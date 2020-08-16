@@ -1,5 +1,6 @@
 
-- [**Diatom** module: what it is useful for and how to install and setup?](#diatom-module-what-it-is-useful-for-and-how-to-install-and-setup)
+- [**Diatom** module: what it is useful for?](#diatom-module-what-it-is-useful-for)
+- [**Diatom** module: how to install and setup?](#diatom-module-how-to-install-and-setup)
 - [Diatomic molecule: basic theoretical concepts](#diatomic-molecule-basic-theoretical-concepts)
   - [The total Hamiltonian and basis functions](#the-total-hamiltonian-and-basis-functions)
   - [The Scrodinger equation for a single state and coupled system of states](#the-scrodinger-equation-for-a-single-state-and-coupled-system-of-states)
@@ -10,29 +11,36 @@
   - [Molecule Data Definition](#molecule-data-definition)
   - [Grid Definition](#grid-definition)
   - [Channel Definition](#channel-definition)
-      - [The structure of the potential files](#the-structure-of-the-potential-files)
   - [Coupling Definition](#coupling-definition)
-      - [Structure of the couplings file](#structure-of-the-couplings-file)
   - [Experimental Data](#experimental-data)
   - [Molecule Levels Computation](#molecule-levels-computation)
-  - [The minimal working example](#the-minimal-working-example)
-- [Fitting of Calculated Energy Levels](#fitting-of-calculated-energy-levels)
-- [Plotting](#plotting)
+  - [Examples](#examples)
+- [Fitting of the Calculated Energy Levels](#fitting-of-the-calculated-energy-levels)
+  - [SVD Fit](#svd-fit)
+  - [Minuit Fit](#minuit-fit)
+  - [Levenberg-Marquard Fit](#levenberg-marquard-fit)
 - [Computing the Transition Frequencies](#computing-the-transition-frequencies)
+  - [States represented by potentials](#states-represented-by-potentials)
+  - [States represented by term values](#states-represented-by-term-values)
 - [Computing the Transition Intensities](#computing-the-transition-intensities)
-  - [Einstein A coefficient and Radiative Lifetime](#einstein-a-coefficient-and-radiative-lifetime)
   - [Line strength](#line-strength)
+    - [Honl-London Factors](#honl-london-factors)
+    - [Frank-Condon Factors](#frank-condon-factors)
+  - [Einstein A coefficient and Radiative Lifetime](#einstein-a-coefficient-and-radiative-lifetime)
+- [Plotting](#plotting)
 
 
-# **Diatom** module: what it is useful for and how to install and setup?
+# **Diatom** module: what it is useful for?
 The Python package **Diatom** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
 The current functionality covered by the program includes:
 * ..
 * ..
 
-Diatom package can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
+# **Diatom** module: how to install and setup?
 
-```
+**Diatom** package can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
+
+```console
 pip install diatom
 ```
 
@@ -162,11 +170,11 @@ In the following example the symbols for three of the isotopes of NiH molecule -
 
 ```python
 # define the symbols for three isotopes
-mdata.masses = ['58Ni1H', '60Ni1H', '62Ni1H']
+mdata.molecule = ['58Ni1H', '60Ni1H', '62Ni1H']
 
 # and this is also a valid syntax
-mdata.masses = ['58Ni 1H']
-mdata.masses = ['58 Ni 1 H']
+mdata.molecule = ['58Ni 1H']
+mdata.molecule = ['58 Ni 1 H']
 ```
 
 - **```masses```** - defines the reduced masses for one or more isotopes of the molecule by specifing their numerical values comupted beforehand. 
@@ -404,7 +412,8 @@ Each channel have to be defined as an object of type Channel. The parameters tha
 
 ----
 
-#### The structure of the potential files
+<!-- omit in toc -->
+#### Structure of the potential files
 
 - for pointwise potentials i.e. **```model```**=_'pointwise'_ or **```model```** =_'cspline'_ the potential file look like
 
@@ -588,6 +597,7 @@ cp1 = diatom.Coupling(
 ```
 ----
 
+<!-- omit in toc -->
 #### Structure of the couplings file
 
 ```
@@ -749,18 +759,24 @@ Similarly **```arpack_k```**, **```arpack_which```** and  **```arpack_sigma```**
   - it is not relevent when experimental data are not provided
 
 <!-- omit in toc -->
-### Storing and Formatting the Ouputs
-- **```store_predicted```** - 
+### Output Format and Storing Options
+
+
+- **```store_predicted```** - save all computed eigenvalues in file
   
-- **```store_info```** - 
+- **```store_info```** - save more information regarding the comutaions in file
+  - may be used for debugging purpose
   
-- **```store_evecs```** - 
+- **```store_evecs```** - save the computed eigenvectors in files
 
-- **```sort_output```** - 
+- **```sort_output```** - sort the selected eigenvalues before saving them by providing column numbers
 
-- **```sort_predicted```** - 
+- **```sort_predicted```** - sort all computed eigenvalues before saving them by providing column numbers
 
-## The minimal working example
+## Examples
+
+<!-- omit in toc -->
+### The minimal working example
 An example with the minimal set of nessecary parameters for running a single channel computations with Morse function is presented.
 
 It is done with only a few lines of code.
@@ -769,7 +785,7 @@ It is done with only a few lines of code.
 import diatom
 
 mdata = diatom.MoleculeData()
-mdata.masses = [0.972222222]
+mdata.molecule = ['58Ni1H']
 mdata.nisotopes = [1]
 mdata.jrange = (1, 5)
 
@@ -789,7 +805,7 @@ diatom.Channel.set_channel_parameters(channels)
 mlevels = diatom.MoleculeLevels(mdata, grid, channels)
 mlevels.calculateLevels()
 ```
-The content of the potential file:
+The content of the input potential file:
 ```
 Te =    1.00000000e-05   0
 De =    1.00000000e+01   0
@@ -808,21 +824,40 @@ Here all eigenvalues and eigenvectors for J=1,2,3,4 and 5 with both e/f parity l
       6   5    1503.471257     1.0     0      1     1.000      1      0     0.00
       7   6    2040.431414     1.0     0      1     1.000      1      0     0.00
       8   7    2659.982664     1.0     0      1     1.000      1      0     0.00
-      9   8    3362.127325     1.0     0      1     1.000      1      0     0.00
-     10   9    4146.873422     1.0     0      1     1.000      1      0     0.00
 ```
-# Fitting of Calculated Energy Levels
+
+<!-- omit in toc -->
+### Another example
+
+<!-- omit in toc -->
+### A more complex example
+
+# Fitting of the Calculated Energy Levels
+
+## SVD Fit
+
+## Minuit Fit
+
+## Levenberg-Marquard Fit
+
+# Computing the Transition Frequencies
+
+## States represented by potentials
+
+## States represented by term values
+
+# Computing the Transition Intensities
+
+## Line strength
+
+### Honl-London Factors
+
+### Frank-Condon Factors
+
+## Einstein A coefficient and Radiative Lifetime
 
 # Plotting
 
 ![image info](./hcolormesh.png)
-
-# Computing the Transition Frequencies
-
-# Computing the Transition Intensities
-
-## Einstein A coefficient and Radiative Lifetime
-
-## Line strength
 
 <!-- ## Cross-section -->
