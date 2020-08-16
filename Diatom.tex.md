@@ -33,13 +33,13 @@ The current functionality covered by the program includes:
 Diatom package can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
 
 ```
-pip install diatom
+$ pip install diatom
 ```
 
 from jupyter or ipython execute
 
 ````python
-! pip install diatom
+In [1]: ! pip install diatom
 ````
 
 After installing create a new python file *.py (for example called main.py) and import the diatom module
@@ -55,11 +55,14 @@ To execute the file from the Linux command line write
 python main.py
 ```
 or type
-```shell
-chmod u+x main.py
-./main.py
+```console
+$ chmod u+x main.py
+$ ./main.py
 ```
-to make the file executable and run it.
+to make the file executable and run it. To execute the file from IPython (An enhanced Interactive Python) type ipython then
+```python
+In [1]: run main.py
+```
 
 The package is extensivly tested only on Linux but will work under Windows and MacOS as well.
 
