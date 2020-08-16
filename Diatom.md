@@ -36,10 +36,10 @@ Diatom package can be installed from the Python software repository PyPI (Python
 pip install diatom
 ```
 
-from jupyter ot ipython execute
+from jupyter or ipython execute
 
 ````python
-pip install diatom
+! pip install diatom
 ````
 
 After installing create a new python file *.py (for example called main.py) and import the diatom module
@@ -49,6 +49,17 @@ After installing create a new python file *.py (for example called main.py) and 
 
 import diatom
 ```
+
+To execute the file from the Linux command line write
+```shell
+python main.py
+```
+or type
+```shell
+chmod u+x main.py
+./main.py
+```
+to make the file executable and run it.
 
 The package is extensivly tested only on Linux but will work under Windows and MacOS as well.
 
@@ -134,9 +145,9 @@ Part of the input information about the molecule should be defined by the follow
 - **```molecule```** - defines one or more isotopic forms of the same molecule by specifing their symbols
   - it should be an iterable of type list or tuple of strings.
   - each defined item inside this iterable represents a symbol corresponding to diffrent isotope of the same molecule. 
-  - The reduced masses for each isotope will be computed by looking for their atomic masses in an existing database (ascii file) available at
-  https://www.nist.gov/pml/atomic-weights-and-isotopic-compositions-relative-atomic-masses
   - the molecule symbols should be specified by thier atomic symbols and each mass number put in front of them; only spaces between the symbols are allowed.
+  - The reduced masses for each isotope will be computed by looking for their atomic masses in an existing database (ascii file) available from
+  https://www.nist.gov/pml/atomic-weights-and-isotopic-compositions-relative-atomic-masses
   - this property does not determine which and how many isotopes will be included in the calculations (refer to the property **```nisotopes```** below) but only defines the masses by the symbols.
   - it is not mandatory
 
@@ -184,7 +195,7 @@ mdata.masses = [mA * mB / (mA + mB)]
 The energies only for the second and the third isotope will be computed in this example:
 ```python
 # define the masses of 3 isotopes
-mdata.masses = [0.990592988928, 0.991157254368, 0.991686280089]
+mdata.molecule = ['58Ni1H', '60Ni1H', '62Ni1H']
 
 # but compute only for the second and the third one
 mdata.nisotopes = [2,3]
