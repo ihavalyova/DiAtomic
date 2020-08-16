@@ -151,55 +151,37 @@ class MoleculeData:
             raise SystemExit(f'Error: Molecule {molecule} not in the correct format')
 
         atoms = (molecule_data[1], molecule_data[3])
-        numbers = (int(molecule_data[0]), int(molecule_data[2]))
+        mnumbers = (int(molecule_data[0]), int(molecule_data[2]))
 
         database_def = 'Atomic_Weights_and_Isotopic_Compositions_for_All_Elements_NIST.ascii'
         database = database or database_def
 
-        with open(database, 'r') as atm:
-            atomic_database = atm.read()
+        with open(database, 'r') as db:
+            atomic_masses = db.read()
 
-         # match atomic symbol
-        symbols = re.findall(r'Atomic\s+Symbol\s+=\s+\w+', atomic_database)
-        ssymbols = map(str.split, symbols)
+        atom_mass1 = self.match_atomic_mass(atomic_masses, atoms[0], mnumbers[0])
+        atom_mass2 = self.match_atomic_mass(atomic_masses, atoms[1], mnumbers[1])
 
-        # match atomic mass
-        masses = re.findall(r'Relative\s+Atomic\s+Mass\s+=\s+\d+\.\d+', atomic_database)
-        smasses = map(str.split, masses)
+        rmass = atom_mass1 * atom_mass2 / (atom_mass1 + atom_mass2)
 
-        # match mass number - to determine isotope
-        mass_numbers = re.findall(r'Mass\s+Number\s+=\s+\d+', atomic_database)
-        smass_numbers = map(str.split, mass_numbers)
-
-        count = 1
-        atom1, atom2 = False, False
-
-        for symbol, mass, mnumber in zip(ssymbols, smasses, smass_numbers):
-            if symbol[-1].strip() in atoms and int(mnumber[-1].strip()) in numbers:
-
-                if count % 2 == 0:
-                    atom1 = True
-                    satom1, matom1, natom1 = symbol[-1], float(mass[-1]), int(mnumber[-1])
-                else:
-                    atom2 = True
-                    satom2, matom2, natom2 = symbol[-1], float(mass[-1]), int(mnumber[-1])
-
-                count += 1
-
-            if atom1 and atom2:
-
-                rmass = matom1 * matom2 / (matom1 + matom2)
-
-                self.atomic_masses.append((matom1, matom2))
-                self.atomic_symbols.append((satom1, satom2))
-                self.atomic_mass_nums.append((natom1, natom2))
-
-                break
-
-        if not atom1 or not atom2:
-            print(f'Error: Atom(s) {atoms} for molecule {molecule} not found\n')
+        self.atomic_masses.append((atom_mass1, atom_mass2))
+        self.atomic_symbols.append((atoms[0], atoms[1]))
+        self.atomic_mass_nums.append((mnumbers[0], mnumbers[1]))
 
         return rmass
+
+    def match_atomic_mass(self, atomic_masses, symbol, mnumber):
+
+        pattern_str = f'Atomic\s+Symbol\s+=\s+{symbol}[\r\n]Mass\s+Number\s+=\s+{mnumber}'
+        pattern_str += '[\r\n]Relative\s+Atomic\s+Mass\s+=\s+\d+\.\d+'
+        pattern = re.compile(pattern_str)
+
+        atom_data = re.findall(pattern, atomic_masses)
+
+        if len(atom_data) != 1:
+            raise SystemExit('Error: Incorrect matching or nothing found.')
+
+        return float(atom_data[0].split('\n')[-1].split('=')[-1].strip())
 
     def get_exp_data(self, exp_file, channels, markers=None, average=False):
 
