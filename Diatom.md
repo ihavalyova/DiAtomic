@@ -33,8 +33,276 @@ The current functionality covered by the program includes:
 Diatom package can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
 
 ```
-<img src="/tex/d3935be3c2c83a415212799b5fb03c60.svg?invert_in_darkmode&sanitize=true" align=middle width=700.27450185pt height=315.6164385pt/> chmod u+x main.py
-<img src="/tex/b27545348bf905b65b0ddfb427bda915.svg?invert_in_darkmode&sanitize=true" align=middle width=1068.53799525pt height=276.1643841pt/><img src="/tex/21bfd3a02c5cb27c5e3ada6162fedac5.svg?invert_in_darkmode&sanitize=true" align=middle width=381.66411524999995pt height=24.65753399999998pt/><img src="/tex/7b342c84e914e939ac4cbd0eaaca7459.svg?invert_in_darkmode&sanitize=true" align=middle width=700.50290805pt height=203.6529759pt/><img src="/tex/797ffc6d128d85b2c09b9c23eb8e0986.svg?invert_in_darkmode&sanitize=true" align=middle width=406.34181885pt height=37.80850590000001pt/><img src="/tex/37ca9269559fef7d7504c55ca37c7020.svg?invert_in_darkmode&sanitize=true" align=middle width=268.2199014pt height=39.45205439999997pt/>R<img src="/tex/be0f0cee207d363be76cfc4530d0c67e.svg?invert_in_darkmode&sanitize=true" align=middle width=275.19620369999996pt height=22.831056599999986pt/>U(R) + ({\hbar^2}/{2\mu R^2})J(J+1)<img src="/tex/8d46e98288f18431d642a331d196bc77.svg?invert_in_darkmode&sanitize=true" align=middle width=578.6930638499999pt height=22.831056599999986pt/>\mu = M_{1} M_{2} /(M_{1} + M_{2})<img src="/tex/1da9fcafafb5c088ab6ddc5e21359621.svg?invert_in_darkmode&sanitize=true" align=middle width=44.86319144999999pt height=22.831056599999986pt/>M_1<img src="/tex/fd92a53167b3c6ae9574071613d555dc.svg?invert_in_darkmode&sanitize=true" align=middle width=27.11199479999999pt height=22.831056599999986pt/>M_2<img src="/tex/456a7ae47fb0b9caedf5550d4ec541a2.svg?invert_in_darkmode&sanitize=true" align=middle width=467.6466399pt height=22.831056599999986pt/>E_{vJ}<img src="/tex/a6c401b133327749f2d1d6015bf6e66e.svg?invert_in_darkmode&sanitize=true" align=middle width=390.9370575pt height=22.831056599999986pt/>\phi_{vJ}<img src="/tex/1e10cdb38b6f2980f14cb619e6afa95b.svg?invert_in_darkmode&sanitize=true" align=middle width=700.2744622499999pt height=322.0091391pt/><img src="/tex/14189077a38971377cea77bfabc6e843.svg?invert_in_darkmode&sanitize=true" align=middle width=217.99017239999998pt height=29.190975000000005pt/><img src="/tex/24844e386612a660188bbd69111bd424.svg?invert_in_darkmode&sanitize=true" align=middle width=246.4918137pt height=22.831056599999986pt/>D_{e}<img src="/tex/638b242b5112d037b2148b9e4ffead2d.svg?invert_in_darkmode&sanitize=true" align=middle width=824.2124484pt height=24.65753399999998pt/>\beta<img src="/tex/9acfbef9f5bc0134997832d6d47f3218.svg?invert_in_darkmode&sanitize=true" align=middle width=112.25229014999998pt height=22.831056599999986pt/>r_{e}<img src="/tex/aa4b599d89fdfa80139ea0e6db0642bd.svg?invert_in_darkmode&sanitize=true" align=middle width=327.67215855pt height=78.90410880000002pt/><img src="/tex/be22f48b5fe0e3c05c068cf6bfb428b7.svg?invert_in_darkmode&sanitize=true" align=middle width=383.94854189999995pt height=26.76175259999998pt/><img src="/tex/395c22333c4cfc54ed09e349f7a123b4.svg?invert_in_darkmode&sanitize=true" align=middle width=640.4583355499999pt height=45.84475499999998pt/><img src="/tex/07ddc82faad966e1ca7aa09c751fcd4a.svg?invert_in_darkmode&sanitize=true" align=middle width=192.07546875pt height=32.256008400000006pt/><img src="/tex/9a3645a25abf72e32fb414d1722b2cfa.svg?invert_in_darkmode&sanitize=true" align=middle width=586.57693875pt height=45.84475499999998pt/><img src="/tex/490b8cc557b393901eddeeccbbc02ee3.svg?invert_in_darkmode&sanitize=true" align=middle width=101.93435999999998pt height=33.76610489999999pt/><img src="/tex/4238e787c12f2e3e6690ef11ed1486f1.svg?invert_in_darkmode&sanitize=true" align=middle width=700.2747410999999pt height=795.4337952pt/>^{58}\textrm{NiH}<img src="/tex/24ee684c2922b0d32c54a34089c92ec0.svg?invert_in_darkmode&sanitize=true" align=middle width=4.5662248499999905pt height=14.15524440000002pt/>^{60}\textrm{NiH}<img src="/tex/fd92a53167b3c6ae9574071613d555dc.svg?invert_in_darkmode&sanitize=true" align=middle width=27.11199479999999pt height=22.831056599999986pt/>^{62}\textrm{NiH}<img src="/tex/24405ce93a16e0f497025fd5e5f7bfab.svg?invert_in_darkmode&sanitize=true" align=middle width=700.5030021pt height=282.55708469999996pt/>\mu = m_{A}*m_{B} / (m_{A} + m_{B})<img src="/tex/baca17a163a9cb6b60d7da054e52fec2.svg?invert_in_darkmode&sanitize=true" align=middle width=947.5261718999999pt height=2255.1598245pt/>R_i<img src="/tex/01a0b2843109824344cc6649405eb01d.svg?invert_in_darkmode&sanitize=true" align=middle width=138.1516059pt height=22.831056599999986pt/>R_{min}<img src="/tex/5b7ce0b11756ea13938668594c96a288.svg?invert_in_darkmode&sanitize=true" align=middle width=13.90414904999999pt height=20.221802699999984pt/>R_{max}<img src="/tex/50b0e30a0c2655fedf357501ff3566da.svg?invert_in_darkmode&sanitize=true" align=middle width=132.89916914999998pt height=22.831056599999986pt/><img src="/tex/f2473b861a7f7efddac0503d81572ae6.svg?invert_in_darkmode&sanitize=true" align=middle width=292.75927724999997pt height=24.65753399999998pt/><img src="/tex/d58337d48610f0bf4202bfdfca7f94fe.svg?invert_in_darkmode&sanitize=true" align=middle width=30.182742149999992pt height=39.45205439999997pt/>N_{R}<img src="/tex/83b907c6487854dce8c00196a3cbc702.svg?invert_in_darkmode&sanitize=true" align=middle width=213.55245284999998pt height=22.831056599999986pt/>\Delta_{R}<img src="/tex/709791a6749a4974e2d16b520812ebdb.svg?invert_in_darkmode&sanitize=true" align=middle width=96.51884055pt height=22.831056599999986pt/><img src="/tex/216bed4bde630a321c7ab38b6e7183b6.svg?invert_in_darkmode&sanitize=true" align=middle width=124.77998774999999pt height=29.205422400000014pt/><img src="/tex/b051c4d167aa8c077ee4e155947b83f7.svg?invert_in_darkmode&sanitize=true" align=middle width=604.6591122pt height=124.74886379999998pt/>R_{min}$ and the final $R_{max}$ values of the R grid.
+pip install diatom
+```
+
+from jupyter or ipython execute
+
+````python
+In [1]: ! pip install diatom
+````
+
+After installing create a new python file *.py (for example called main.py) and import the diatom module
+
+```python
+# inside main.py
+
+import diatom
+```
+
+To execute the file from the Linux command line write
+```console
+python main.py
+```
+
+or type
+
+```console
+chmod u+x main.py
+./main.py
+```
+
+to make the file executable and run it. To execute the file from IPython (An enhanced Interactive Python) type ipython then
+
+```python
+In [1]: run main.py
+```
+
+The package is extensivly tested only on Linux but will work under Windows and MacOS as well.
+
+# Diatomic molecule: basic theoretical concepts
+
+## The total Hamiltonian and basis functions
+
+The total Hamiltonian of a diatomic molecule in the rotating molecular frame with origin at the center of mass of the molecule can be written as a sum of several terms:
+
+<p align="center"><img src="/tex/0befcf4d6f64295f51648ed6605604bf.svg?invert_in_darkmode&sanitize=true" align=middle width=381.66411525pt height=16.438356pt/></p>
+
+where the each of the terms is defined as follows:
+
+## The Scrodinger equation for a single state and coupled system of states
+...
+<!-- omit in toc -->
+### Single channel approximation for an isolated state
+
+The energy eigenvalues of single isolated state of diatomic molecule can be obtained by solving the radial Schrodinger equation
+
+<p align="center"><img src="/tex/04ec33ae2ec81c77f6d478424e026fe4.svg?invert_in_darkmode&sanitize=true" align=middle width=428.47916925pt height=40.11819404999999pt/></p>
+
+with internuclear distance labeled with <img src="/tex/1e438235ef9ec72fc51ac5025516017c.svg?invert_in_darkmode&sanitize=true" align=middle width=12.60847334999999pt height=22.465723500000017pt/>, the sum of the second and the third term <img src="/tex/f11fee23e73e65ca5d56841195727865.svg?invert_in_darkmode&sanitize=true" align=middle width=196.35702239999998pt height=26.76175259999998pt/> from the left hand side is called effective potential energy curve, the reduced mass is <img src="/tex/9c774da583d642ab71cf6fc72e1cb939.svg?invert_in_darkmode&sanitize=true" align=middle width=166.2062853pt height=24.65753399999998pt/> where <img src="/tex/6f549764f2f97bec950c14de5352994a.svg?invert_in_darkmode&sanitize=true" align=middle width=22.500061649999992pt height=22.465723500000017pt/> and <img src="/tex/dced8cd0d35e2af2d3499c10d7ee6289.svg?invert_in_darkmode&sanitize=true" align=middle width=22.500061649999992pt height=22.465723500000017pt/> are the masses of the two atoms, J is the rotational quantum number; <img src="/tex/311f29e88a451816c3e621e910343bf4.svg?invert_in_darkmode&sanitize=true" align=middle width=27.481438049999987pt height=22.465723500000017pt/> are the energy eigenvalues of the rovibrational levels and <img src="/tex/6130302efada133fa7ea1cd1ccb12a8f.svg?invert_in_darkmode&sanitize=true" align=middle width=25.14126119999999pt height=22.831056599999986pt/> are their corresponding eigenfunctions.
+
+<!-- omit in toc -->
+### The coupled channels problem
+
+## The interaction terms and their matrix elements
+
+## Methods for solving the Schrodinger equation
+<!-- omit in toc -->
+  ### Fourier Grid Hamiltonian (FGH)
+
+<!-- omit in toc -->
+  ### Finite Difference Method (FD)
+
+## Potential Energy function models (PECs models)
+- Pointwise potential
+
+- Analytical potential
+   - Morse potential
+
+  The Morse potential function is defined as:
+
+  <p align="center"><img src="/tex/32aad865ba81d6b7c52a0cb268f1a101.svg?invert_in_darkmode&sanitize=true" align=middle width=217.99017239999998pt height=19.526994300000002pt/></p>
+  where Te is the term value energy??, <img src="/tex/1876b29402de38408e13f33010df5c24.svg?invert_in_darkmode&sanitize=true" align=middle width=19.84651514999999pt height=22.465723500000017pt/> measures the energy from the bottom of the potential to the dissociation limit (it different from the dissociation energy)
+  <img src="/tex/8217ed3c32a785f0b5aad4055f432ad8.svg?invert_in_darkmode&sanitize=true" align=middle width=10.16555099999999pt height=22.831056599999986pt/> is a constant and <img src="/tex/7b6a7362f072c7598f6fdb54363c97e8.svg?invert_in_darkmode&sanitize=true" align=middle width=13.65323849999999pt height=14.15524440000002pt/> is the equilibrium internuclear distance.
+
+   - EMO (Expanded Morse Oscillator) potential
+
+  It is defined as
+
+  <p align="center"><img src="/tex/e88b8315d59ce4cb6c5fa4897772e628.svg?invert_in_darkmode&sanitize=true" align=middle width=383.9485419pt height=18.312383099999998pt/></p>
+
+  which is a Morse potential function with a radial dependence of the exponential coefficient
+
+  <p align="center"><img src="/tex/f1e0f767c174f6661b8264ae68817fec.svg?invert_in_darkmode&sanitize=true" align=middle width=176.35144889999998pt height=47.806078649999996pt/></p>
+
+  represented as a polynomial expansion in the powers of the dimensionless function
+
+  <p align="center"><img src="/tex/ba1da685931183a2ce899c4a8fbe37c3.svg?invert_in_darkmode&sanitize=true" align=middle width=118.4382078pt height=35.551675499999995pt/></p>
+
+  with p being a positive integer number.
+
+   - MLR (Morse/Long-Range) potential
+
+# Computing Energy Eigenvalues
+
+## Molecule Data Definition
+
+Initially an object of type **```MoleculeData```** should be created:
+
+```python
+# creating molecule data object called mdata
+mdata = diatom.MoleculeData()
+```
+
+Part of the input information about the molecule should be defined by the following properties and attached to the created **```MoleculeData```** object:
+
+<!-- omit in toc -->
+### Reduced masses and isotopes
+
+- **```molecule```** - defines one or more isotopic forms of the same molecule by specifing their symbols
+  - it should be an iterable of type list or tuple of strings.
+  - each defined item inside this iterable represents a symbol corresponding to diffrent isotope of the same molecule. 
+  - the molecule symbols should be specified by thier atomic symbols and each mass number put in front of them; only spaces between the symbols are allowed.
+  - The reduced masses for each isotope will be computed by looking for their atomic masses in an existing database (ascii file) available from
+  https://www.nist.gov/pml/atomic-weights-and-isotopic-compositions-relative-atomic-masses
+  - this property does not determine which and how many isotopes will be included in the calculations (refer to the property **```nisotopes```** below) but only defines the masses by the symbols.
+  - it is not mandatory
+
+In the following example the symbols for three of the isotopes of NiH molecule - <img src="/tex/a01778636bb5ed1e24e91614821128df.svg?invert_in_darkmode&sanitize=true" align=middle width=43.15082309999999pt height=26.76175259999998pt/>, <img src="/tex/f04c8e60a7fed2786b83de051f533185.svg?invert_in_darkmode&sanitize=true" align=middle width=43.15082309999999pt height=26.76175259999998pt/> and <img src="/tex/bfb4aef268944889b9a31b9123d21404.svg?invert_in_darkmode&sanitize=true" align=middle width=43.15082309999999pt height=26.76175259999998pt/> are defined as: 
+
+```python
+# define the symbols for three isotopes
+mdata.masses = ['58Ni1H', '60Ni1H', '62Ni1H']
+
+# and this is also a valid syntax
+mdata.masses = ['58Ni 1H']
+mdata.masses = ['58 Ni 1 H']
+```
+
+- **```masses```** - defines the reduced masses for one or more isotopes of the molecule by specifing their numerical values comupted beforehand. 
+
+  - use when the automatic computation of the reduced masses is not preffered
+  - it should be an iterable of type list or tuple of float numbers.
+  - each defined item inside this iterable represents the reduced mass for a different isotope computed by <img src="/tex/a5f91a48b545c00d9b57f59247ed65e8.svg?invert_in_darkmode&sanitize=true" align=middle width=190.2203985pt height=24.65753399999998pt/> in amu units.
+  - this property does not determine which and how many isotopes will be included in the calculations (refer to the property **```nisotopes```** below) but only defines their masses.
+  - it is not mandatory
+
+
+```python
+# define the reduced masses for three of NiH isotopes
+mdata.masses = [0.990592988928, 0.991157254368, 0.991686280089]
+```
+Or it could be directly computed from the masses of the two atoms:
+```python
+# or by using the masses of the separate atoms
+mA, mB = 1.00782503223, 34.968852682
+mdata.masses = [mA * mB / (mA + mB)]
+```
+
+> **_NOTE:_** At least one of the above two properties (**```molecule```** or **```masses```**) should be specified (i.e. one of them is mandatory) otherwise the execution fails.
+
+> **_NOTE:_** The properties **```molecule```**/**```masses```** and **```nisotopes```** are closely connected.
+
+- **```nisotopes```** - tells which isotopes to be included in the compuations by providing their numbers
+  - it should be a list or tuple of integer numbers
+  - a list of numbers each corresponding to an isotope with mass defined by the property **```masses```**. In other words the values of this property are indicies of the property **```masses```** counting from 1.
+  - the values starts from 1 up to the number of masses in **```masses```**
+  - it is mandatory
+
+The energies only for the second and the third isotope will be computed in this example:
+```python
+# define the masses of 3 isotopes
+mdata.molecule = ['58Ni1H', '60Ni1H', '62Ni1H']
+
+# but compute only for the second and the third one
+mdata.nisotopes = [2,3]
+```
+
+<!-- omit in toc -->
+### Values of the rotational quantum number J
+
+- **```jrange```** - defines a continious sequence of J values by specifing the inital and the final values.
+
+  - it is an iterable of type list or tuple containing only 2 elements (integer or float numbers)
+  - the two elements are the initial and the final J value of the required range of rotational quantum numbers which to be used in the computations
+
+```python
+# the J values will be: 0, 1, 2, 3, 4 and 5
+mdata.jrange = (0, 5)
+```
+
+- **```jvalues```** - defines a specific set of values for J
+
+  - it could be a single number or list of numbers defined as type list/tuple of integer or float numbers
+
+```python
+# the J values will be: 7.5, 8.5, 11.5, 12.5
+mdata.jvalues = (7.5, 8.5, 11.5, 12.5)
+```
+
+In the below example the values of the rotational quantum number that will be used in the calculations are: 0.5, 1.5, 2.5, 3.5, 4.5, 10.5, 12.5, 15.5, 16.5
+
+```python
+mdata.jrange = (0.5, 4.5)
+mdata.jvalues = (10.5, 12.5, 15.5, 16.5)
+```
+
+> **_NOTE:_** At least one of the properties **```jvalues```** or **```jrange```** is mandatory i.e. either one or both should be set.
+
+<!-- omit in toc -->
+### Parity labels
+
+- **```parities```** - tells which parity levels to be computed. 
+  - levels with one or both e/f parity labels can be computed. 
+  - we use a convention for designating the parity labels with numbers 0 and 1 for f and e respectivly.
+  - it accepts a sinle value or tuple/list of one or two values of integer type (0 or 1).
+  - not mandatory - if it is not set both e- and f-levels will be computed by default.
+
+```python
+# both e- and f-levels will be computed
+mdata.parities = 0, 1
+
+# only e-levels will be computed
+mdata.parities = 1
+```
+
+<!-- omit in toc -->
+### Reference level
+
+- **```referenceJ```** - a reference J level which energy will be used for shifting all other levels
+  - the energies of all levels will be shifted by the energy of the level having this J value
+  - in the general case the e/f levels and levels corresponding to diffrent isotopes might be shifted with diffrent energy
+  - integer or float number
+
+- **```referenceE```** - a reference energy value which will be used for shifting all levels
+  - all levels will be shifted with the same value
+  - integer or float number
+
+Examples:
+```python
+mdata.referenceJ = 2.5
+```
+
+```python
+mdata.referenceE = 1000
+```
+None of them is mandatory.
+
+If both of these parameters are specified simultaneously, **```referenceJ```** will be used.
+
+## Grid Definition
+
+Will define a grid of points on the internuclear distance R.
+
+To set all parameters releated to the defininiton of the grid we need to initilize the grid object. This can be done if we call the Grid method (actually this is the constructor of the class Grid) and pass the required arguments. Two types of grids are supported:
+<!-- omit in toc -->
+### Uniform grid
+
+An equdistant set of points will be generated on which all subsequent calculations will be performed. The grid points <img src="/tex/6660896e4379722ff79bba94961b201c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.132374049999992pt height=22.465723500000017pt/> in the interval from <img src="/tex/3076bed5ea0f6f7be4dcc194b5375a3b.svg?invert_in_darkmode&sanitize=true" align=middle width=36.92324789999999pt height=22.465723500000017pt/> to <img src="/tex/ea449f9e9a48e2959872aac8fa65e1ca.svg?invert_in_darkmode&sanitize=true" align=middle width=38.73108029999999pt height=22.465723500000017pt/> are determined by:
+
+<p align="center"><img src="/tex/6f277b0df057cb1fe10512647772c30a.svg?invert_in_darkmode&sanitize=true" align=middle width=292.75927724999997pt height=16.438356pt/></p>
+
+where <img src="/tex/83b80e12323c9ced450508d7bd3822a5.svg?invert_in_darkmode&sanitize=true" align=middle width=23.169583799999987pt height=22.465723500000017pt/> is the number of grid points and <img src="/tex/5385180385f31e03adfa5256148b06bb.svg?invert_in_darkmode&sanitize=true" align=middle width=23.66048849999999pt height=22.465723500000017pt/> is the grid step
+
+<p align="center"><img src="/tex/f17deb669038ee0be520dfb23a4a35c0.svg?invert_in_darkmode&sanitize=true" align=middle width=145.76189265pt height=36.09514755pt/></p>
+
+The required arguments in this case are:
+
+- **```npoints```** - the number of grid points
+    - It should be a positive integer number
+
+- **```rgrid```** - the range of R values.
+    - We need to specify the initial $R_{min}$ and the final $R_{max}$ values of the R grid.
     - It accepts a tuple/list containing two integer or float numbers
 
 The above two arguments are mandatory.
