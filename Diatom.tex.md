@@ -51,7 +51,7 @@ import diatom
 ```
 
 To execute the file from the Linux command line write
-```shell
+```console
 python main.py
 ```
 or type
