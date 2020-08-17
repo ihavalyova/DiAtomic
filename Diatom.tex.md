@@ -1,6 +1,6 @@
 
-- [**Diatom** module: what it is useful for?](#diatom-module-what-it-is-useful-for)
-- [**Diatom** module: how to install and setup?](#diatom-module-how-to-install-and-setup)
+- [**```Diatom```** module: what is it used for?](#diatom-module-what-is-it-used-for)
+- [**```Diatom```** module: how to install and setup?](#diatom-module-how-to-install-and-setup)
 - [Diatomic molecule: basic theoretical concepts](#diatomic-molecule-basic-theoretical-concepts)
   - [The total Hamiltonian and basis functions](#the-total-hamiltonian-and-basis-functions)
   - [The Scrodinger equation for a single state and coupled system of states](#the-scrodinger-equation-for-a-single-state-and-coupled-system-of-states)
@@ -30,53 +30,60 @@
 - [Plotting](#plotting)
 
 
-# **Diatom** module: what it is useful for?
-The Python package **Diatom** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
+# **```Diatom```** module: what is it used for?
+The Python package **```Diatom```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
 The current functionality covered by the program includes:
 * ..
 * ..
 
-# **Diatom** module: how to install and setup?
+# **```Diatom```** module: how to install and setup?
 
-**Diatom** package can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
+**```Diatom```** module can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
 
 ```console
-pip install diatom
+$ pip install diatom
 ```
 
-from jupyter or ipython execute
+and from Jupyter or IPython execute
 
 ````python
 In [1]: ! pip install diatom
 ````
+To quickly check whether the installation has been successful type
+```console
+$ python
+>>> import diatom
+>>> diatom
+```
+and the path to the \_\_init\_\_.py file in the install location should be outputed.
 
-After installing create a new python file *.py (for example called main.py) and import the diatom module
+After installing create a new python file for example called main.py and import the diatom module
 
 ```python
-# inside main.py
+#!/usr/bin/env python
 
 import diatom
 ```
 
 To execute the file from the Linux command line write
 ```console
-python main.py
+$ python main.py
 ```
 
 or type
 
 ```console
-chmod u+x main.py
-./main.py
+$ chmod u+x main.py
+$ ./main.py
 ```
 
-to make the file executable and run it. To execute the file from IPython (An enhanced Interactive Python) type ipython then
+to make the file executable and run it. To execute the file from the interactive shell of IPython (Interactive Python) type ipython then
 
 ```python
 In [1]: run main.py
 ```
 
-The package is extensivly tested only on Linux but will work under Windows and MacOS as well.
+The **```Diatom```** package is extensivly tested on Linux platform but works under Windows and MacOS as well.
 
 # Diatomic molecule: basic theoretical concepts
 
@@ -157,7 +164,7 @@ with internuclear distance labeled with $R$, the sum of the second and the third
 
 ## Molecule Data Definition
 
-Initially an object of type **```MoleculeData```** should be created:
+Initially an object of type **```MoleculeData```** should be instantiated in the already created *.py file which we called main.py:
 
 ```python
 # creating molecule data object called mdata
