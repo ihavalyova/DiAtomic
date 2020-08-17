@@ -50,11 +50,13 @@ and from Jupyter or IPython execute
 In [1]: ! pip install diatom
 ````
 To quickly check whether the installation has been successful type
+
 ```console
 $ python
 >>> import diatom
 >>> diatom
 ```
+
 and the path to the \_\_init\_\_.py file in the install location should be outputed.
 
 After installing create a new python file for example called main.py and import the diatom module
