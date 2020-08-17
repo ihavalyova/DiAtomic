@@ -1,6 +1,6 @@
 
-- [**Diatom** module: what it is useful for?](#diatom-module-what-it-is-useful-for)
-- [**Diatom** module: how to install and setup?](#diatom-module-how-to-install-and-setup)
+- [**```Diatom```** module: what is it used for?](#diatom-module-what-is-it-used-for)
+- [**```Diatom```** module: how to install and setup?](#diatom-module-how-to-install-and-setup)
 - [Diatomic molecule: basic theoretical concepts](#diatomic-molecule-basic-theoretical-concepts)
   - [The total Hamiltonian and basis functions](#the-total-hamiltonian-and-basis-functions)
   - [The Scrodinger equation for a single state and coupled system of states](#the-scrodinger-equation-for-a-single-state-and-coupled-system-of-states)
@@ -10,6 +10,7 @@
 - [Computing Energy Eigenvalues](#computing-energy-eigenvalues)
   - [Molecule Data Definition](#molecule-data-definition)
   - [Grid Definition](#grid-definition)
+    - [Comment](#comment)
   - [Channel Definition](#channel-definition)
   - [Coupling Definition](#coupling-definition)
   - [Experimental Data](#experimental-data)
@@ -30,34 +31,44 @@
 - [Plotting](#plotting)
 
 
-# **Diatom** module: what it is useful for?
-The Python package **Diatom** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
+# **```Diatom```** module: what is it used for?
+The Python package **```Diatom```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
 The current functionality covered by the program includes:
 * ..
 * ..
 
-# **Diatom** module: how to install and setup?
+Just as an example of what you can do with **```Diatom```** module, if you have a set of potentials for a couple of molecular electronic states represented by points (abinitio, RKR and etc.) and want to see how they look you can do something like:
+```python
+p = diatom.Plotting()
+p.plot_potentials_points(['p1.pot', 'p2.pot', 'p3.pot', 'p4.pot'], show=True, ipoints=50, ylim=(1e3, 1e5))
+```
+or even simpler:
+```python
+import glob
+p = diatom.Plotting()
+p.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=50, ylim=(1e3, 1e5))
+```
+assuming your potential files are in the current directory.
 
-**Diatom** package can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
+# **```Diatom```** module: how to install and setup?
+
+**```Diatom```** module can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
 
 ```console
-pip install diatom
+<img src="/tex/51c974c55f0f79de613a9497aba562c0.svg?invert_in_darkmode&sanitize=true" align=middle width=700.2744276pt height=157.8082209pt/> python
+>>> import diatom
+>>> diatom
 ```
 
-from jupyter or ipython execute
+and the path to the \_\_init\_\_.py file in the install location should be outputed.
 
-````python
-In [1]: ! pip install diatom
-````
-
-After installing create a new python file *.py (for example called main.py) and import the diatom module
+After installing create a new python file for example called main.py and import the diatom module
 
 ```python
-# inside main.py
+#!/usr/bin/env python
 
 import diatom
 ```
-
 To execute the file from the Linux command line write
 ```console
 python main.py
@@ -70,13 +81,13 @@ chmod u+x main.py
 ./main.py
 ```
 
-to make the file executable and run it. To execute the file from IPython (An enhanced Interactive Python) type ipython then
+to make the file executable and run it. To execute the file from the interactive shell of IPython (Interactive Python) type ipython then
 
 ```python
 In [1]: run main.py
 ```
 
-The package is extensivly tested only on Linux but will work under Windows and MacOS as well.
+The **```Diatom```** package is extensivly tested on Linux platform but works under Windows and MacOS as well.
 
 # Diatomic molecule: basic theoretical concepts
 
@@ -141,11 +152,13 @@ with internuclear distance labeled with <img src="/tex/1e438235ef9ec72fc51ac5025
 
    - MLR (Morse/Long-Range) potential
 
+<p align="center"><img src="/tex/826ef0830ed7bf386d12de409f2bb662.svg?invert_in_darkmode&sanitize=true" align=middle width=106.3151496pt height=16.438356pt/></p>
+
 # Computing Energy Eigenvalues
 
 ## Molecule Data Definition
 
-Initially an object of type **```MoleculeData```** should be created:
+Initially an object of type **```MoleculeData```** should be instantiated in the already created *.py file which we called main.py:
 
 ```python
 # creating molecule data object called mdata
@@ -292,7 +305,7 @@ If both of these parameters are specified simultaneously, **```referenceJ```** w
 
 Will define a grid of points on the internuclear distance R.
 
-To set all parameters releated to the defininiton of the grid we need to initilize the grid object. This can be done if we call the Grid method (actually this is the constructor of the class Grid) and pass the required arguments. Two types of grids are supported:
+To set all parameters releated to the defininiton of the grid we need to initilize the grid object. This can be done if we call the **```Grid```** constructor and pass the required arguments. Two types of grids are supported:
 <!-- omit in toc -->
 ### Uniform grid
 
@@ -318,9 +331,9 @@ The above two arguments are mandatory.
 - **```solver```** - the method used for solution of the Schrodinger equation
     - The initialization of the grid depends on which solver method is selected.
     - It should be a string and the following values are available:
-      - 'sinc'
-      - 'fourier'
-      - 'fd5'
+      - **```'sinc'```**
+      - **```'fourier'```**
+      - **```'fd5'```**
 
       If one of the values 'sinc' or 'fourier' is selected then FGH (Fourier Grid Hamiltonian) method will be used for the solution of the Schrodinger equation.
 
@@ -356,7 +369,7 @@ This example shows how the grid object should be initialized for nonuniform grid
 grid = diatom.Grid(npoints=100, rgrid=(1.0, 3.0), solver='sinc', alpha=3.0, rbar=1.458)
 ```
 ----
-
+### Comment
 Python does not have so restrictive means for contolling the privite/public access of the internally defined data as the other OO (Object-Oriented) languages. In other words we are allowed to access directly some of the internal properties of the declared classes and objects. For example if we would like to see how the generated grid of points looks we can simply write
 
 ```python
@@ -364,7 +377,7 @@ print(grid.rgrid)
 ```
 That will produce an output like
 
-```
+```python
 [1.41729459 1.48936042 1.56142625 1.63349207 1.7055579  1.77762373
  1.84968955 1.92175538 1.99382121 2.06588703 2.13795286 2.21001869
  2.28208451 2.35415034 2.42621617 2.498282   2.57034782 2.64241365
@@ -372,9 +385,7 @@ That will produce an output like
  3.14687444 3.21894026 3.29100609 3.36307192 3.43513774 3.50720357
  3.5792694  3.65133522 3.72340105 3.79546688 3.8675327  3.93959853
  4.01166436 4.08373018 4.15579601 4.22786184 4.29992766 4.37199349
- 4.44405932 4.51612515 4.58819097 4.6602568  4.73232263 4.80438845
- 4.87645428 4.94852011 5.02058593 5.09265176 5.16471759 5.23678341
- 5.30884924 5.38091507 5.45298089 5.52504672 5.59711255 5.66917837]
+ 4.44405932 4.51612515 4.58819097 4.6602568  4.73232263 4.80438845]
 ```
 Or if we want to save the generated grid in file we can write
 
@@ -393,20 +404,20 @@ Although the program has additional external options for storing such informatio
 
 A channel is defined as an electronic state with definite values of <img src="/tex/b23332f99af850a48831f80dbf681ed6.svg?invert_in_darkmode&sanitize=true" align=middle width=11.41554479999999pt height=22.465723500000017pt/>, <img src="/tex/e257acd1ccbe7fcb654708f1a866bfe9.svg?invert_in_darkmode&sanitize=true" align=middle width=11.027402099999989pt height=22.465723500000017pt/>, <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> and <img src="/tex/9432d83304c1eb0dcb05f092d30a767f.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> quantum numbers.
 
-Each channel have to be defined as an object of type Channel. The parameters that we need to pass to the constructor of the Channel object are:
+Each channel have to be defined as an object of type **```Channel```**. The parameters that we need to pass to its constructor are:
 
 - **```filep```** - the name of the file containing the potential parameters
   - It is a string parameter referring to an existing file or file path
   - The structure of the file depends on which model function is selected by the propery **```model```** described below.
 
 - **```model```** - defines the potential energy function model (PECs model)
-  - It could be a pointwise, analytical (one of the internally defined potentials) or custom analytical potential (defined by the user). The possible values are:
-    - _'pointwise'_ : pointwise potential with cubic spline interpolation using internal Python implementation
-    - _'cspline'_ : pointwise potential with cubic spline interpolation using our own implementation
-    - _'Morse'_ : analytical Morse potential
-    - _'EMO'_ : analytical EMO (Expanded Morse Oscilator) potential
-    - _'MLR'_ : analytical MLR (Morse/Long-Range) potential
-    - _'custom'_ : custom analytical potential
+  - It could be a pointwise function, builtin analytical potential function or custom analytical potential function (defined by the user). The possible values are:
+    - **```'pointwise'```** : pointwise potential with cubic spline interpolation using internal Python implementation
+    - **```'cspline'```** : pointwise potential with cubic spline interpolation using our own implementation
+    - **```'Morse'```** : analytical Morse potential
+    - **```'EMO'```** : analytical EMO (Expanded Morse Oscilator) potential
+    - **```'MLR'```** : analytical MLR (Morse/Long-Range) potential
+    - **```'custom'```** : custom analytical potential
 
   - Its should be a string and the value is case-insensitive
 
@@ -564,14 +575,15 @@ The parameters that we need to pass to the constructor of the Coupling object:
 
 - **```coupling```** - the type of the interation
   - the available values are:
-    - _'spin-orbit'_ : the diagonal and off-diagonal Spin-Orbit (SO) interaction
-    - _'LJ'_ : the rotational L-uncoupling interaction
-    - '_SJ'_ : the rotational Spin-uncoupling interaction
-    - _'SL'_ : the rotational Spin-electronic interaction
-    - _'spin-rot'_ : Spin-Rotational interaction
-    - _'spin-spin'_ : Spin-Spin interaction
-    - _'LambdaDe'_ : second-order $\Omega$- or $\Lambda-$doubling effect on the e-parity levels
-    - _'LambdaDf'_ : second-order $\Omega$- or $\Lambda-$doubling effect on the f-parity levels
+    - **```'spin-orbit'```** : the diagonal and off-diagonal Spin-Orbit (SO) interaction
+    - **```'LJ'```** : L-uncoupling interaction
+    - **```'SJ'```** : Spin-uncoupling interaction
+    - **```'SL'```** : Spin-electronic interaction
+    - **```'spin-rot'```** : Spin-Rotation interaction
+    - **```'spin-spin'```** : Spin-Spin interaction
+    - **```'LambdaDe'```** : second-order $\Omega$- or $\Lambda-$doubling effect on e-parity levels
+    - **```'LambdaDf'```** : second-order $\Omega$- or $\Lambda-$doubling effect on f-parity levels
+    - **```'LambdaD'```** : second-order $\Omega$- or $\Lambda-$doubling effect on e- and f-parity levels
   - should be of type string or tuple of strings
 
 - **```model```** - the type of the function which will be used for modelling the interacion
@@ -600,7 +612,7 @@ cp1 = diatom.Coupling(
 <!-- omit in toc -->
 #### Structure of the couplings file
 
-```
+```yaml
 cp1:
 - 0.75000000  -300.731917268926   0
 - 1.25000000  -300.188348980659   0
@@ -613,7 +625,7 @@ cp2:
 - 1.50000000  -599.307655859103   0
 - 2.00000000  -607.563537893363   0
 - 3.00000000  -603.000000000000   0
-3:
+cp3:
 - 0.75000000     1.024663995832   0
 - 1.20000000     1.223710979140   0
 - 1.50000000     1.003797203439   0
@@ -661,17 +673,17 @@ The first optional parameter is created list of [Coupling](#coupling-definition)
 <!-- omit in toc -->
 ### Calculate the eigenvalues and eigenvectors
 
-- **```eig_decomp```** - defines the Python <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigh.html" target="_blank">SciPy</a> package to be used for eigenvalues decomposition
+- **```eig_decomp```** - defines whcih <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigh.html" target="_blank">SciPy</a> procedure to be used for eigenvalues decomposition
   - The two possible values are:
 
-    - _'lapack'_ : will compute the eigenvalues and eigenvectors by calling 
+    - _'lapack'_ : will compute the eigenvalues and eigenvectors by calling the **```scipy```** builtin 
     <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigh.html" target="_blank">scipy.linalg.eigh()</a> procedure
 
-    - _'arpack'_ : will compue the eigenvalues and eigenvectors by calling 
+    - _'arpack'_ : will compue the eigenvalues and eigenvectors by calling the **```scipy```** builtin
     <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh" target="_blank">scipy.sparse.linalg.eigsh() </a> procedure
 
   - Default is set to 'lapack'
-  - The two SciPy procedures provide high-level interface to standard LAPACK and ARPACK routines written in Fortran and C.
+  - The two **```scipy```** procedures provide high-level interface to standard LAPACK and ARPACK routines written in Fortran and C.
 
 <!-- omit in toc -->
 #### Eigenvalue Decomposition with LAPACK
@@ -705,13 +717,13 @@ The range of eigenvalues and eigenvectors which to be computed can be set by one
 - **```lapack_driver```** - the lapack procedure which will be called for the eigenvalues and eigenvectors computation
   - The possible values are:
 
-    - _'ev'_  : call syev() procedure
-    - _'evd'_ : call syevd() procedure
-    - _'evr'_ : call syevr() procedure
-    - _'evx'_ : call syevx() procedure
+    - **```'ev'```**  : call syev() procedure
+    - **```'evd'```** : call syevd() procedure
+    - **```'evr'```** : call syevr() procedure
+    - **```'evx'```** : call syevx() procedure
 
-  - The default value is set to 'evr'
-  > **_NOTE:_**  **```subset_by_index```** and **```subset_by_value```** cannot be used together with 'ev' and 'evd'.
+  - The default value is set to **```'evr'```**
+  > **_NOTE:_**  **```subset_by_index```** and **```subset_by_value```** cannot be used together with **```'ev'```** and **```'evd'```**.
 
     ```python
     mlevels.calculateLevels(eig_decomp='lapack', lap_driver='evx')
@@ -729,14 +741,14 @@ The releated parameters are:
   - should be smaller than the dimension of the matrix 
 - **```arpack_which```** - which eigenvalues and eigenvectors to find
   - The possible values are:
-    - _'LM'_ : Largest (in magnitude) eigenvalues.
-    - _'SM'_ : Smallest (in magnitude) eigenvalues.
-    - _'LA'_ : Largest (algebraic) eigenvalues.
-    - _'SA'_ : Smallest (algebraic) eigenvalues.
-    - _'BE'_ : Half (k/2) from each end of the spectrum.
+    - **```'LM'```** : Largest (in magnitude) eigenvalues.
+    - **```'SM'```** : Smallest (in magnitude) eigenvalues.
+    - **```'LA'```** : Largest (algebraic) eigenvalues.
+    - **```'SA'```** : Smallest (algebraic) eigenvalues.
+    - **```'BE'```** : Half (k/2) from each end of the spectrum.
 - **```arpack_sigma```** - if this parameter is specified then shift-invert mode is applied. Then the procedure will return k (specified by **```arpack_k```**) shifted eigenvalues which have values around the specified value of this parameter.
   
-  - efficient when the smallest eigenvalues are required (**```arpack_which```**='SM')
+  - efficient when the smallest eigenvalues are required (**```arpack_which```**=**```'SM'```**)
   - integer or float number
 
 ```python
@@ -751,11 +763,11 @@ Similarly **```arpack_k```**, **```arpack_which```** and  **```arpack_sigma```**
 ### Identification of computed levels
 - **```identify```** - defines the method for identification of the calculated energies i.e. the procedure used for the assignment of vibrational quantum number for each level and the determination of the state which it belongs to based on the available experimental data.
   - integer number with 2 possible values:
-    - _0_ : identification by energy
-    - _1_ : identification by the largest value of the coupling coefficient
+    - **```0```** : identification by energy
+    - **```1```** : identification by the largest value of the coupling coefficient
     <!-- - _2_ : a slow version of _0_; defined and used only for debugging puropse
     - _3_ : a slow version of _1_; defined and used only for debugging puropse -->
-  - defult value is set to _0_ 
+  - defult value is set to **```0```**
   - it is not relevent when experimental data are not provided
 
 <!-- omit in toc -->
@@ -782,6 +794,8 @@ An example with the minimal set of nessecary parameters for running a single cha
 It is done with only a few lines of code.
 
 ```python
+#!/usr/bin/env python
+
 import diatom
 
 mdata = diatom.MoleculeData()
