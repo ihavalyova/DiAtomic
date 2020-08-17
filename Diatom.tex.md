@@ -80,7 +80,6 @@ After installing create a new python file for example called main.py and import 
 
 import diatom
 ```
-
 To execute the file from the Linux command line write
 ```console
 python main.py
