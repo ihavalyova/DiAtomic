@@ -176,6 +176,10 @@ with internuclear distance labeled with $R$, the sum of the second and the third
 
    - MLR (Morse/Long-Range) potential
 
+$$
+V_{MLR}(R) = T_{e}
+$$
+
 # Computing Energy Eigenvalues
 
 ## Molecule Data Definition
