@@ -36,6 +36,19 @@ The current functionality covered by the program includes:
 * ..
 * ..
 
+Just as an example of what you can do with **```Diatom```** module, if you have a set of potentials for a couple of molecular electronic states represented by points (abinitio, RKR and etc.) and want to see how they look you can do something like:
+```python
+p = diatom.Plotting()
+p.plot_potentials_points(['p1.pot', 'p2.pot', 'p3.pot', 'p4.pot'], show=True, ipoints=50, ylim=(1e3, 1e5))
+```
+or even simpler:
+```python
+import glob
+p = diatom.Plotting()
+p.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=50, ylim=(1e3, 1e5))
+```
+assuming your potential files are in the current directory.
+
 # **```Diatom```** module: how to install and setup?
 
 **```Diatom```** module can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
