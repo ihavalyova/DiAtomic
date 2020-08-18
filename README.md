@@ -1,4 +1,7 @@
 # Diatom
+
+![](./logo_new.png)
+
 <!-- **Diatom** (**Diatom**-ic) is a Python package implementing useful routines for various computations of Diatomic Molecules using OOP (Object-Oriented Programming) style. 
 
 -------
