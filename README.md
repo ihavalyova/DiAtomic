@@ -1,4 +1,4 @@
-<img src="./logo_new.png" alt="drawing" width="490" height=160/>
+<img src="./logo_new.png" alt="drawing" width="460" height=260/>
 
 <!-- **Diatom** (**Diatom**-ic) is a Python package implementing useful routines for various computations of Diatomic Molecules using OOP (Object-Oriented Programming) style. 
 
