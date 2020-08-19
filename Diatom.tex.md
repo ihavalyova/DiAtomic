@@ -703,11 +703,11 @@ The first optional parameter is created list of [Coupling](#coupling-definition)
 - **```eig_decomp```** - defines whcih <a href="https://docs.scipy.org/" target="_blank">SciPy</a> procedure to be used for eigenvalues decomposition
   - The two possible values are:
 
-    - **```'lapack'```** : will compute the eigenvalues and eigenvectors by calling the **```scipy```** builtin 
-    <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigh.html" target="_blank">scipy.linalg.eigh()</a> procedure
+    - **```'lapack'```** : calls the **```scipy```** builtin 
+    <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigh.html" target="_blank">scipy.linalg.eigh</a> function to compute the eigenvalues and eigenvectors.
 
-    - **```'arpack'```** : will compue the eigenvalues and eigenvectors by calling the **```scipy```** builtin
-    <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh" target="_blank">scipy.sparse.linalg.eigsh() </a> procedure
+    - **```'arpack'```** : calls the **```scipy```** builtin
+    <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh" target="_blank">scipy.sparse.linalg.eigsh</a> function to compute the eigenvalues and eigenvectors.
 
   - Default is set to **```'lapack'```**
   - The two **```scipy```** procedures provide high-level interface to standard LAPACK and ARPACK routines written in Fortran and C.
@@ -722,7 +722,7 @@ If we need the eigenvalues and the eigenvectors only in a certain interval of va
 - **```energy_subset_index```** - defines a subinterval of indicies for the returned eigenvalues
 
   -  the first and the last index of the desired subinterval of eigenvalues and their eigenvectors in the whole array of computed eigenvalues
-  - iterable with 2 integer numbers defining the two indicies
+  - iterable of type list/tuple with 2 integer numbers defining the two indicies
 
     ```python
     mlevels.calculate_levels(energy_subset_index=(0, 6))
@@ -732,7 +732,7 @@ If we need the eigenvalues and the eigenvectors only in a certain interval of va
 
   - the smallest and the largest value of the selected range of eigenvalues - only the eigenvalues with values between these two numbers and the corresponding eigenvectors will be returned 
 
-  - iterable with 2 integer or float numbers - the smallest and the largest value
+  - iterable if type list/tuple with 2 integer or float numbers - the smallest and the largest value
 
     ```python
     mlevels.calculate_levels(energy_subset_value=(1000., 3000.))
@@ -740,16 +740,16 @@ If we need the eigenvalues and the eigenvectors only in a certain interval of va
 
   > **_NOTE:_**  If neither of them is set all possible eigenvalues and thier eigenvectors will be computed and returned
 
-- **```lapack_driver```** - the lapack procedure which will be called for the eigenvalues and eigenvectors computation
+- **```lapack_driver```** - the lapack routine which computes the eigenvalues and eigenvectors
   - The possible values are:
+    - **```'ev'```**  : calls dsyev routine which computes _all_ eigenvalues and eiegnvectors of a real symmetric matrix
+    - **```'evd'```** : calls dsyevd routine which computes _all_ eigenvalues and eiegnvectors for real symmetric matrix using a divide and conquer algorithm
+    - **```'evr'```** : calls dsyevr routine which computes a _selected_ eigenvalues and eigenvectors of a real symmetric matrix using the RRR algorithm
+    - **```'evx'```** : calls dsyevx routine which computes a _selected_ eigenvalues and eiegnvectors of a real symmetric matrix
 
-    - **```'ev'```**  : call syev() procedure
-    - **```'evd'```** : call syevd() procedure
-    - **```'evr'```** : call syevr() procedure
-    - **```'evx'```** : call syevx() procedure
+  - The default value is set to **```'evr'```** which in general is the recommended choice. **```'evx'```** is faster when only a few of the eigenvalues are desired.
 
-  - The default value is set to **```'evr'```**
-  > **_NOTE:_**  **```subset_by_index```** and **```subset_by_value```** cannot be used together with **```'ev'```** and **```'evd'```**.
+  > **_NOTE:_**  **```subset_by_index```** and **```subset_by_value```** cannot be used together with **```'ev'```** and **```'evd'```** because they compute all eigenvalues.
 
     ```python
     mlevels.calculate_levels(eig_decomp='lapack', lap_driver='evx')
@@ -885,14 +885,18 @@ fit = diatom.Fitting(mlevels, progress=True)
 
 Linear Algebra technique for ...
 
+It is important that SVD can be applied to _any_ matrix, it is unique and guaranteed to exist.
+
 The **```run_svd```** method has only default parameters:
 
 - **```niter```** - the number of iterations. Default is **```niter=1```**
 
 - **```deriv```** - the method used for computation of derivatives. Default is **```deriv='n'```**. When **```deriv='n'```** the derivatives will be computed numerically with the finite diffrence method. Another possibility is **```deriv='a'```** in which case the derivatives will be computed analitically with the Hellman-Feynman theorem:
+
 $$
 \frac{\partial E}{\partial a} = \langle \Psi \vert \frac{\partial H}{\partial a}\vert \Psi \rangle
 $$
+
 - **```tol```** - the tolerance value. It determines which and how many linear combinations of the fitted parameters will be discarded because the matrix is singular. The singular values which are less than **```tol```** times the largest singular value are treated as zero. That governs the effective rank of the matrix. Default is **```tol=0.1```**
 
 - **```lapack_driver```** - The name of the LAPACK routine used to solve the least-squares problem. The three possible values **```'gelsd'```**, **```'gelsy'```** and **```'gelss'```** correspond to the names of these routines. **```'gelsd'```** uses singular value decomposition and a divide and conquer method, **```'gelsy'```** uses the orthogonal QR factorization of the matrix and **```'gelss'```** uses the singular value decomposition of the matrix. In the most cases **```'gelsd'```** will likely be the most efficient method. Default is **```lapack_driver='gelsd'```**.
