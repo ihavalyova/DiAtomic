@@ -1,6 +1,6 @@
 
-- [**```Diatom```** module: what is it used for?](#diatom-module-what-is-it-used-for)
-- [**```Diatom```** module: how to install and setup?](#diatom-module-how-to-install-and-setup)
+- [**Diatomic** module: what is it used for?](#diatomic-module-what-is-it-used-for)
+- [**Diatom** module: how to install and setup?](#diatom-module-how-to-install-and-setup)
 - [Diatomic molecule: basic theoretical concepts](#diatomic-molecule-basic-theoretical-concepts)
   - [The total Hamiltonian and basis functions](#the-total-hamiltonian-and-basis-functions)
   - [The Scrodinger equation for a single state and coupled system of states](#the-scrodinger-equation-for-a-single-state-and-coupled-system-of-states)
@@ -8,11 +8,10 @@
   - [Methods for solving the Schrodinger equation](#methods-for-solving-the-schrodinger-equation)
   - [Potential Energy function models (PECs models)](#potential-energy-function-models-pecs-models)
 - [Computing Energy Eigenvalues](#computing-energy-eigenvalues)
-  - [Molecule Data Definition](#molecule-data-definition)
-  - [Grid Definition](#grid-definition)
-    - [Comment](#comment)
-  - [Channel Definition](#channel-definition)
-  - [Coupling Definition](#coupling-definition)
+  - [Molecule Data Object Definition](#molecule-data-object-definition)
+  - [Grid Object Definition](#grid-object-definition)
+  - [Channel Object Definition](#channel-object-definition)
+  - [Coupling Object Definition](#coupling-object-definition)
   - [Experimental Data](#experimental-data)
   - [Molecule Levels Computation](#molecule-levels-computation)
   - [Examples](#examples)
@@ -31,13 +30,13 @@
 - [Plotting](#plotting)
 
 
-# **```Diatom```** module: what is it used for?
-The Python package **```Diatom```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
+# **Diatomic** module: what is it used for?
+The Python package **```Diatomic```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
 The current functionality covered by the program includes:
 * ..
 * ..
 
-Just as an example of what you can do with **```Diatom```** module, if you have a set of potentials for a couple of molecular electronic states represented by points (abinitio, RKR and etc.) and want to see how they look you can do something like:
+Just as an example of what you can do with **```Diatomic```** module, if you have a set of potentials for a couple of molecular electronic states represented by points (abinitio, RKR and etc.) and want to see how they look you can do something like:
 ```python
 p = diatom.Plotting()
 p.plot_potentials_points(['p1.pot', 'p2.pot', 'p3.pot', 'p4.pot'], show=True, ipoints=50, ylim=(1e3, 1e5))
@@ -50,12 +49,12 @@ p.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=50, ylim=(1e3,
 ```
 assuming your potential files are in the current directory.
 
-# **```Diatom```** module: how to install and setup?
+# **Diatom** module: how to install and setup?
 
 **```Diatom```** module can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
 
 ```console
-$ pip install diatom
+pip install diatom
 ```
 
 and from Jupyter or IPython execute
@@ -66,7 +65,7 @@ In [1]: ! pip install diatom
 To quickly check whether the installation has been successful type
 
 ```console
-$ python
+python
 >>> import diatom
 >>> diatom
 ```
@@ -181,7 +180,7 @@ $$
 
 # Computing Energy Eigenvalues
 
-## Molecule Data Definition
+## Molecule Data Object Definition
 
 Initially an object of type **```MoleculeData```** should be instantiated in the already created *.py file which we called main.py:
 
@@ -210,7 +209,7 @@ In the following example the symbols for three of the isotopes of NiH molecule -
 # define the symbols for three isotopes
 mdata.molecule = ['58Ni1H', '60Ni1H', '62Ni1H']
 
-# and this is also a valid syntax
+# this is also a valid syntax
 mdata.molecule = ['58Ni 1H']
 mdata.molecule = ['58 Ni 1 H']
 ```
@@ -223,14 +222,11 @@ mdata.molecule = ['58 Ni 1 H']
   - this property does not determine which and how many isotopes will be included in the calculations (refer to the property **```nisotopes```** below) but only defines their masses.
   - it is not mandatory
 
-
 ```python
 # define the reduced masses for three of NiH isotopes
 mdata.masses = [0.990592988928, 0.991157254368, 0.991686280089]
-```
-Or it could be directly computed from the masses of the two atoms:
-```python
-# or by using the masses of the separate atoms
+
+# or from the masses of the separate atoms
 mA, mB = 1.00782503223, 34.968852682
 mdata.masses = [mA * mB / (mA + mB)]
 ```
@@ -326,7 +322,7 @@ None of them is mandatory.
 
 If both of these parameters are specified simultaneously, **```referenceJ```** will be used.
 
-## Grid Definition
+## Grid Object Definition
 
 Will define a grid of points on the internuclear distance R.
 
@@ -364,15 +360,14 @@ The above two arguments are mandatory.
       - **```'fourier'```**
       - **```'fd5'```**
 
-      If one of the values 'sinc' or 'fourier' is selected then FGH (Fourier Grid Hamiltonian) method will be used for the solution of the Schrodinger equation.
+      If one of the values **```'sinc'```** or **```'fourier'```** is selected then FGH (Fourier Grid Hamiltonian) method will be used for the solution of the Schrodinger equation.
 
       If 'fd5' option is selected the Schrodinger equation will be solved by Finite Diffrence method using...
 
       These two methods are the most frequently applied when the Schrodinger equation is solving for coupled channels problems in diatomic molecular spectroscopy.
-    - If this argument is not set the 'sinc' method will be used by default.
-    - It is case-insensitive (i.e. 'fd5', 'FD5', 'fD5' are acceptable values).
+    - **```solver='sinc'```** is set by default.
 
-> **_NOTE:_** All parameters in program which values should be of type string are case-insensitive.
+> **_NOTE:_** All parameters in program with values of type string are case-insensitive.
 
 This example shows how the grid object should be initialized for uniform grid.
 ```python
@@ -398,6 +393,7 @@ This example shows how the grid object should be initialized for nonuniform grid
 grid = diatom.Grid(npoints=100, rgrid=(1.0, 3.0), solver='sinc', alpha=3.0, rbar=1.458)
 ```
 ----
+<!-- omit in toc -->
 ### Comment
 Python does not have so restrictive means for contolling the privite/public access of the internally defined data as the other OO (Object-Oriented) languages. In other words we are allowed to access directly some of the internal properties of the declared classes and objects. For example if we would like to see how the generated grid of points looks we can simply write
 
@@ -429,7 +425,7 @@ Although the program has additional external options for storing such informatio
 
 ----
 
-## Channel Definition
+## Channel Object Definition
 
 A channel is defined as an electronic state with definite values of $\Lambda$, $S$, $\Sigma$ and $\Omega$ quantum numbers.
 
@@ -448,14 +444,12 @@ Each channel have to be defined as an object of type **```Channel```**. The para
     - **```'MLR'```** : analytical MLR (Morse/Long-Range) potential
     - **```'custom'```** : custom analytical potential
 
-  - Its should be a string and the value is case-insensitive
-
 ----
 
 <!-- omit in toc -->
 #### Structure of the potential files
 
-- for pointwise potentials i.e. **```model```**=_'pointwise'_ or **```model```** =_'cspline'_ the potential file look like
+- for pointwise potentials i.e. **```model='pointwise'```** or **```model='cspline'```** the potential file look like
 
 ```python
 13
@@ -487,7 +481,7 @@ If some point is no longer needed we can comment it out like:
   # 1.8505434783       5627.41358380562    0
 ```
 
-- for Morse potential i.e. **```model```**=_'Morse'_
+- for Morse potential i.e. **```model='Morse'```**
 
 ```
 Te = 1.00000000e-05  0
@@ -496,7 +490,7 @@ a  = 1.00000000      0
 re = 1.27463182      0
 ```
 
-- for EMO potential i.e. **```model```**=_'EMO'_
+- for EMO potential i.e. **```model='EMO'```**
 
 ```
 Te =    1.00000   1
@@ -509,10 +503,10 @@ b2 =    1.10000   1
 re =    1.27455   1
 ```
 
-- for MLR potential i.e. **```model```**=_'MLR'_
+- for MLR potential i.e. **```model='MLR'```**
 
 ...
-- for custom potential i.e. **```model```**=_'custom'_
+- for custom potential i.e. **```model='custom'```**
 
 ```
 param1 = 4.5e-11   0
@@ -554,7 +548,7 @@ For readability the parameters are written on separate lines.
   - The first input argument is an array containing the values of the potential parameters as defined in the potential file through the parameter **```filep```**. In this file the parameters have to be defined with the keyword 'param' followed by the number of corresponding parameter. An example is shown below. The second input argument is an array containing the grid points.
   - The output parameter has to be an array containing the calculated values of the potential function on the grid points. The length of the returned array should be equal to the number of grid points.
 
-  - All input and output arguments are 1D numpy arrays of type 'numpy.ndarray'.
+  - All input and output arguments are 1D **```numpy```** arrays of type **```'numpy.ndarray'```**.
   - **```custom_function```** is an optional parameter
   - In this case the parameter **```model```** has to be set to 'custom'.
 
@@ -594,7 +588,7 @@ channels = [ch1, ch2]
 diatom.Channel.set_channel_parameters(channels)
 ```
 
-## Coupling Definition
+## Coupling Object Definition
 
 The parameters that we need to pass to the constructor of the Coupling object:
 
@@ -617,9 +611,12 @@ The parameters that we need to pass to the constructor of the Coupling object:
 
 - **```model```** - the type of the function which will be used for modelling the interacion
   - should be of type string
+  - The possible options are:
+    - **```pointwise```**
+    - **```cspline```**
+    - **```custom```**
 
-- **```multiplier```** - a number which will multiply the defined function
-  - integer or float number
+- **```multiplier```** - integer or float number which will multiply the defined function
   - if not provided the default value will be set to 1.0
 
 - **```label```** - 
@@ -640,6 +637,7 @@ cp1 = diatom.Coupling(
 
 <!-- omit in toc -->
 #### Structure of the couplings file
+The couplings file uses a <a href="https://yaml.org/" target="_blank">YAML</a> syntax.
 
 ```yaml
 cp1:
@@ -702,46 +700,45 @@ The first optional parameter is created list of [Coupling](#coupling-definition)
 <!-- omit in toc -->
 ### Calculate the eigenvalues and eigenvectors
 
-- **```eig_decomp```** - defines whcih <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigh.html" target="_blank">SciPy</a> procedure to be used for eigenvalues decomposition
+- **```eig_decomp```** - defines whcih <a href="https://docs.scipy.org/" target="_blank">SciPy</a> procedure to be used for eigenvalues decomposition
   - The two possible values are:
 
-    - _'lapack'_ : will compute the eigenvalues and eigenvectors by calling the **```scipy```** builtin 
+    - **```'lapack'```** : will compute the eigenvalues and eigenvectors by calling the **```scipy```** builtin 
     <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigh.html" target="_blank">scipy.linalg.eigh()</a> procedure
 
-    - _'arpack'_ : will compue the eigenvalues and eigenvectors by calling the **```scipy```** builtin
+    - **```'arpack'```** : will compue the eigenvalues and eigenvectors by calling the **```scipy```** builtin
     <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh" target="_blank">scipy.sparse.linalg.eigsh() </a> procedure
 
-  - Default is set to 'lapack'
+  - Default is set to **```'lapack'```**
   - The two **```scipy```** procedures provide high-level interface to standard LAPACK and ARPACK routines written in Fortran and C.
 
 <!-- omit in toc -->
 #### Eigenvalue Decomposition with LAPACK
 
-This is the recommended choice when FGH method is selected as solving method since the generated Hamiltonain is a dense matrix except for the case of high number of channels.
+This is the recommended choice when FGH method is selected as a solving method since the generated Hamiltonain matrix is a dense matrix except for the case of high number of channels.
 
-The range of eigenvalues and eigenvectors which to be computed can be set by one of the two optional parameters 
+If we need the eigenvalues and the eigenvectors only in a certain interval of values or indicies then it is possible to get only a subset of them which will likely reduce the computation time. The range of eigenvalues and eigenvectors which to be computed can be set by one of the two optional parameters 
 
-- **```energy_subset_index```** - defines a subset of indicies for the returned eigenvalues
+- **```energy_subset_index```** - defines a subinterval of indicies for the returned eigenvalues
 
-  -  the first and the last index of the desired eigenvalues and the corresponding eigenvectors in the whole array of computed eigenvalues
-  
+  -  the first and the last index of the desired subinterval of eigenvalues and their eigenvectors in the whole array of computed eigenvalues
   - iterable with 2 integer numbers defining the two indicies
 
     ```python
-    mlevels.calculateLevels(energy_subset_index=(0, 6))
+    mlevels.calculate_levels(energy_subset_index=(0, 6))
     ```
 
-- **```energy_subset_value```** - defines a subset of values for the returned eigenvalues
+- **```energy_subset_value```** - defines a subinterval of values for the returned eigenvalues
 
   - the smallest and the largest value of the selected range of eigenvalues - only the eigenvalues with values between these two numbers and the corresponding eigenvectors will be returned 
 
   - iterable with 2 integer or float numbers - the smallest and the largest value
 
     ```python
-    mlevels.calculateLevels(energy_subset_value=(1000., 3000.))
+    mlevels.calculate_levels(energy_subset_value=(1000., 3000.))
     ```
 
-  > **_NOTE:_**  If neither of them is set the whole range of comupted eigenvalues will be returned
+  > **_NOTE:_**  If neither of them is set all possible eigenvalues and thier eigenvectors will be computed and returned
 
 - **```lapack_driver```** - the lapack procedure which will be called for the eigenvalues and eigenvectors computation
   - The possible values are:
@@ -755,7 +752,7 @@ The range of eigenvalues and eigenvectors which to be computed can be set by one
   > **_NOTE:_**  **```subset_by_index```** and **```subset_by_value```** cannot be used together with **```'ev'```** and **```'evd'```**.
 
     ```python
-    mlevels.calculateLevels(eig_decomp='lapack', lap_driver='evx')
+    mlevels.calculate_levels(eig_decomp='lapack', lap_driver='evx')
     ```
 
 <!-- omit in toc -->
@@ -781,7 +778,7 @@ The releated parameters are:
   - integer or float number
 
 ```python
-mlevels.calculateLevels(eig_decomp='arpack', arpack_k=25, arpack_which='SM', arpack_sigma=0.1)
+mlevels.calculate_levels(eig_decomp='arpack', arpack_k=25, arpack_which='SM', arpack_sigma=0.1)
 ```
 > **_NOTE:_** With ARPACK it is not possible to compute all eigenvectors of a matrix.
 
@@ -846,7 +843,7 @@ channels = [ch1]
 diatom.Channel.set_channel_parameters(channels)
 
 mlevels = diatom.MoleculeLevels(mdata, grid, channels)
-mlevels.calculateLevels()
+mlevels.calculate_levels()
 ```
 The content of the input potential file:
 ```
@@ -877,11 +874,60 @@ Here all eigenvalues and eigenvectors for J=1,2,3,4 and 5 with both e/f parity l
 
 # Fitting of the Calculated Energy Levels
 
+- the normal equations
+- chi square
+
+```python
+fit = diatom.Fitting(mlevels, progress=True)
+```
+
 ## SVD Fit
+
+Linear Algebra technique for ...
+
+The **```run_svd```** method has only default parameters:
+
+- **```niter```** - the number of iterations. Default is **```niter=1```**
+
+- **```deriv```** - the method used for computation of derivatives. Default is **```deriv='n'```**. When **```deriv='n'```** the derivatives will be computed numerically with the finite diffrence method. Another possibility is **```deriv='a'```** in which case the derivatives will be computed analitically with the Hellman-Feynman theorem:
+$$
+\frac{\partial E}{\partial a} = \langle \Psi \vert \frac{\partial H}{\partial a}\vert \Psi \rangle
+$$
+- **```tol```** - the tolerance value. It determines which and how many linear combinations of the fitted parameters will be discarded because the matrix is singular. The singular values which are less than **```tol```** times the largest singular value are treated as zero. That governs the effective rank of the matrix. Default is **```tol=0.1```**
+
+- **```lapack_driver```** - The name of the LAPACK routine used to solve the least-squares problem. The three possible values **```'gelsd'```**, **```'gelsy'```** and **```'gelss'```** correspond to the names of these routines. **```'gelsd'```** uses singular value decomposition and a divide and conquer method, **```'gelsy'```** uses the orthogonal QR factorization of the matrix and **```'gelss'```** uses the singular value decomposition of the matrix. In the most cases **```'gelsd'```** will likely be the most efficient method. Default is **```lapack_driver='gelsd'```**.
+
+- **```step_size```** - Default is **```step_size=1.0e-4```**.
+
+- **```is_weighted=False```** - whether to apply the weighted least-squares fitting with the method proposed by J. Watson. Default is **```is_weighted=False```**.
+
+- **```restart```** - not yet implemented
+- **```limit```** - not yet implemented
+- **```regular```** - not yet implemented
+
+To find the least-squares solution **```run_svd```** calls <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lstsq.html" target="_blank">scipy.linalg.lstsq</a> function. In the most widespread numerical libraries and packages the implementations which use SVD are based on the LAPACK implementation of SVD in Fortran - the routine called DGESVD.
 
 ## Minuit Fit
 
+It is possible to call the MINUIT
+
+To run the Minuit Fit we should call the method **```run_minuit```** through the created **```Fitting```** object. This method has only optional parameters:
+
+- **```niter```** - The number of iterations. Default is **```niter=0```**.
+- **```step_size```** - Default is **```step_size=1.0e-4```**
+- **```correlation```** - Default is **```correlation=False```**.
+- **```covariance```**.  Default is **```covariance=False```**
+- **```uncert```** - Default is **```uncert=False```**
+
+Example
+
+```python
+fit.run_minuit(niter=5, step_size=1.0e-3, correlation=True)
+```
+
 ## Levenberg-Marquard Fit
+
+Not yet implemented
 
 # Computing the Transition Frequencies
 
