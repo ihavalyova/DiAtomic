@@ -6,21 +6,23 @@ import numpy as np
 import scipy as sp
 
 from pprint import pprint
-from sklearn.metrics import mean_squared_error
+#from sklearn.metrics import mean_squared_error
 from more_itertools import unique_everseen
+from iminuit import Minuit
 
 from utils import Utils
 from molecule_data import Channel
 from molecule_data import Coupling
 from constants import Const
 
+
 class Fitting:
 
-    def __init__(self, ml, overwrite=True, progress_fit=False):
+    def __init__(self, ml, progress=False):
 
         self.ml = ml
-        self.overwrite = overwrite
-        self.progress_fit = progress_fit
+        self.progress = progress
+        #self.count_it = 1
 
         try:
             Utils.createBackup(Coupling.cpl_file)
@@ -30,45 +32,6 @@ class Fitting:
         for pname in Channel.pnames:
             Utils.createBackup(pname)
 
-    def run(self, method='svd', niter=1, tol=0.1, deriv='n', is_weighted=False):
-
-        """The fit function called by the user for running the fit
-
-        Args:
-            method (str, optional): The fit method.
-            The options are 'svd', 'minuit', 'levmar'. Defaults to 'svd'.
-            niter (int, optional): Number of fit iterations. Defaults to 1.
-            tol (float, optional): Tolerance value used only with SVD method. Defaults to 0.1.
-            deriv (str, optional): Numerical or Analytical derivatives. Defaults to 'n'.
-            is_weighted (bool, optional): Perform weighed fit by Watson's method. Defaults to False.
-
-        Raises:
-            SystemExit: if incorrect value for method parameter is provided
-        """
-
-        # if deriv != 'n' or deriv != 'a':
-        #     deriv = 'n'
-
-        ypar, yfixed = self.get_initial_parameters()
-
-        if method.lower() == 'minuit':
-            try:
-                from iminuit import Minuit
-            except ImportError as err:
-                SystemExit(err)
-
-            fit = MinuitFit(self.ml, self.overwrite, self.progress_fit)
-            fit.run_minuit(ypar, yfixed, niter)
-
-        elif method.lower() == 'svd':
-            fit = SvdFit(self.ml, self.overwrite, self.progress_fit)
-            fit.run_svd(ypar, yfixed, niter, deriv, tol, is_weighted)
-
-        elif method.lower() == 'levmar':
-            pass
-        else:
-            raise SystemExit(f'\nFitting procedure {method} is not supported')
-
     def get_initial_parameters(self):
 
         """Combine all parameters in one array which to be used in the fit
@@ -76,8 +39,7 @@ class Fitting:
         Returns:
             tuple of 2 arrays: values of all parameters and which of them is fixed/free
         """
-
-        #ppar, pfixed = Channel.get_channel_parameters()
+        
         ppar, pfixed = Channel.get_unique_channels_parameters(self.ml.channels)
         cpar, cfixed = np.array([]), np.array([])
 
@@ -86,41 +48,20 @@ class Fitting:
 
         ypar = np.concatenate((ppar, cpar), axis=None)
         yfixed = np.concatenate((pfixed, cfixed), axis=None)
+        yfixed = yfixed.astype(int)
 
         return ypar, yfixed
 
+    def get_eigenvalues(self, ypar, is_weighted=False):
 
-class Fit:
-
-    def __init__(self, ml, overwrite, progress_fit):
-
-        self.ml = ml
-        self.overwrite = overwrite
-        self.progress_fit = progress_fit
-
-    # TODO: change the name of this procedure
-    def getEigenvalues(self, ypar, is_weighted=False):
-
-        #self.ml.calculateLevels(store_predicted=False, ypar=ypar, is_weighted=is_weighted)
         self.ml.store_predicted = False ## ????
         self.ml.is_weighted = is_weighted ## ????
-        self.ml.calculate_eigenvalues(ypar=ypar)
+        stats = self.ml.calculate_eigenvalues(ypar=ypar)
 
-        return self.ml.out_data
+        # Uncomment this if intermidiate results are needed for debugging
+        #print(f'Chi Square = {stats[0]:<18.8f} | RMS = {stats[1]:<15.8f}cm-1')
 
-class MinuitFit(Fit):
-    
-    """Class defining the Minuit algorithm for nonliner least squares fitting
-
-    Args:
-        Fit (object): The inherited class
-    """
-
-    def __init__(self, ml, overwrite, progress_fit):
-
-        super().__init__(ml, overwrite, progress_fit)
-
-        self.count_it = 1
+        return self.ml.out_data, stats
 
     def minuit_least_squares(self, ypar):
 
@@ -136,41 +77,25 @@ class MinuitFit(Fit):
             1. Minuit requires this procedure to accept a single argument
         """
 
-        #self.edit_yml_file(ypar)
-
-        out_data = super().getEigenvalues(ypar)
-
-        ycal = out_data[:,8]
-        yexp = out_data[:,9]
+        out_data, _ = self.get_eigenvalues(ypar)
         ydel = out_data[:,10]
         yvar = out_data[:,11]
 
-        #rms = self.calculate_rms(yexp, ycal)
-        #rmsd = self.calculate_dimless_rms(yexp, ycal, yvar, is_weighted=False)
+        #self.count_it += 1
 
-        chi2, rms, rmsd = self.ml.calculate_stats(yexp, ycal, yvar, is_weighted=False)
+        Channel.edit_channel_parameters(ypar, self.ml.channels)
 
-        if self.progress_fit:
-            print(f'Chi2 = {chi2:.8f} for iteration {self.count_it}')
-            print(f'RMS = {rms:.8f} cm-1 for iteration {self.count_it}')
-            print(f'RMSD = {rmsd:.8f} for iteration {self.count_it}\n')
-
-        self.count_it += 1
-
-        if self.overwrite:
-            Channel.edit_channel_parameters(ypar, self.ml.channels)
-
-            if len(self.ml.couplings) > 0:
-                Coupling.edit_coupling_parameters(ypar, self.ml.couplings)
+        if len(self.ml.couplings) > 0:
+            Coupling.edit_coupling_parameters(ypar, self.ml.couplings)
 
         return np.sum(ydel ** 2 / yvar)
 
     def set_constraints(self):
         pass
 
-    def run_minuit(self, ypar, yfixed, niter):
+    def run_minuit(self, niter=0, step_size=1.0e-4, set_limits=None, uncert=False):
 
-        """The main procedure which is calling the Minuit procedure
+        """Minuit algorithm for nonliner least squares fitting
 
         Args:
             ypar (ndarray): fitting parameters
@@ -178,114 +103,156 @@ class MinuitFit(Fit):
             niter (int): the number of fit iterations
         """
 
-        errors = np.abs(ypar) * 1.0e-4
+        print_level = int(self.progress) + 1
+
+        ypar, yfixed = self.get_initial_parameters()
+
+        # TODO: # check if this is correct
+        errors = np.abs(ypar) * step_size
 
         m = Minuit.from_array_func(
-            self.minuit_least_squares, 
-            ypar, 
-            errors,                       
-            fix=yfixed, 
+            self.minuit_least_squares,
+            ypar,
+            errors,
+            fix=1-yfixed,
             limit=None,
-            errordef=1, 
-            print_level=2
+            errordef=Minuit.LEAST_SQUARES,
+            print_level=print_level
         )
 
-        m.print_param()
-        fmin, param = m.migrad(ncall=niter)
+        print('Initial parameters')
+        print(m.params)
 
-        pprint(fmin)
-        pprint(param)
-        m.print_param()
-        pprint(m.migrad_ok())
-        pprint(m.fval)
-        print(m.matrix_accurate())
-        pprint(m.np_matrix())
-        pprint(m.np_matrix(correlation=True))
+        m.migrad(ncall=niter)
 
+        print('Initial parameters')
+        m.init_params
+        print('Final parameters')
+        print(m.params)
 
-class SvdFit(Fit):
+        # reduced chi2 - should be around 1
+        print(f'reduced chi2 = {m.fval / (len(ypar) - m.nfit)}')
 
-    """Class defining the SVD algorithm for nonliner least squares fitting
+        # print(m.fmin)
+        # print(m.migrad_ok())
+        # print(m.fval)
+        # print(m.matrix_accurate())
 
-    Args:
-        Fit (object): The inherited class
-    """
+        # TODO: check how to get the uncertenties
+        if correlation:
+            np.set_printoptions(linewidth=150)
+            np.set_printoptions(precision=3)
+            print('\nCorrelation matrix\n')
+            print(m.np_matrix(correlation=True))
+            print('\nCovariance matrix\n')
+            print(m.np_covariance())
+            print('\nParameter uncertainties\n')
+            print(m.hesse())
 
-    def __init__(self, ml, overwrite, progress_fit):
+    def run_svd(self, niter=1, deriv='n', tol=0.1, lapack_driver='gelsd', 
+        step_size=1.0e-4, is_weighted=False, restart=False):
 
-        super().__init__(ml, overwrite, progress_fit)
-        self.progress_str = None
-
-    def run_svd(self, ypar, yfixed, niter, deriv, tol, is_weighted):
-
-        """The main procedure for the svd fit
+        """SVD algorithm for nonliner least squares fitting.
+        Starting from a trial set of parameters on each iteration
+        the linear system Ax=b for the corrections x to the current 
+        set of parameters x_cur will be solved and a new set 
+        x_new = x_cur + x will be obtained. The matrix A is the
+        matrix with the derivatives with respect to the parameters 
+        and b is the rhs vector E_obs - E_cal(x_cur).
+        Solves Ax = b using Singular Value Decomposition (SVD)
 
         Args:
-            ypar (ndarray): The fitting parameters
-            yfixed (ndarray): Which parameter is fixed/free
-            niter (int): the number of fit iterations
-            tol (float): The tolerance value
-            is_weighted (bool): whether to apply weighted fitting 
+            niter (int, optional): number of iterations. Defaults to 1.
+            deriv (str, optional): numerical or analytical derivative. Defaults to 'n'.
+            tol (float, optional): the tolerance value - determines which linear combinations 
+            of parameters to be discared by SVD through the singular values. Defaults to 0.1.
+            lapack_driver (str, optional): which lapack routine to use. Defaults to 'gelsd'.
+            step_size (float, optional): the value used for changing the parameters during 
+            the calculation of derivatives. Defaults to 1.0e-4.
+            is_weighted (bool, optional): whether to apply weighted fit. Defaults to False.
+            restart (bool, optional): Not yet implemented. Defaults to False.
         """
-    
+
+        # (0) get the initial trial parameters
+        ypar, yfixed = self.get_initial_parameters()
+        is_failed = False
+        change_tol = np.array([False, False], dtype=bool)
+        is_tol_changed = False
+
         for it in range(1, niter + 1):
 
             self.progress_str = io.StringIO()
 
-            self.progress_str.write(f'\n {15*"="} Iteration {it} {15*"="} \n')
+            self.progress_str.write(
+                f'\n{18*"- "}Iteration {it} {18*"- "} \n'
+                f'\nTOL{"":>23}= {tol:.1e}'
+            )
 
-            # 1) Get initially calculated data
-            out_data = super().getEigenvalues(ypar, is_weighted=is_weighted)
+            # (1) get initially calculated energies on each new iteration
+            out_data, stats = self.get_eigenvalues(ypar, is_weighted=is_weighted)
 
             ycal = out_data[:,8].astype(np.float64)
-            yexp = out_data[:,9].astype(np.float64)
             ydel = -out_data[:,10].astype(np.float64)
             yvar = out_data[:,11].astype(np.float64)
 
-            chisq_best, rms_init, rmsd_init = self.ml.calculate_stats(yexp, ycal, yvar, is_weighted)
+            chisq_best, rms_init, _ = stats
 
             self.progress_str.write(
-                f'\nChi square initial = {chisq_best:.8f} for iteration {it}'
-                f'\nRMS initial = {rms_init:.8f} cm-1 for iteration {it}'
-                f'\nRMSD initial = {rmsd_init:.8f} for iteration {it}\n'
+                f'\nChi square initial{"":>8}= {chisq_best:.8f}'
+                f'\nRMS initial{"":>15}= {rms_init:.8f} cm-1\n'
             )
 
-            # 2) Generate design matrix A
-            # A is found through calculation of numerical derivatives
+            # (2) generate the matrix A - the matrix with the derivatives 
+            # of the energies with respect to the parameters
             
             if deriv == 'n':
-                dydp = self.generate_design_matrix_numerical(
-                    ypar, yfixed, ycal, is_weighted=is_weighted
+                dydp = self.generate_derivatives_matrix_numerical(
+                    ypar, yfixed, ycal, is_weighted=is_weighted, step_size=step_size
                 )
-
                 #np.savetxt('true_dydp.dat', dydp, fmt='%.6e')
             else:
-                dydp = self.generate_design_matrix_analytical(
+                dydp = self.generate_derivatives_matrix_analytical(
                     ypar, yfixed, ycal, is_weighted=is_weighted
                 )
 
-            # 3) Solve Ax = b using Singular Value Decomposition
-
-            # find rhs vector
+            # (3) calculate the vector b - the rhs vector 
             b = ydel / yvar
 
             # the proposed corrections to the parameters is the solution
-            x = self.find_corrections(ypar, dydp, b, tol)
+            x, rank, sv = self.find_corrections(ypar, dydp, b, tol, lapack_driver)
            
-            # 4) calculate using the proposed corrections
-            egnvls_try = super().getEigenvalues(ypar+x, is_weighted=is_weighted)
+            # (4) calculate new energies using the proposed corrections
+            _, stats_try = self.get_eigenvalues(ypar+x, is_weighted=is_weighted)
 
-            chi2_try, *_ = self.ml.calculate_stats(
-                egnvls_try[:, 9], egnvls_try[:,8], egnvls_try[:,11], is_weighted
-            )
+            chi2_try = stats_try[0]
 
             self.progress_str.write(
-                f'\n\nTOL = {tol}'
-                f'\nChi square best = {chisq_best:.8f} from the previous iteration {it-1}'
-                f'\nChi square current = {chi2_try:.8f} for the current iteration {it} \n'
+                #f'\nChi square best{"":>11}= {chisq_best:.8f}'
+                f'\nChi square current{"":>8}= {chi2_try:.8f}\n'
             )
 
-            # 5) Try to change the corrections
+            # Another improvment: added 08.2020. Change tol if for two successive 
+            # iterations the corrections are smaller than some small value eps
+
+            is_tol_changed = False
+            eps = 1.0e-7
+
+            if np.all(np.absolute(x) < eps):
+                if it % 2 == 0:
+                    change_tol[0] = True
+                if it % 2 == 1:
+                    change_tol[1] = True
+
+                # change tol on odd iteration if the above condition is True
+                if change_tol[0] and change_tol[1]:
+                    tol /= 10.0
+                    # reset the boolean array
+                    change_tol = np.array([False, False], dtype=bool)
+                    is_tol_changed = True
+
+                    self.progress_str.write(f'\nTOL CHANGED{"":>15}= {tol:.1e}')
+
+            # (5) Try to change the corrections
             is_failed = False
 
             if chi2_try < chisq_best:
@@ -302,61 +269,53 @@ class SvdFit(Fit):
                     # x_try = x_try / step
                     ypar_try = ypar_try + x_try
 
-                    egnvls_new = super().getEigenvalues(ypar_try, is_weighted=is_weighted)
-
-                    chi2_new, *_ = self.ml.calculate_stats(
-                        egnvls_new[:,9], egnvls_new[:,8], egnvls_new[:,11], is_weighted
-                    )
+                    _, stats_new = self.get_eigenvalues(ypar_try, is_weighted=is_weighted)
+                    chi2_new = stats_new[0]
+                    # chi2_new, *_ = self.ml.calculate_stats(
+                    #     egnvls_new[:,9], egnvls_new[:,8], egnvls_new[:,11], is_weighted
+                    # )
 
                     if chi2_new < chisq_best:
                         chisq_best = chi2_new
                         ypar = ypar_try
 
-                        self.progress_str.write(
-                            f'\nChi square changing corrections = ' \
-                            f'{chisq_best:.5f} for iteration {it}'
-                        )
                     else:  # chi2new >= chi2best:
                         is_failed = True
 
                         self.progress_str.write(
-                            f'\nChi square final after changing the corrections = ' \
-                            f'{chisq_best:.8f} for iteration {it}\n'
+                            f'\nCorrections changed =>\nchi square = {chisq_best:.8f}\n'
                         )
 
                         break
-            # if it isn't get improved then change the tol
-            if is_failed:
+
+            # if it isn't get improved then change tol
+            if is_failed and not is_tol_changed:
                 tol /= 5.0
+                self.progress_str.write(f'\nTOL CHANGED {"":>15}= {tol:.1e}')
 
-            # 6. Save the final parameters
-            egnvls = super().getEigenvalues(ypar, is_weighted=is_weighted)
+            # (6) Save the final parameters
+            if self.progress:
+                self.print_current_svd_parameters(rank, sv, tol, ypar, x, yfixed, it)
 
-            if self.overwrite:
-                Channel.edit_channel_parameters(ypar, self.ml.channels)
+            _, stats_final = self.get_eigenvalues(ypar, is_weighted=is_weighted)
 
-                if len(self.ml.couplings) > 0:
-                    Coupling.edit_coupling_parameters(ypar, self.ml.couplings)
+            Channel.edit_channel_parameters(ypar, self.ml.channels)
 
-            _, rms_final, rmsd_final = self.ml.calculate_stats(
-                egnvls[:,9], egnvls[:,8], egnvls[:,11], is_weighted
-            )
+            if len(self.ml.couplings) > 0:
+                Coupling.edit_coupling_parameters(ypar, self.ml.couplings)
+
+            rms_final, rmsd_final = stats_final[1], stats_final[2]
 
             self.progress_str.write(
-                f'\nChi square final/best = {chisq_best:.8f} for iteration {it}\n'
-                f'\nRMS final = {rms_final:.8f} cm-1'
-                f'\nRMSD final = {rmsd_final:.8f}\n'
+                f'\nChi square final/best{"":>6}= {chisq_best:.8f} for iteration {it}'
+                f'\nRMS final{"":>18}= {rms_final:.8f} cm-1'
+                f'\nRMSD final{"":>17}= {rmsd_final:.8f}\n'
             )
 
-            if self.progress_fit:
-                print(self.progress_str.getvalue())
+            print(self.progress_str.getvalue())
 
-            #if rms_fin - rms_init > 0.001:
-            #     save_best_parameters(rms_fin)
-
-
-    def generate_design_matrix_numerical(self, 
-        ypar, yfixed, ycal_init, is_weighted):
+    def generate_derivatives_matrix_numerical(self, ypar, yfixed, 
+        ycal_init, is_weighted, step_size):
 
         """Compute the derivatives matrix by the parameters
 
@@ -372,7 +331,7 @@ class SvdFit(Fit):
 
         # TODO: Rewrite to optimize this procedure with numpy
         # TODO: check for some internal python sinc interpolation procedure
-        perc = 1.0e-4
+        # perc = 1.0e-4 -> replaced by step_size
 
         # get changes in the parameters
         dp = np.zeros(ypar.shape[0])
@@ -383,10 +342,10 @@ class SvdFit(Fit):
             dp.fill(0.0)
 
             if yfixed[prm]:
-                dp[prm] = abs(ypar[prm]) * perc
+                dp[prm] = abs(ypar[prm]) * step_size
                 dpar = ypar + dp
 
-                out_data = super().getEigenvalues(dpar, is_weighted=is_weighted)
+                out_data, _ = self.get_eigenvalues(dpar, is_weighted=is_weighted)
 
                 ycal = out_data[:,8]
                 yvar = out_data[:,11]
@@ -396,19 +355,20 @@ class SvdFit(Fit):
         
         return dydp
 
-    def find_corrections(self, ypar, dydp, b, tol):
-
+    def find_corrections(self, ypar, dydp, b, tol, lapack_driver):
         """Find the corrections to the parameters by solving 
-        the system of normal equations with SVD technique
+        the system of linear equations with SVD technique
 
         Args:
-            ypar (ndarray): the fitting parameters
-            dydp (ndarray): The derivatives matrix
-            b (ndarray): right hand side vector for solving the normal equations
-            tol (float): tolerance value
+            ypar (array): the fitted parameters
+            dydp (array): matrix with the derivatives
+            b (array): rhs vector
+            tol (float): the tolerance value
+            lapack_driver (str): the lapack routine
 
         Returns:
-            ndarray: The suggested corrections to the parameters
+            tuple: the corrections, the rank of the 
+            matrix and the matrix with the singular values 
 
         Remarks:
             1. There are two similar procedures for svd fit from numpy 
@@ -418,24 +378,12 @@ class SvdFit(Fit):
                 parameters will be ignored since the matrix is singular
         """
 
-        #x, _, rank, s = np.linalg.lstsq(dydp, b, tol)
-        x, _, rank, s = sp.linalg.lstsq(dydp, b, tol)
+        x, _, rank, s = sp.linalg.lstsq(dydp, b, tol, lapack_driver)
 
-        self.progress_str.write(
-            f'\nSVD matrix rank = the number significant singular values = {rank}' 
-            f'\ntol * max singular value = {tol*s[0]:.3f}\n'
-            f'\nThe first {2*rank} significant singular values:\n'
-        )
-        self.progress_str.write(' '.join(['{0:0.5e}'.format(i) for i in s[0:2*rank]]))
-        self.progress_str.write(f'\n\nParameters:\n')
-        # TODO: what is some parameter has 0 value?
-        astr = np.array2string(np.column_stack((ypar, x, x+ypar, np.absolute(x/ypar)*100)))
-        self.progress_str.write(astr)
-
-        return x
+        return x, rank, s
    
-    def generate_design_matrix_analytical(self, 
-        ypar, yfixed, ycal_init, is_weighted):
+    def generate_derivatives_matrix_analytical(self, ypar, yfixed, 
+        ycal_init, is_weighted):
 
         if self.ml.sderiv is None:
             raise SystemExit(
@@ -446,7 +394,6 @@ class SvdFit(Fit):
 
         evec_selected = np.array([])
         n = 0
-        print(self.ml.evecs_index)
 
         for i in range(0, len(self.ml.evecs_index)):
             evec = np.loadtxt(os.path.join('eigenvectors', f'evector_{i}.dat'))
@@ -465,19 +412,60 @@ class SvdFit(Fit):
 
         #dydp = dydp * Const.hartree  ## ?????????????????
 
-        np.savetxt('dydp.dta', dydp, fmt='%.6e')
+        #np.savetxt('dydp.dta', dydp, fmt='%.6e')
         
         return dydp
 
-class LevMarFit(Fit):
+    def print_current_svd_parameters(self, rank, sv, tol, ypar, x, yfixed, it):
+        
+        # singular values are sorted from the largest to the smallest one
+        # singular values smaller than tol*largest_singular_value are set to zero
 
-    """Class defining the Levenberg-Marquardt algorithm for nonliner least squares fitting
+        self.progress_str.write(
+            f'\nTOL * max singular value{"":>3}= {tol*sv[0]:.3f}\n'
+            f'\nSVD matrix rank = the number significant singular values = {rank}'
+            f'\nThe first {rank} significant singular values:\n'
+        )
 
-    Args:
-        Fit (object): The inherited class
-    """
+        self.progress_str.write(
+            ' '.join(['{:.1e}'.format(i) for i in sv[0:rank]])
+        )
 
-    def __init__(self, ml):
+        # the conditon number is the ratio of the largest to the smallest sing. value
+        # the larger the condition number the more close to singular is the matrix
+        # if cond. number = inf => the matrix is singular
 
-        super().__init__(ml)
+        self.progress_str.write(f'\nCondition number = {abs(sv[0] / sv[-1])}')
+        self.progress_str.write(f'\n\n{21*"- "}Parameters after iteration {it} {20*"- "}')
 
+        header = (
+            f'\n{111*"-"}\n|{"":>9}|{"":>5}Initial value{"":>4}|'
+            f'{"":>5}Correction{"":>7}|{"":>5}Final value{"":>6}|'
+            f'{"":>5}Percent change{"":>3}|{"":>1}Fixed{"":>1}|\n{111*"-"}\n'
+        )
+        self.progress_str.write(header)
+
+        # TODO: what if some parameter has 0 value?
+        nn = np.arange(1, ypar.shape[0]+1, 1, dtype=np.int64)
+        xypar = ypar + x
+        change = np.absolute(x/ypar)*100        
+
+        params_str = ''
+        for i in range(0, nn.shape[0]):
+            params_str = (
+                f'|{"":>1}{i:4d}{"":>4}|{"":>3}{ypar[i]:>16.12f}{"":>3}|'
+                f'{"":>3}{x[i]:>16.12f}{"":>3}|{"":>3}{xypar[i]:>16.12f}{"":>3}|'
+                f'{"":>3}{change[i]:>16.12f}{"":>3}|{"":>1}{yfixed[i]:>3d}{"":>3}|\n'
+            )
+
+            self.progress_str.write(params_str)
+
+    def run_levmar(self, niter=1):
+
+        """Levenberg-Marquardt algorithm for nonliner least squares fitting
+
+        Args:
+            niter (int, optional): Number of iterations. Defaults to 1.
+        """
+        
+        pass
