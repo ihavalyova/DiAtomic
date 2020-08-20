@@ -880,7 +880,7 @@ $$
 \chi^2 = \sum_{i=1}^{n} \left[ \frac{E_{i}^{obs} - E_{i}^{cal}(\mathbf{x})}{\sigma_i} \right]^2
 $$
 
-where the computed energies are functions of the parameters that we would like to determine by minimizing the $\chi^2$ value. The dependance $E_{i}^{cal}(\mathbf{x})$ is in general nonlinear therefore an iterative procedure will be applied - starting from some trial values of the parameters a corrections will be generated and added to the current values on each iteration that will improve the $\chi^2$ value. The corrections will be found by solving the system:
+where the computed energies are functions of the parameters that we would like to determine by minimizing the $\chi^2$ value. The dependance $E_{i}^{cal}(\mathbf{x})$ is in general nonlinear therefore an iterative procedure will be applied - starting from some trial values of the parameters a corrections will be generated and added to the current values on each iteration whcih will improve the $\chi^2$ value. The corrections will be found by solving the system:
 
 $$
 E_{i}^{obs} - E_{i}^{cal}(\mathbf{x}^{(0)}) - \sum_{j=1}^{m} \frac{\partial{E_{i}^{cal}}}{\partial x_{j}} \bigg\rvert_{x_j=x_{j}^{(0)}} \Delta x_{j} = 0
@@ -889,21 +889,21 @@ $$
 where we have approximated the dependance $E_{i}^{cal}(\mathbf{x})$ by the first two terms in its Taylor expansion around $\mathbf{x}^{(0)}$. This is a linear system of n equations with m unknowns (usually n > m) in the form $\hat{A}\mathbf{x} - \mathbf{b}$ where the unknown vector x is the vector with the corrections $\Delta x$, the right-hand side vector b is $E_{i}^{obs} - E_{i}^{cal}(\mathbf{x}^{(0)})$, and the coefficient matrix A is formed by the first derivatives of the energies with respect to the parameters. The overall goal of the fit could be summirzied as:
 
 $$
-\min_{\mathbf{x}}\;\chi^2 = | \hat{A}\mathbf{x} - \mathbf{b} |^2
+\min_{\mathbf{x}}\;\chi^2 = \frac{1}{\sigma^2} | \hat{A}\mathbf{x} - \mathbf{b} |^2
 $$
 
-As a first step we need to initialize the Fitting object like
+As a first step we need to initialize the **```Fitting```** object for example like
 ```python
-fit = diatom.Fitting(mlevels, progress=True)
+fit = diatom.Fitting(mlevels, progress=False)
 ```
 
-The first parameter is the created **```MoleculeLevels```** object and the second parameter **```progress```** is optional and tells whether a more detailed output to be printed during all the iterations.
+The first parameter is the created **```MoleculeLevels```** object and the second parameter **```progress```** is optional and tells whether a more detailed output to be printed after the end of _every_ iteration. The default is **```False```** which means that a detailed output will be printed only after the _final_ iteration.
 
 ## SVD Fit
 
-In general it is not recommnded to solve the above linear system by the method of the normal equations (that uses the matrix inverse) since the matrix is either singular or very close to singular. Sometimes there exist two or more linear combinations of...
+In general it is not recommended to solve the above linear system by the method of the normal equations (that uses the matrix inverse) since the matrix A is singular mainly because of the following problem. Sometimes there exist two or more linear combinations of functions with the fitted parameters that can be added to the model functions without changing the $\chi^2$ value. This is an indication of a linear dependance between the model functions (the data matrix will be singular) and also means that there exist two or more sets of parameters that fit the data equally well. In this cases it is recommended to use the Singular Value Decomposition (SVD). In SVD the matrix $A$ (n x m) is represented as a product of three matrices $A = U\Sigma V^{\dagger}$, two unitary (or orthogonal in the real case) matrices U (n x n) and V (m x m) and one diagonal matrix $\Sigma$ (n x m). This is known as full SVD. When $n \ge m$ (more data then parameters), $\Sigma$ will have at most m nonzero rows then a more compact representation is possible: $A = \hat{U}\hat{\Sigma}V^{\dagger}$ where $\hat{U}$ (n x m) is a submatrix of U and $\hat{\Sigma}$ (m x m) is the nonzero submatrix of $\Sigma$. This is known as "economy" SVD. The U and V matrices are called right and left singular vectors and the diagonal elments of $\Sigma$ are called singular values. It is important that the singular values are hierarchically aranged from the largest to the smallest i.e. $\sigma_{1} \ge \sigma_2 \ge \dots \ge \sigma_{m}$...
 
-Linear Algebra technique for ...
+The singular values are different from zero when the model functions are linearly independant.
 
 SVD is very special matrix factorization because it can be applied to _any_ matrix, it is unique and guaranteed to exist.
 
