@@ -14,6 +14,7 @@
   - [Coupling Object Definition](#coupling-object-definition)
       - [Shared parameters](#shared-parameters)
   - [Experimental Data](#experimental-data)
+      - [Structure of the experimental data file](#structure-of-the-experimental-data-file)
   - [Molecule Levels Computation](#molecule-levels-computation)
   - [Examples](#examples)
 - [Fitting of the Calculated Energy Levels](#fitting-of-the-calculated-energy-levels)
@@ -605,9 +606,9 @@ The parameters that we need to provide in order to initilize a **```Coupling```*
     - **```'SL'```** : Spin-electronic interaction
     - **```'spin-rot'```** : Spin-Rotation interaction
     - **```'spin-spin'```** : Spin-Spin interaction
-    - **```'LambdaDe'```** : second-order $\Omega$- or $\Lambda-$doubling effect on e-parity levels
-    - **```'LambdaDf'```** : second-order $\Omega$- or $\Lambda-$doubling effect on f-parity levels
-    - **```'LambdaD'```** : second-order $\Omega$- or $\Lambda-$doubling effect on e- and f-parity levels
+    - **```'LambdaDe'```** : second-order $\Omega$ or $\Lambda$ doubling effect on e-parity levels
+    - **```'LambdaDf'```** : second-order $\Omega$ or $\Lambda$ doubling effect on f-parity levels
+    - **```'LambdaD'```** : second-order $\Omega$ or $\Lambda$ doubling effect on e- and f-parity levels
   - should be of type string or tuple of strings
 
 - **```model```** - the type of the function which will be used for modelling the interacion
@@ -681,6 +682,31 @@ cp2 = diatom.Coupling(
 If we have defined the channels 2, 3, 4 and 5 as ${^2\Pi_{1/2}}$, $^2\Pi_{3/2}$, $^2\Delta_{3/2}$ and $^2\Delta_{5/2}$ then the pairs (2,4), (3,5) and (3,4) are connected by the same $L_+$ operator in two different rotational interactions. Defined in this way they will use the same set of parameters - those labeled by 'cp2'. This type of definition is ....... Of course we could define each of these pairs of interacting states as separate **```Coupling```** objects each having labels and the results will be the same. But then the fit will treat them .....
 
 ## Experimental Data
+
+Experimental data can be provided if we call the method **```get_exp_data```** as
+
+```python
+mdata.get_exp_data('exp.dat', markers=[1,2,3,11,12])
+```
+
+The only required parameter is the name of the file containing the experimental data. **```markers```** is an optional parameter which allows the program to differentiate between data of different isotopes. The markers are provided as a separate column in the experimental data file (see below).
+
+#### Structure of the experimental data file
+
+```python
+450
+1    0    6.5    306.935000   0    0.0050   5    5    
+2    0    7.5    421.631000   1    0.0050   5    5    
+3    0    7.5    421.631000   0    0.0050   5    5    
+4    0    8.5    551.354000   1    0.0050   5    5    
+5    0    8.5    551.354000   0    0.0050   5    5    
+6    0    9.5    696.031000   0    0.0050   5    5    
+7    0    9.5    695.987000   1    0.0050   5    5    
+8    0   10.5    855.503000   0    0.0050   5    5    
+9    0   10.5    855.445000   1    0.0050   5    5 
+```
+
+The first row is either the total number of data in the file or the first n of them that should be read. The columns are as follows: counter, the vibrational quantum number, the rotational qunatum number, the experimental energy value, parity label (0 or 1), experimental uncertainty, marker and state. Levels with markers between 0 and 9 belong to the first isotope, levels with merkers between 10 and 19 belong to the second isotope and so on.
 
 ## Molecule Levels Computation
 <!-- omit in toc -->
@@ -801,8 +827,20 @@ Similarly **```arpack_k```**, **```arpack_which```** and  **```arpack_sigma```**
 
 
 - **```store_predicted```** - save all computed eigenvalues in file
+
+The file looks like:
+
+```python
+#     No  v      Ecalc          J   parity  marker   CC1   state   lambda  omega
+      1   0      56.113986     1.0     0      1     1.000      1      0     0.00
+      2   1     180.940849     1.0     0      1     1.000      1      0     0.00
+      3   2     387.925302     1.0     0      1     1.000      1      0     0.00
+      4   3     677.259248     1.0     0      1     1.000      1      0     0.00
+      5   4    1049.088043     1.0     0      1     1.000      1      0     0.00
+      6   5    1503.471257     1.0     0      1     1.000      1      0     0.00
+```
   
-- **```store_info```** - save more information regarding the comutaions in file
+- **```store_info```** - save more detailed information regarding the comutaions in a file
   - may be used for debugging purpose
   
 - **```store_evecs```** - save the computed eigenvectors in files
