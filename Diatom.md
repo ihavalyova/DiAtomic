@@ -883,7 +883,9 @@ The **```run_svd```** method has only default parameters:
 - **```niter```** - the number of iterations. Default is **```niter=1```**
 
 - **```deriv```** - the method used for computation of derivatives. Default is **```deriv='n'```**. When **```deriv='n'```** the derivatives will be computed numerically with the finite diffrence method. Another possibility is **```deriv='a'```** in which case the derivatives of the energies with respect to the parameters will be computed analitically with the Hellman-Feynman theorem:
+
 <p align="center"><img src="/tex/c3694908f44be879f0a2f10bc915062f.svg?invert_in_darkmode&sanitize=true" align=middle width=122.68708484999998pt height=33.81208709999999pt/></p>
+
 - **```tol```** - the tolerance value. It determines which and how many linear combinations of the fitted parameters will be discarded because the matrix is singular. The singular values which are less than **```tol```** times the largest singular value are treated as zero. The rank of the matrix is determined by the number of the nonzero singular values and **```tol```** governs the effective rank of the matrix that is the number of singular values smaller than some specific value. Default is **```tol=0.1```**
 
 - **```lapack_driver```** - The name of the LAPACK routine used to solve the least-squares problem. The three possible values **```'gelsd'```**, **```'gelsy'```** and **```'gelss'```** correspond to the names of these routines. **```'gelsd'```** uses singular value decomposition and a divide and conquer method, **```'gelsy'```** uses the orthogonal QR factorization of the matrix and **```'gelss'```** uses the singular value decomposition of the matrix. In the most cases **```'gelsd'```** will likely be the most efficient method. Default is **```lapack_driver='gelsd'```**.
@@ -891,10 +893,13 @@ The **```run_svd```** method has only default parameters:
 - **```step_size```** - used to determine the change in the parameters during the computation of derivatives. Default is **```step_size=1.0e-4```**.
 
 - **```is_weighted```** - whether to apply a weighted least-squares fitting with the method proposed by J. Watson (default is **```False```**) in which case the weights <img src="/tex/c5e40d7bbcc7d29edc388de6341b5f66.svg?invert_in_darkmode&sanitize=true" align=middle width=26.80945079999999pt height=28.894955100000008pt/> given by the experimental uncerteinty will be replaced by the expression:
+
 <p align="center"><img src="/tex/fecf078bd951ed0d732f61d5030effdc.svg?invert_in_darkmode&sanitize=true" align=middle width=170.20721849999998pt height=38.51761815pt/></p>
+
 - **```restart```** - not yet implemented
 - **```limit```** - not yet implemented
 - **```regular```** - not yet implemented
+
 
 To find the least-squares solution **```run_svd```** calls <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lstsq.html" target="_blank">scipy.linalg.lstsq</a> function. In the most widespread numerical libraries and packages the implementations which use SVD are based on the LAPACK implementation in Fortran - the routine called DGESVD.
 
