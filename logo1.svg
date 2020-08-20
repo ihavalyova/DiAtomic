@@ -7,57 +7,57 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="71mm"
-   height="24mm"
-   viewBox="0 0 71 24"
-   version="1.1"
-   id="svg8"
-   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
-   sodipodi:docname="logo1.svg"
-   inkscape:export-filename="/home/ilvie/Desktop/logo2.png"
+   inkscape:export-ydpi="107.60466"
    inkscape:export-xdpi="107.60466"
-   inkscape:export-ydpi="107.60466">
+   inkscape:export-filename="/home/ilvie/Desktop/logo2.png"
+   sodipodi:docname="logo1.svg"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   id="svg8"
+   version="1.1"
+   viewBox="0 0 71 24"
+   height="24mm"
+   width="71mm">
   <defs
      id="defs2">
     <rect
-       x="18.363663"
-       y="73.519119"
-       width="70.075188"
+       id="rect835"
        height="23.143503"
-       id="rect835" />
+       width="70.075188"
+       y="73.519119"
+       x="18.363663" />
     <filter
-       inkscape:collect="always"
+       height="1.0000075"
+       y="-3.7721555e-06"
+       width="1.0000014"
+       x="-7.134875e-07"
+       id="filter852"
        style="color-interpolation-filters:sRGB"
-       id="filter1599"
-       x="-1.6932272e-05"
-       width="1.0000339"
-       y="-8.7134125e-05"
-       height="1.0001743">
+       inkscape:collect="always">
       <feGaussianBlur
-         inkscape:collect="always"
-         stdDeviation="0.00042970566"
-         id="feGaussianBlur1601" />
+         id="feGaussianBlur854"
+         stdDeviation="1.8736679e-05"
+         inkscape:collect="always" />
     </filter>
   </defs>
   <sodipodi:namedview
-     id="base"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0.0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="1.2218217"
-     inkscape:cx="101.73713"
-     inkscape:cy="43.493854"
-     inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
-     inkscape:document-rotation="0"
-     showgrid="false"
-     inkscape:window-width="1592"
-     inkscape:window-height="832"
-     inkscape:window-x="0"
+     inkscape:window-maximized="1"
      inkscape:window-y="0"
-     inkscape:window-maximized="1" />
+     inkscape:window-x="0"
+     inkscape:window-height="832"
+     inkscape:window-width="1592"
+     showgrid="false"
+     inkscape:document-rotation="0"
+     inkscape:current-layer="layer1"
+     inkscape:document-units="mm"
+     inkscape:cy="42.266179"
+     inkscape:cx="101.73713"
+     inkscape:zoom="1.2218217"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     borderopacity="1.0"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     id="base" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -66,32 +66,32 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <g
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
+     style="display:inline"
      id="layer1"
-     style="display:inline">
+     inkscape:groupmode="layer"
+     inkscape:label="Layer 1">
     <text
-       xml:space="preserve"
-       id="text833"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19.7556px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect835);fill:#000000;fill-opacity:1;stroke:none;filter:url(#filter1599);"
-       inkscape:export-xdpi="96"
+       transform="translate(-17.899845,-76.498615)"
        inkscape:export-ydpi="96"
-       transform="translate(-17.899845,-76.498615)"><tspan
+       inkscape:export-xdpi="96"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19.7556px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect835);fill:#000000;fill-opacity:1;stroke:none;filter:url(#filter852);"
+       id="text833"
+       xml:space="preserve"><tspan
          x="18.363281"
          y="90.736733"><tspan
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16.2278px;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;opacity:1;fill:#143059;fill-opacity:1">Diatomic</tspan></tspan></text>
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16.9333px;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;opacity:1;fill:#146d84;fill-opacity:1">Diatomic</tspan></tspan></text>
     <g
-       id="g4762"
-       transform="matrix(0.04502516,0,0,0.04502516,-83.533018,11.377894)">
+       transform="matrix(0.04502516,0,0,0.04502516,-83.533018,11.377894)"
+       id="g4762">
       <path
-         id="path3542"
+         style="fill:#ffffff;stroke:none"
          d="m 804.50093,705.14212 v 8 10 29 6 8 4 6 2 5 26 5 5 2 56 1 1 24 36 121.99998 361 h 225.99997 302 3 4 4 10 1 5 10 1 4 17 49 4 6 5 6 32 5 6 1 3 3 8 1 4 5 2 5 8 13 4 1 2 10 5 1 3 6 5 6 v -6 -4 -1 -35 -65 -1 -9 -47 -5 -1 -9 -17 -9 -6 -24 -254.99998 -42 -1 -2 -2 -5 -19 -1 -4 -8 -13 -38 -4 -1 -3 -1 -1 -5 -7 -13 -5 -5 -8 -1 -3 -1 -1 -6 -4 -5 -1 -4 -5 -4 h -2.056 -4.944 -8 -3 -2 -3 -4 -2 -3 -4 -3 -4 -24 -9 -4 -6 -2 -3 -6 -1 -32 -32 -5 -4 -20 -3 -47 -5 -67 -65 -13 -7 -24 -13 -23 -13 -17 -1 -25 -8 -23 -7 -6 z"
-         style="fill:#ffffff;stroke:none" />
+         id="path3542" />
     </g>
   </g>
 </svg>
