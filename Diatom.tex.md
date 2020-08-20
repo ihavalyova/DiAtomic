@@ -938,20 +938,18 @@ To find the least-squares solution **```run_svd```** calls <a href="https://docs
 
 ## Minuit Fit
 
-It is possible to call the MINUIT
+**```Diatomic```** provides an option to call the Minuit library in C++ via the Python frontend **```iminuit```**. It works with the Minuit Migrad subroutine for local function minimization. In addition to that it is able to estimate the uncertainty in the fitted parameters by computing the covariance and correlation matrices using two different algorithms and procedures called Hesse and Minos.
 
 To run the Minuit Fit we should call the method **```run_minuit```** through the created **```Fitting```** object. This method has only optional parameters:
 
 - **```niter```** - The number of iterations. Default is **```niter=0```**.
-- **```step_size```** - Default is **```step_size=1.0e-4```**
-- **```correlation```** - Default is **```correlation=False```**.
-- **```covariance```**.  Default is **```covariance=False```**
-- **```uncert```** - Default is **```uncert=False```**
+- **```step_size```** -  used to determine the initial gradient. Default is **```step_size=1.0e-4```**
+- **```uncert```** - whether to compute and print the covariance and correlation matricies and the uncertainties in the in the model parameters after the fit completed. Default is **```False```**.
 
 Example
 
 ```python
-fit.run_minuit(niter=5, step_size=1.0e-3, correlation=True)
+fit.run_minuit(niter=5, step_size=1.0e-3, uncert=True)
 ```
 
 ## Levenberg-Marquard Fit
