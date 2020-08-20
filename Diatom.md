@@ -12,6 +12,7 @@
   - [Grid Object Definition](#grid-object-definition)
   - [Channel Object Definition](#channel-object-definition)
   - [Coupling Object Definition](#coupling-object-definition)
+      - [Shared parameters](#shared-parameters)
   - [Experimental Data](#experimental-data)
   - [Molecule Levels Computation](#molecule-levels-computation)
   - [Examples](#examples)
@@ -572,7 +573,7 @@ diatom.Channel.set_channel_parameters(channels)
 
 ## Coupling Object Definition
 
-The parameters that we need to pass to the constructor of the Coupling object:
+The parameters that we need to provide in order to initilize a **```Coupling```** object are:
 
 - **```interact```** - the numbers of the channels which are connected by this interaction
   - should be of type tuple or tuple of tuples
@@ -644,7 +645,10 @@ cp3:
 
 ----
 
-More complicated example for coupling definition:
+#### Shared parameters
+
+When two or more interacting states coupled by the same or different interactions share the same set of parameters a more complicated construction of the **```Coupling```** object is possible.
+This is what frequently happens in the case of states coupled by the <img src="/tex/f7f72bf6b74988049786767c04a6bdf3.svg?invert_in_darkmode&sanitize=true" align=middle width=21.278616149999987pt height=22.465723500000017pt/> operator. Here is an example for the interaction <img src="/tex/95986b9d0125352e11ec2ed1ae280905.svg?invert_in_darkmode&sanitize=true" align=middle width=19.70325884999999pt height=26.76175259999998pt/> ~ <img src="/tex/b6ccdd799b87869964f3c3d42b645c41.svg?invert_in_darkmode&sanitize=true" align=middle width=21.07313174999999pt height=26.76175259999998pt/> in the lowest doublet states of NiH molecule:
 
 ```python
 cp2 = diatom.Coupling(
@@ -652,9 +656,11 @@ cp2 = diatom.Coupling(
     coupling=('LJ', 'LJ', 'SL'),
     model='pointwise',
     multiplier=(2.0, 2.0, 2.0),
-    label='3'
+    label='cp2'
 )
 ```
+
+If we have defined the channels 2, 3, 4 and 5 as <img src="/tex/431d13954ddb470c575ad747add2579f.svg?invert_in_darkmode&sanitize=true" align=middle width=39.54354689999999pt height=26.76175259999998pt/>, <img src="/tex/9fa68b1d66e128b534bfe07e9855f1bf.svg?invert_in_darkmode&sanitize=true" align=middle width=39.54354689999999pt height=26.76175259999998pt/>, <img src="/tex/f3523a0e299ea9fcab02794a2368f2ca.svg?invert_in_darkmode&sanitize=true" align=middle width=40.913419799999986pt height=26.76175259999998pt/> and <img src="/tex/b54d59552cddec58d4e0da7405bb2952.svg?invert_in_darkmode&sanitize=true" align=middle width=40.913419799999986pt height=26.76175259999998pt/> then the pairs (2,4), (3,5) and (3,4) are connected by the same <img src="/tex/f7f72bf6b74988049786767c04a6bdf3.svg?invert_in_darkmode&sanitize=true" align=middle width=21.278616149999987pt height=22.465723500000017pt/> operator in two different rotational interactions. Defined in this way they will use the same set of parameters - those labeled by 'cp2'. This type of definition is ....... Of course we could define each of these pairs of interacting states as separate **```Coupling```** objects each having labels and the results will be the same. But then the fit will treat them .....
 
 ## Experimental Data
 
@@ -691,15 +697,16 @@ The first optional parameter is created list of [Coupling](#coupling-definition)
     - **```'arpack'```** : calls the **```scipy```** builtin
     <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh" target="_blank">scipy.sparse.linalg.eigsh</a> function to compute the eigenvalues and eigenvectors.
 
+    These two **```scipy```** procedures provide high-level interface to standard LAPACK and ARPACK routines written in Fortran and C.
   - Default is set to **```'lapack'```**
-  - The two **```scipy```** procedures provide high-level interface to standard LAPACK and ARPACK routines written in Fortran and C.
+
 
 <!-- omit in toc -->
 #### Eigenvalue Decomposition with LAPACK
 
-This is the recommended choice when FGH method is selected as a solving method since the generated Hamiltonain matrix is a dense matrix except for the case of high number of channels.
+This is the recommended choice when FGH method is selected as a solving method since the generated Hamiltonain matrix except for the case of high number of channels is not a sparse matrix.
 
-If we need the eigenvalues and the eigenvectors only in a certain interval of values or indicies then it is possible to get only a subset of them which will likely reduce the computation time. The range of eigenvalues and eigenvectors which to be computed can be set by one of the two optional parameters 
+If we need the eigenvalues and the eigenvectors only in a certain interval of values or indicies then it is possible to get only a subset of them which will likely reduce the computation time. The range of eigenvalues and eigenvectors which to be computed can be set by one of the two optional parameters:
 
 - **```energy_subset_index```** - defines a subinterval of indicies for the returned eigenvalues
 
@@ -745,19 +752,12 @@ For further information: https://docs.scipy.org/doc/scipy/reference/tutorial/arp
 
 The releated parameters are:
 - **```arpack_k```** - the dsired number of eigenvalues and eigenvectors
-  - positive integer number
-  - should be smaller than the dimension of the matrix 
-- **```arpack_which```** - which eigenvalues and eigenvectors to find
-  - The possible values are:
-    - **```'LM'```** : Largest (in magnitude) eigenvalues.
-    - **```'SM'```** : Smallest (in magnitude) eigenvalues.
-    - **```'LA'```** : Largest (algebraic) eigenvalues.
-    - **```'SA'```** : Smallest (algebraic) eigenvalues.
-    - **```'BE'```** : Half (k/2) from each end of the spectrum.
-- **```arpack_sigma```** - if this parameter is specified then shift-invert mode is applied. Then the procedure will return k (specified by **```arpack_k```**) shifted eigenvalues which have values around the specified value of this parameter.
+  - it is a positive integer number and should be smaller than the dimension of the matrix 
+- **```arpack_which```** - which eigenvalues to compute
+  - The possible values are: **```'LM'```** (largest in magnitude), **```'SM'```** (smallest in magnitude), **```'LA'```** (largest algebraic), **```'SA'```** (smallest algebraic), **```'BE'```** (half (k/2) from each end of the spectrum).
+- **```arpack_sigma```** - if this parameter is specified a shift-invert mode is applied. Then the procedure will return k (specified by **```arpack_k```**) shifted eigenvalues which have values around the specified value of this parameter (integer or float number).
   
   - efficient when the smallest eigenvalues are required (**```arpack_which```**=**```'SM'```**)
-  - integer or float number
 
 ```python
 mlevels.calculate_levels(eig_decomp='arpack', arpack_k=25, arpack_which='SM', arpack_sigma=0.1)
@@ -856,40 +856,49 @@ Here all eigenvalues and eigenvectors for J=1,2,3,4 and 5 with both e/f parity l
 
 # Fitting of the Calculated Energy Levels
 
-- the normal equations
-- chi square
+The **```Diatomic```** module has several implemented procedures for weighted least-squares fitting of the calculated to the experimental energy levels. In all cases what we want to minimize is the difference between the experimental (observed) energies and the calculated ones. Therefore we define the <img src="/tex/a67d576e7d59b991dd010277c7351ae0.svg?invert_in_darkmode&sanitize=true" align=middle width=16.837900199999993pt height=26.76175259999998pt/> function as:
+<p align="center"><img src="/tex/c0bb903ec3cedd65944bf39e720e0cf8.svg?invert_in_darkmode&sanitize=true" align=middle width=192.90083835pt height=47.8235406pt/></p>
+where the computed energies are functions of the parameters that we would like to determine by minimizing <img src="/tex/a67d576e7d59b991dd010277c7351ae0.svg?invert_in_darkmode&sanitize=true" align=middle width=16.837900199999993pt height=26.76175259999998pt/> value. The dependance <img src="/tex/4ca1aee6e8270689594bcea797736c2f.svg?invert_in_darkmode&sanitize=true" align=middle width=53.89543995pt height=27.91243950000002pt/> is in general nonlinear therefore an iterative procedure will be applied - starting from some trial values of the parameters a corrections will be generated and added to the current values on each iteration that will improve the <img src="/tex/a67d576e7d59b991dd010277c7351ae0.svg?invert_in_darkmode&sanitize=true" align=middle width=16.837900199999993pt height=26.76175259999998pt/> value. The corrections will be found by solving the system:
+<p align="center"><img src="/tex/3d56e9c278a94b22d5667eb320678c6a.svg?invert_in_darkmode&sanitize=true" align=middle width=328.22589855pt height=47.2889208pt/></p>
 
+where we have approximated the dependance <img src="/tex/4ca1aee6e8270689594bcea797736c2f.svg?invert_in_darkmode&sanitize=true" align=middle width=53.89543995pt height=27.91243950000002pt/> by the first two terms in its Taylor expansion around <img src="/tex/14fc0e68e921111d80f847f49f14fa1b.svg?invert_in_darkmode&sanitize=true" align=middle width=26.803695599999987pt height=29.190975000000005pt/>. This is a linear system of n equations with m unknowns (usually n > m) in the form <img src="/tex/5e1e7c803719b446197e2edde2f0815c.svg?invert_in_darkmode&sanitize=true" align=middle width=52.89932669999998pt height=31.141535699999984pt/> where the unknown vector x is the vector with the corrections <img src="/tex/3919bbc84b8079e27194efe99a1f6a80.svg?invert_in_darkmode&sanitize=true" align=middle width=23.09366069999999pt height=22.465723500000017pt/>, the right-hand side vector b is <img src="/tex/f2e84668ab502e9be17614dcee78f4aa.svg?invert_in_darkmode&sanitize=true" align=middle width=124.01297039999999pt height=29.190975000000005pt/>, and the coefficient matrix A is formed by the first derivatives of the energies with respect to the parameters. The overall goal of the fit could be summirzied as:
+<p align="center"><img src="/tex/28a32e2e7679fbc8079cd0cf12f6479d.svg?invert_in_darkmode&sanitize=true" align=middle width=142.8648672pt height=25.4337831pt/></p>
+
+As a first step we need to initialize the Fitting object like
 ```python
 fit = diatom.Fitting(mlevels, progress=True)
 ```
 
+The first parameter is the created **```MoleculeLevels```** object and the second parameter **```progress```** is optional and tells whether a more detailed output to be printed during all the iterations.
+
 ## SVD Fit
+
+In general it is not recommnded to solve the above linear system by the method of the normal equations (that uses the matrix inverse) since the matrix is either singular or very close to singular. Sometimes there exist two or more linear combinations of...
 
 Linear Algebra technique for ...
 
-It is important that SVD can be applied to _any_ matrix, it is unique and guaranteed to exist.
+SVD is very special matrix factorization because it can be applied to _any_ matrix, it is unique and guaranteed to exist.
 
 The **```run_svd```** method has only default parameters:
 
 - **```niter```** - the number of iterations. Default is **```niter=1```**
 
-- **```deriv```** - the method used for computation of derivatives. Default is **```deriv='n'```**. When **```deriv='n'```** the derivatives will be computed numerically with the finite diffrence method. Another possibility is **```deriv='a'```** in which case the derivatives will be computed analitically with the Hellman-Feynman theorem:
+- **```deriv```** - the method used for computation of derivatives. Default is **```deriv='n'```**. When **```deriv='n'```** the derivatives will be computed numerically with the finite diffrence method. Another possibility is **```deriv='a'```** in which case the derivatives of the energies with respect to the parameters will be computed analitically with the Hellman-Feynman theorem:
 
 <p align="center"><img src="/tex/c3694908f44be879f0a2f10bc915062f.svg?invert_in_darkmode&sanitize=true" align=middle width=122.68708484999998pt height=33.81208709999999pt/></p>
-
-- **```tol```** - the tolerance value. It determines which and how many linear combinations of the fitted parameters will be discarded because the matrix is singular. The singular values which are less than **```tol```** times the largest singular value are treated as zero. That governs the effective rank of the matrix. Default is **```tol=0.1```**
+- **```tol```** - the tolerance value. It determines which and how many linear combinations of the fitted parameters will be discarded because the matrix is singular. The singular values which are less than **```tol```** times the largest singular value are treated as zero. The rank of the matrix is determined by the number of the nonzero singular values and **```tol```** governs the effective rank of the matrix that is the number of singular values smaller than some specific value. Default is **```tol=0.1```**
 
 - **```lapack_driver```** - The name of the LAPACK routine used to solve the least-squares problem. The three possible values **```'gelsd'```**, **```'gelsy'```** and **```'gelss'```** correspond to the names of these routines. **```'gelsd'```** uses singular value decomposition and a divide and conquer method, **```'gelsy'```** uses the orthogonal QR factorization of the matrix and **```'gelss'```** uses the singular value decomposition of the matrix. In the most cases **```'gelsd'```** will likely be the most efficient method. Default is **```lapack_driver='gelsd'```**.
 
-- **```step_size```** - Default is **```step_size=1.0e-4```**.
+- **```step_size```** - used to determine the change in the parameters during the computation of derivatives. Default is **```step_size=1.0e-4```**.
 
-- **```is_weighted=False```** - whether to apply the weighted least-squares fitting with the method proposed by J. Watson. Default is **```is_weighted=False```**.
-
+- **```is_weighted```** - whether to apply a weighted least-squares fitting with the method proposed by J. Watson (default is **```False```**) in which case the weights <img src="/tex/c5e40d7bbcc7d29edc388de6341b5f66.svg?invert_in_darkmode&sanitize=true" align=middle width=26.80945079999999pt height=28.894955100000008pt/> given by the experimental uncerteinty will be replaced by the expression:
+<p align="center"><img src="/tex/fecf078bd951ed0d732f61d5030effdc.svg?invert_in_darkmode&sanitize=true" align=middle width=170.20721849999998pt height=38.51761815pt/></p>
 - **```restart```** - not yet implemented
 - **```limit```** - not yet implemented
 - **```regular```** - not yet implemented
 
-To find the least-squares solution **```run_svd```** calls <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lstsq.html" target="_blank">scipy.linalg.lstsq</a> function. In the most widespread numerical libraries and packages the implementations which use SVD are based on the LAPACK implementation of SVD in Fortran - the routine called DGESVD.
+To find the least-squares solution **```run_svd```** calls <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lstsq.html" target="_blank">scipy.linalg.lstsq</a> function. In the most widespread numerical libraries and packages the implementations which use SVD are based on the LAPACK implementation in Fortran - the routine called DGESVD.
 
 ## Minuit Fit
 
