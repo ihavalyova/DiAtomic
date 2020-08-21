@@ -49,12 +49,12 @@ or even simpler:
 import glob
 
 p = diatom.Plotting()
-p.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=120, xlim=(None, 20))
+p.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=120, xlim=(None, 18))
 ```
 assuming your potential files are in the current directory.
 
 
-![image info](./kcs_potential_points.png)
+![image info](./kcs_potential_points.svg)
 
 # **Diatom** module: how to install and setup?
 
