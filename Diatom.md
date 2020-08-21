@@ -1,21 +1,5 @@
 
 - [**Diatomic** module: what is it used for?](#diatomic-module-what-is-it-used-for)
-- [**Diatom** module: how to install and setup?](#diatom-module-how-to-install-and-setup)
-- [Diatomic molecule: basic theoretical concepts](#diatomic-molecule-basic-theoretical-concepts)
-  - [The total Hamiltonian and basis functions](#the-total-hamiltonian-and-basis-functions)
-  - [The Scrodinger equation for a single state and coupled system of states](#the-scrodinger-equation-for-a-single-state-and-coupled-system-of-states)
-  - [The interaction terms and their matrix elements](#the-interaction-terms-and-their-matrix-elements)
-  - [Methods for solving the Schrodinger equation](#methods-for-solving-the-schrodinger-equation)
-  - [Potential Energy function models (PECs models)](#potential-energy-function-models-pecs-models)
-- [Computing Energy Eigenvalues](#computing-energy-eigenvalues)
-  - [Molecule Data Object Definition](#molecule-data-object-definition)
-  - [Grid Object Definition](#grid-object-definition)
-  - [Channel Object Definition](#channel-object-definition)
-  - [Coupling Object Definition](#coupling-object-definition)
-      - [Shared parameters](#shared-parameters)
-  - [Experimental Data](#experimental-data)
-      - [Structure of the experimental data file](#structure-of-the-experimental-data-file)
-  - [Molecule Levels Computation](#molecule-levels-computation)
   - [Examples](#examples)
 - [Fitting of the Calculated Energy Levels](#fitting-of-the-calculated-energy-levels)
   - [SVD Fit](#svd-fit)
@@ -39,17 +23,21 @@ The current functionality covered by the program includes:
 * ..
 
 Just as an example of what you can do with **```Diatomic```** module, if you have a set of potentials for a couple of molecular electronic states represented by points (abinitio, RKR and etc.) and want to see how they look you can do something like:
-```python
+<!-- ```python
 p = diatom.Plotting()
 p.plot_potentials_points(['p1.pot', 'p2.pot', 'p3.pot', 'p4.pot'], show=True, ipoints=50, ylim=(1e3, 1e5))
 ```
-or even simpler:
+or even simpler: -->
 ```python
 import glob
+
 p = diatom.Plotting()
-p.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=50, ylim=(1e3, 1e5))
+p.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=120, xlim=(None, 20))
 ```
 assuming your potential files are in the current directory.
+
+
+![image info](./kcs_potential_points.png)
 
 # **Diatom** module: how to install and setup?
 
@@ -645,7 +633,7 @@ cp3:
 ```
 
 ----
-
+<!-- omit in toc -->
 #### Shared parameters
 
 When two or more interacting states coupled by the same or different interactions share the same set of parameters a more complicated construction of the **```Coupling```** object is possible.
@@ -673,6 +661,7 @@ mdata.get_exp_data('exp.dat', markers=[1,2,3,11,12])
 
 The only required parameter is the name of the file containing the experimental data. **```markers```** is an optional parameter which allows the program to differentiate between data of different isotopes. The markers are provided as a separate column in the experimental data file (see below).
 
+<!-- omit in toc -->
 #### Structure of the experimental data file
 
 ```python
@@ -984,6 +973,6 @@ Not yet implemented
 
 # Plotting
 
-![image info](./hcolormesh.png)
+![Hamiltonian matrix colormesh](./hcolormesh.png)
 
 <!-- ## Cross-section -->
