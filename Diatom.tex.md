@@ -1,5 +1,19 @@
 
 - [**Diatomic** module: what is it used for?](#diatomic-module-what-is-it-used-for)
+- [**Diatom** module: how to install and setup?](#diatom-module-how-to-install-and-setup)
+- [Diatomic molecule: basic theoretical concepts](#diatomic-molecule-basic-theoretical-concepts)
+  - [The total Hamiltonian and basis functions](#the-total-hamiltonian-and-basis-functions)
+  - [The Scrodinger equation for a single state and coupled system of states](#the-scrodinger-equation-for-a-single-state-and-coupled-system-of-states)
+  - [The interaction terms and their matrix elements](#the-interaction-terms-and-their-matrix-elements)
+  - [Methods for solving the Schrodinger equation](#methods-for-solving-the-schrodinger-equation)
+  - [Potential Energy function models (PECs models)](#potential-energy-function-models-pecs-models)
+- [Computing Energy Eigenvalues](#computing-energy-eigenvalues)
+  - [Molecule Data Object Definition](#molecule-data-object-definition)
+  - [Grid Object Definition](#grid-object-definition)
+  - [Channel Object Definition](#channel-object-definition)
+  - [Coupling Object Definition](#coupling-object-definition)
+  - [Experimental Data](#experimental-data)
+  - [Molecule Levels Computation](#molecule-levels-computation)
   - [Examples](#examples)
 - [Fitting of the Calculated Energy Levels](#fitting-of-the-calculated-energy-levels)
   - [SVD Fit](#svd-fit)
@@ -23,11 +37,14 @@ The current functionality covered by the program includes:
 * ..
 
 Just as an example of what you can do with **```Diatomic```** module, if you have a set of potentials for a couple of molecular electronic states represented by points (abinitio, RKR and etc.) and want to see how they look you can do something like:
-<!-- ```python
+<!-- 
+```python
 p = diatom.Plotting()
 p.plot_potentials_points(['p1.pot', 'p2.pot', 'p3.pot', 'p4.pot'], show=True, ipoints=50, ylim=(1e3, 1e5))
 ```
-or even simpler: -->
+or even simpler:
+-->
+
 ```python
 import glob
 
