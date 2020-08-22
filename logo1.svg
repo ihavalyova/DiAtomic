@@ -7,9 +7,9 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="77mm"
-   height="26mm"
-   viewBox="0 0 77 26"
+   width="52.798038mm"
+   height="11.192995mm"
+   viewBox="0 0 52.79804 11.192995"
    version="1.1"
    id="svg8"
    inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
@@ -20,10 +20,16 @@
   <defs
      id="defs2">
     <rect
+       id="rect924"
+       height="32.407536"
+       width="19.037317"
+       y="43.127029"
+       x="-47.310234" />
+    <rect
        x="18.363663"
        y="73.519119"
-       width="76.255707"
-       height="23.384237"
+       width="73.720078"
+       height="27.71361"
        id="rect835" />
     <filter
        inkscape:collect="always"
@@ -40,6 +46,10 @@
     </filter>
   </defs>
   <sodipodi:namedview
+     fit-margin-bottom="0"
+     fit-margin-right="0"
+     fit-margin-left="0"
+     fit-margin-top="0"
      id="base"
      pagecolor="#ffffff"
      bordercolor="#666666"
@@ -47,8 +57,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.2218217"
-     inkscape:cx="120.16409"
-     inkscape:cy="29.953583"
+     inkscape:cx="103.92693"
+     inkscape:cy="-4.4826772"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      inkscape:document-rotation="0"
@@ -66,11 +76,12 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <g
+     transform="translate(87.704345,-20.707807)"
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
@@ -81,17 +92,15 @@
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19.7556px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect835);fill:#000000;fill-opacity:1;stroke:none;filter:url(#filter852);"
        inkscape:export-xdpi="96"
        inkscape:export-ydpi="96"
-       transform="translate(-11.084616,-76.00784)"><tspan
+       transform="translate(-107.04972,-59.039172)"><tspan
          x="18.363281"
          y="90.736733"><tspan
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.1111px;font-family:Eczar;-inkscape-font-specification:'Eczar, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;opacity:1;fill:#000000;fill-opacity:1">DiAtom</tspan></tspan></text>
-    <g
-       id="g4762"
-       transform="matrix(0.04502516,0,0,0.04502516,-83.533018,11.377894)">
-      <path
-         id="path3542"
-         d="m 804.50093,705.14212 v 8 10 29 6 8 4 6 2 5 26 5 5 2 56 1 1 24 36 121.99998 361 h 225.99997 302 3 4 4 10 1 5 10 1 4 17 49 4 6 5 6 32 5 6 1 3 3 8 1 4 5 2 5 8 13 4 1 2 10 5 1 3 6 5 6 v -6 -4 -1 -35 -65 -1 -9 -47 -5 -1 -9 -17 -9 -6 -24 -254.99998 -42 -1 -2 -2 -5 -19 -1 -4 -8 -13 -38 -4 -1 -3 -1 -1 -5 -7 -13 -5 -5 -8 -1 -3 -1 -1 -6 -4 -5 -1 -4 -5 -4 h -2.056 -4.944 -8 -3 -2 -3 -4 -2 -3 -4 -3 -4 -24 -9 -4 -6 -2 -3 -6 -1 -32 -32 -5 -4 -20 -3 -47 -5 -67 -65 -13 -7 -24 -13 -23 -13 -17 -1 -25 -8 -23 -7 -6 z"
-         style="fill:#ffffff;stroke:none" />
-    </g>
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16.9333px;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;opacity:1;fill:#582d78;fill-opacity:1">D</tspan><tspan
+           style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:16.9333px;font-family:'Cormorant Upright';-inkscape-font-specification:'Cormorant Upright, Semi-Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">i</tspan><tspan
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16.9333px;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;opacity:1;fill:#582d78;fill-opacity:1">Atom</tspan></tspan></text>
+    <text
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect924);fill:#000000;fill-opacity:1;stroke:none;"
+       id="text922"
+       xml:space="preserve" />
   </g>
 </svg>
