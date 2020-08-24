@@ -4,12 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy.interpolate import CubicSpline
-from collections import defaultdict
+# from collections import defaultdict
 from utils import Utils
 from constants import Const
 
 import matplotlib
 matplotlib.use('TkAgg')
+
 
 class Plotting:
 
@@ -52,7 +53,7 @@ class Plotting:
 
         keys = self._define_main_keywords()
         what_keys = self._define_what_keywords()
-    
+
         what = kwargs[keys[0]].lower()
         mlevels = kwargs.get(keys[1])
         frm = kwargs.get(keys[2]) or 'png'
@@ -63,10 +64,12 @@ class Plotting:
         if what not in what_keys.keys():
             raise SystemExit(f'Error: Invalid plotting parameter {what}.')
 
-        what_keys[what](mlevels=mlevels, path=path, fformat=frm, show=show, props=props)
-    
-    def full_residuals_plot(self, mlevels, path=None, 
-        fformat='png', show=False, props=None):
+        what_keys[what](
+            mlevels=mlevels, path=path, fformat=frm, show=show, props=props
+        )
+
+    def full_residuals_plot(self, mlevels, path=None, fformat='png',
+                            show=False, props=None):
 
         path = path or self.resid_path
         data = mlevels.out_data
@@ -89,18 +92,22 @@ class Plotting:
         nisotopes = len(mlevels.masses)
 
         for _ in range(1, nisotopes+1):
-            mranges = (9*(nisotopes-1)+1, (nisotopes+9)-1)
+            mrng = (9*(nisotopes-1)+1, (nisotopes+9)-1)
 
             # split e- and f-levels
-            if mranges is None:
-                edata = data[data[:,6] == 1]
-                fdata = data[data[:,6] == 0]
+            if mrng is None:
+                edata = data[data[:, 6] == 1]
+                fdata = data[data[:, 6] == 0]
             else:
-                edata = data[data[:,6] == 1 & (mranges[0] <= data[:,7].all() <= mranges[1])]
-                fdata = data[data[:,6] == 0 & (mranges[0] <= data[:,7].all() <= mranges[1])]
+                edata = data[
+                    data[:, 6] == 1 & (mrng[0] <= data[:, 7].all() <= mrng[1])
+                ]
+                fdata = data[
+                    data[:, 6] == 0 & (mrng[0] <= data[:, 7].all() <= mrng[1])
+                ]
 
             line_styles = {
-                'color': (next(gen_color), next(gen_color)), 
+                'color': (next(gen_color), next(gen_color)),
                 'marker': (next(gen_marker), next(gen_marker)),
                 'markersize': (6, 6),
                 'markeredgewidth': (0.4, 0.4),
@@ -111,8 +118,8 @@ class Plotting:
             _, ax = plt.subplots()
 
             ax.plot(
-                edata[:,9],
-                edata[:,10],
+                edata[:, 9],
+                edata[:, 10],
                 color=line_styles['color'][0],
                 marker=line_styles['marker'][0],
                 markersize=line_styles['markersize'][0],
@@ -122,8 +129,8 @@ class Plotting:
             )
 
             ax.plot(
-                fdata[:,9],
-                fdata[:,10],
+                fdata[:, 9],
+                fdata[:, 10],
                 color=line_styles['color'][1],
                 marker=line_styles['marker'][1],
                 markersize=line_styles['markersize'][1],
@@ -132,28 +139,32 @@ class Plotting:
                 fillstyle=line_styles['fillstyle'][1]
             )
 
-             # annotate average uncertanty
-            average_uncert = np.sum(data[:,11]) / data[:,11].shape
+            # annotate average uncertanty
+            average_uncert = np.sum(data[:, 11]) / data[:, 11].shape
 
-            plt.axhline(y=average_uncert, color='r', linestyle='-', linewidth=0.5)
-            plt.axhline(y=-1.0*average_uncert, color='r', linestyle='-', linewidth=0.5)
-            
+            plt.axhline(
+                y=average_uncert, color='r', linestyle='-', linewidth=0.5
+            )
+            plt.axhline(
+                y=-1.0*average_uncert, color='r', linestyle='-', linewidth=0.5
+            )
+
             os.makedirs(path, exist_ok=True)
 
             ax.set_title(props['title'])
             ax.set_xlabel(props['xlabel'])
             ax.set_ylabel(props['ylabel'])
             ax.legend(['e-parity levels', 'f-parity levels'], loc=0)
-            #fig.tight_layout()
+            # fig.tight_layout()
 
             fig_path = os.path.join(path, 'residuals' + f'.{fformat}')
-            plt.savefig(fig_path, format=fformat, dpi=250) # transparent=True
+            plt.savefig(fig_path, format=fformat, dpi=250)  # transparent=True
             print(f'Created figure: {fig_path}', sep='')
             if show:
                 plt.show()
 
-    def plot_couplings_on_grid(self, mlevels, path=None, 
-        fformat='png', show=False, props=None):
+    def plot_couplings_on_grid(self, mlevels, path=None, fformat='png',
+                               show=False, props=None):
 
         path = path or self.func_path
         print(mlevels.fgrid)
@@ -173,11 +184,12 @@ class Plotting:
         for i, cpl in enumerate(mlevels.couplings):
             gridr = mlevels.rgrid * Const.bohr
 
-            # will not work 
-            gridf = mlevels.fgrid[i*mlevels.ngrid:(i+1)*mlevels.ngrid] * Const.hartree
+            # will not work
+            gridf_range = mlevels.fgrid[i*mlevels.ngrid:(i+1)*mlevels.ngrid]
+            gridf = gridf_range * Const.hartree
 
             ax.plot(
-                gridr, 
+                gridr,
                 gridf,
                 color=next(gen_color),
                 markersize=0,
@@ -198,8 +210,8 @@ class Plotting:
         # for col, name in zip(cols, coupling_names):
         #     plt.plot(x, data[:,col])
 
-    def plot_residuals_level(self, mlevels, path=None, 
-        fformat='png', show=False, props=None):
+    def plot_residuals_level(self, mlevels, path=None, fformat='png',
+                             show=False, props=None):
 
         os.makedirs(self.res_path, exist_ok=True)
         path = path or self.res_path
@@ -213,34 +225,34 @@ class Plotting:
         # will change props values
         props = self._combine_props(props, props_def)
 
-        #if mlevels is not None:
+        # if mlevels is not None:
         data = mlevels.out_data
         # else:
         #     data = np.loadtxt(evalues_file)
 
-        # split data by v, then split by state, then extract 
+        # split data by v, then split by state, then extract
         # marker ranges and get the data for each isotope
-        vsplit = np.split(data, np.where(np.diff(data[:,1]))[0]+1)
-        
+        vsplit = np.split(data, np.where(np.diff(data[:, 1]))[0]+1)
+
         for v in range(0, len(vsplit)):
             ssplit = np.split(
-                vsplit[v], np.where(np.diff(vsplit[v][:,-1]))[0]+1
+                vsplit[v], np.where(np.diff(vsplit[v][:, -1]))[0]+1
             )
 
             for st in range(0, len(ssplit)):
-                mrange = self._map_marker(ssplit[st][:,7])
+                mrange = self._map_marker(ssplit[st][:, 7])
 
                 for i, m in enumerate(mrange):
-                    splitted_data = ssplit[st][m,:]
+                    splitted_data = ssplit[st][m, :]
 
-                    fdata = splitted_data[splitted_data[:,6] == 0]
-                    edata = splitted_data[splitted_data[:,6] == 1]
+                    fdata = splitted_data[splitted_data[:, 6] == 0]
+                    edata = splitted_data[splitted_data[:, 6] == 1]
 
                     fig, ax = plt.subplots()
 
                     ax.plot(
-                        edata[:,2],
-                        -edata[:,10],
+                        edata[:, 2],
+                        -edata[:, 10],
                         color='blue',
                         marker='o',
                         markersize=10,
@@ -250,8 +262,8 @@ class Plotting:
                     )
 
                     ax.plot(
-                        fdata[:,2],
-                        -fdata[:,10],
+                        fdata[:, 2],
+                        -fdata[:, 10],
                         color='red',
                         marker='v',
                         markersize=8,
@@ -269,14 +281,14 @@ class Plotting:
                     figpath = os.path.join(path, figname)
                     plt.savefig(figpath, format=fformat, dpi=100)
                     fig.tight_layout()
-                    #plt.gcf().clear()
+                    # plt.gcf().clear()
 
                     print(f'Created figure: {figpath}', sep='')
                     if show:
                         plt.show()
 
-    def plot_potentials_on_grid(self, mlevels, path=None, 
-        fformat='png', show=False, props=None):
+    def plot_potentials_on_grid(self, mlevels, path=None, fformat='png',
+                                show=False, props=None):
 
         path = path or self.plot_path
 
@@ -303,10 +315,11 @@ class Plotting:
 
         for i, _ in enumerate(unique_pfiles):
             gridr = mlevels.rgrid * Const.bohr
-            gridu = mlevels.ugrid[i*mlevels.ngrid:(i+1)*mlevels.ngrid] * Const.hartree
+            gridu_range = mlevels.ugrid[i*mlevels.ngrid:(i+1)*mlevels.ngrid]
+            gridu = gridu_range * Const.hartree
 
             ax.plot(
-                gridr, 
+                gridr,
                 gridu,
                 color=next(gen_color),
                 markersize=0,
@@ -328,7 +341,7 @@ class Plotting:
             plt.show()
 
     def plot_potentials_points(self, files, path=None, fformat='png',
-        show=False, ipoints=None, xlim=None, ylim=None):
+                               show=False, ipoints=None, xlim=None, ylim=None):
         # cannot not be called as option from plot()
         # only for plotting pointwise potentials
 
@@ -346,7 +359,7 @@ class Plotting:
         for pfile in files:
             try:
                 pdata = np.loadtxt(pfile, skiprows=1)
-                x, y = pdata[:,0], pdata[:,1]
+                x, y = pdata[:, 0], pdata[:, 1]
 
                 ipoints = ipoints or x.shape[0]
                 x_interp = np.linspace(x[0], x[-1], ipoints, endpoint=True)
@@ -355,7 +368,7 @@ class Plotting:
                 y_interp = cs(x_interp)
 
                 ax.plot(
-                    x_interp, 
+                    x_interp,
                     y_interp,
                     color=next(gen_color),
                     marker=next(gen_marker),
@@ -371,7 +384,7 @@ class Plotting:
                     f'Error: The file {pfile} does not exist or is not in '
                     f'the correct format and cannot be poltted!\n{err}'
                 )
-        
+
         if not is_failed:
 
             ax.set_title('Potentials')
@@ -389,22 +402,24 @@ class Plotting:
             if show:
                 plt.show()
 
-    def hcolormesh(self, mlevels, rows=None, cols=None, 
-        path=None, fformat='png', show=False):
+    def hcolormesh(self, mlevels, rows=None, cols=None, path=None,
+                   fformat='png', show=False):
 
-        """create a colormesh of the Hamiltonian matrix 
+        """create a colormesh of the Hamiltonian matrix
 
         Args:
             mlevels (object): MoleculeLevels object
-            rows (tuple, optional): The row indecies of the matrix. Defaults to None.
-            cols (tuple, optional): The col indices of the matrix. Defaults to None.
-            path (str, optional): Path where to save the created figure. Defaults to None.
+            rows (tuple, optional): the row indecies. Defaults to None.
+            cols (tuple, optional): the col indices. Defaults to None.
+            path (str, optional): path where to save the created figure.
+            Defaults to None.
             fformat (str, optional): File extension. Defaults to 'png'.
-            show (bool, optional): whether to show the image. Defaults to False.
+            show (bool, optional): whether to show the image.
+            Defaults to False.
 
         Remarks:
-            1. rows and cols should be tuples with two integer numbers - 
-            the first and the last row and the first and the last column 
+            1. rows and cols should be tuples with two integer numbers -
+            the first and the last row and the first and the last column
             of the submatrix whcih to be plotted
             2. cannot be called as option from plot()
         """
@@ -418,11 +433,11 @@ class Plotting:
 
         fig, ax = plt.subplots()
 
-        # im = ax.pcolormesh(hmat[rows[0]:rows[1], cols[0]:cols[1]], 
+        # im = ax.pcolormesh(hmat[rows[0]:rows[1], cols[0]:cols[1]],
         #   vmin=1.0e-8, vmax=0.01, cmap='RdBu_r')
 
         '''
-        vmin and vmax set the normalization range. 
+        vmin and vmax set the normalization range.
         By default scale scalar data to the [0, 1] range
         '''
 
@@ -437,72 +452,72 @@ class Plotting:
             f'rows={rows[0]}:{rows[1]}, cols={cols[0]}:{cols[1]}'
         )
 
-        #fig.tight_layout()
+        # fig.tight_layout()
         path = path or self.plot_path
 
         figpath = os.path.join(path, f'hcolormesh.{fformat}')
         plt.savefig(figpath, format=fformat)
-        
+
         print(f'Created figure: {figpath}', sep='')
 
         if show:
             plt.show()
 
-    def plot_wavefunctions(self, wffile, props=None, path=None, subplots=True, 
-        fformat='png', title='', xlabel='R', ylabel='wavefunction', leg=''):
-            """
-            Plot the provided array of the interpolated wavefunction over the interpolation grid
+    def plot_wavefunctions(self, wffile, props=None, path=None,
+                           subplots=True, fformat='png', title='',
+                           xlabel='R', ylabel='wavefunction', leg=''):
+        """
+        Plot the interpolated wavefunction over the interpolation grid
 
-            Args:
-                wffile: file where the interpolated wavefunction is stored
-                props: various properties concerning the style of the figure
-                path: the directory path where the figure will be saved
-                fformat: the file format of the figure (e.g. png, eps and so on)
-                title: the title of the figure
-                subplots: whether the wavefunctions for each level to be plotted as subplot
-            Returns: None
-            """
+        Args:
+            wffile: file where the interpolated wavefunction is stored
+            props: various properties concerning the style of the figure
+            path: the directory path where the figure will be saved
+            fformat: the file format of the figure (e.g. png, eps,...)
+            title: the title of the figure
+            subplots: whether the wavefunctions to be plotted as subplots
+        Returns: None
+        """
 
-            wfdata = np.loadtxt(wffile)
-            igrid = wfdata[:,0]
-            wavefunc = wfdata[:,0:]
+        wfdata = np.loadtxt(wffile)
+        igrid = wfdata[:, 0]
+        wavefunc = wfdata[:, 0:]
 
-            path = path or self.wavefunc_path
+        path = path or self.wavefunc_path
 
-            os.makedirs(path, exist_ok=True)
+        os.makedirs(path, exist_ok=True)
 
-            if subplots == False:
+        if not subplots:
 
-                fig_name = os.path.join(path, 'wavefunctions' + f'.{fformat}')
+            fig_name = os.path.join(path, 'wavefunctions' + f'.{fformat}')
 
-                plt.xlabel(xlabel)
-                plt.ylabel(ylabel)
-                plt.legend(leg)
-                plt.plot(igrid, wavefunc)
-                plt.savefig(fig_name, format=fformat, dpi=250) # transparent=True
+            plt.xlabel(xlabel)
+            plt.ylabel(ylabel)
+            plt.legend(leg)
+            plt.plot(igrid, wavefunc)
+            plt.savefig(fig_name, format=fformat, dpi=250)
 
-                print(f'Created figure: {fig_name}', sep='')
-            else:
-                #fig, ax = plt.subplots()
-                fig = plt.figure()
+            print(f'Created figure: {fig_name}', sep='')
+        else:
+            # fig, ax = plt.subplots()
+            # fig = plt.figure()
+            # colors = self._get_color()
 
-                colors = self._get_color()
+            for i in range(1, wavefunc.shape[1]+1):
+                ax = plt.subplot(2, 3, i)
+                ax.set_title(f'v={i-1}')
+                ax.set_ylabel(ylabel)
+                ax.set_xlabel(xlabel)
+                plt.axis('on')
 
-                for i in range(1, wavefunc.shape[1]+1):
-                    ax = plt.subplot(2, 3, i)
-                    ax.set_title(f'v={i-1}')
-                    ax.set_ylabel(ylabel)
-                    ax.set_xlabel(xlabel)
-                    plt.axis('on')
+                plt.plot(igrid, wavefunc[:, i-1])
 
-                    plt.plot(igrid, wavefunc[:,i-1])
+            plt.subplots_adjust(wspace=0.4, hspace=0.4)
 
-                plt.subplots_adjust(wspace=0.4, hspace=0.4)
-
-                plt.show()
+            plt.show()
 
     def _combine_props(self, props, props_def):
-        
+
         if props is None:
             return props_def
         else:
@@ -520,18 +535,49 @@ class Plotting:
             res = np.where(np.logical_and(markers >= i, markers <= i+10))[0]
             if res.shape[0] > 0:
                 ranges.append(res)
-        
+
         return ranges
 
     def _get_color(self):
 
-        colors = [
-            '#1f77b4', '#ff7f0e', '#2ca02c', 
-            '#d62728', '#9467bd', '#17becf', 
-            '#bcbd22', 'dodgerblue', 'navy'
+        bcolors = [
+            '#1C03FF', '#4132C7', '#130B5B', '#10286B',
+            '#355098', '#380AA2', '#3061B5', '#1C8FC9',
+            '#00ABFF', '#10C7EC', '#10ECEC', '#BA5FFF'
         ]
+        random.shuffle(bcolors)
 
-        random.shuffle(colors)
+        rcolors = [
+            '#FA0A0A', '#D44141', '#B53232', '#EF262D',
+            '#D50D50', '#FC697C', '#FC69E3', '#A11589',
+            '#A8639C', '#DF211A', '#F3592A', '#FF8F44'
+        ]
+        random.shuffle(rcolors)
+
+        gcolors = [
+            '#00FF2B', '#3AA44C', '#165F22', '#54FC70',
+            '#3EE22C', '#15730B', '#4EA644', '#65EE16',
+            '#12DB7D', '#EAF215', '#DFF64D', '#F9F924'
+        ]
+        random.shuffle(gcolors)
+
+        # colors = [
+        #     '#e50000', '#9a0200', '#fe420f', '#f9bc08', '#9cbb04',
+        #     '#419c03', '#69d84f', '#089404', '#06470c', '#01386a',
+        #     '#448ee4', '#0d758f', '#1d5dec', '#0203e2', '#2000b1',
+        #     '#380282', '#9a0eea', '#7e1e9c', '#4e0550', '#c20078',
+        #     '#23c48b', '#fe86a4', '#ff474c', '#ffdf22', '#00122e'
+        # ]
+        # random.shuffle(colors)
+        # for color in colors:
+        #     yield color
+
+        colors = []
+        for color in zip(gcolors, bcolors, rcolors):
+            g, b, r = color
+            colors.append(g)
+            colors.append(b)
+            colors.append(r)
 
         for color in colors:
             yield color
@@ -539,7 +585,7 @@ class Plotting:
     def _get_marker(self):
 
         markers = [
-            'o', 'v', '<', '>', 's', 'p', '*', 
+            'o', 'v', '<', '>', 's', 'p', '*',
             '+', 'x', 'D', 'd', 'X', '^'
         ]
 

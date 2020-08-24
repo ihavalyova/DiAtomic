@@ -2,6 +2,7 @@ import numpy as np
 
 from constants import Const
 
+
 class Grid:
 
     def __init__(self, npoints, rgrid, solver='sinc', alpha=0.0, rbar=0.0):
@@ -19,14 +20,19 @@ class Grid:
         if alpha > 0.0:
             # mapping is allowed with sinc method only
             self.solver = 'sinc'
-            
+
             self.rmin = self.get_grid_bounding_values(self.rmin, rbar, alpha)
             self.rmax = self.get_grid_bounding_values(self.rmax, rbar, alpha)
 
             self.rgrid, ygrid = self.generate_nonuniform_grid(alpha, rbar)
-            self.Gy = (2.0*rbar/alpha) * (np.power(1.0+ygrid, (1.0/alpha)-1.0) / np.power(1.0-ygrid, (1.0/alpha)+1.0))
-            self.Fy = (1.0 - (1.0/(alpha**2))) / (np.power((1.0 - np.power(ygrid, 2)), 2))
-            
+
+            gy_power1 = np.power(1.0+ygrid, (1.0/alpha)-1.0)
+            gy_power2 = np.power(1.0-ygrid, (1.0/alpha)+1.0)
+            self.Gy = (2.0*rbar/alpha) * gy_power1 / gy_power2
+
+            fy_power = (np.power((1.0 - np.power(ygrid, 2)), 2))
+            self.Fy = (1.0 - (1.0/(alpha**2))) / fy_power
+
     def get_grid_bounding_values(self, rlimit, rbar, alpha):
 
         return ((rlimit/rbar)**alpha - 1.0) / ((rlimit/rbar)**alpha + 1.0)
@@ -35,19 +41,22 @@ class Grid:
 
         # FGH Fourier grid
         if self.solver == 'fourier':
-            return np.linspace(self.rmin, self.rmax, num=self.ngrid, endpoint=False)
+            return np.linspace(self.rmin, self.rmax, num=self.ngrid,
+                               endpoint=False)
 
         # FGH Sinc grid and FD5 grid
         return np.linspace(self.rmin, self.rmax, num=self.ngrid, endpoint=True)
 
     def generate_nonuniform_grid(self, alpha, rbar):
 
-        ystep = (self.rmax - self.rmin) / (self.ngrid -1)  # / ngrid - 1 ??
-        #ygrid = np.ogrid[self.rmin+ystep:self.rmax+ystep:ystep]
-        #ygrid = np.ogrid[self.rmin:self.rmax:ystep]
-        #ygrid = np.linspace(self.rmin, self.rmax, num=self.ngrid)
-        #ygrid = np.arange(self.rmin, self.rmax, step=ystep)
-        #ygrid = np.linspace(self.rmin, self.rmax, num=self.ngrid, endpoint=True)
+        ystep = (self.rmax - self.rmin) / (self.ngrid - 1)  # / ngrid - 1 ??
+        # ygrid = np.ogrid[self.rmin+ystep:self.rmax+ystep:ystep]
+        # ygrid = np.ogrid[self.rmin:self.rmax:ystep]
+        # ygrid = np.linspace(self.rmin, self.rmax, num=self.ngrid)
+        # ygrid = np.arange(self.rmin, self.rmax, step=ystep)
+        # ygrid = np.linspace(
+        # self.rmin, self.rmax, num=self.ngrid, endpoint=True
+        # )
 
         ygrid = np.empty(self.ngrid)
 
@@ -61,6 +70,7 @@ class Grid:
 
         return Ry, ygrid
 
+
 class CSpline:
 
     """Natural cubic spline interpolation algorithm
@@ -72,7 +82,7 @@ class CSpline:
         self.y = y
 
         self.Lmatrix = self.generate_spline()
-    
+
     def cspline_check(self):
 
         try:
@@ -96,11 +106,13 @@ class CSpline:
         if self.x.shape[0] < 2:
             raise ValueError("`x` must contain at least 2 elements.")
         if self.x.shape[0] != self.y.shape[0]:
-            raise ValueError("The length of `y` doesn't match the length of `x`")
+            raise ValueError(
+                "The length of `y` doesn't match the length of `x`"
+            )
 
     def generate_spline(self):
 
-        #xgrid = np.linspace(x[0], x[-1], xgrid.shape[0], endpoint=False)
+        # xgrid = np.linspace(x[0], x[-1], xgrid.shape[0], endpoint=False)
 
         n = self.x.shape[0]
 
@@ -117,7 +129,7 @@ class CSpline:
         # the lower diagonal, k=-1; (x_i - x_i-1)/6
         diag1 = (self.x[1:n-1] - self.x[0:n-2]) / 6.0
 
-        # the diagonal, k=0;  (x_i+1 - x_i-1)/3 
+        # the diagonal, k=0;  (x_i+1 - x_i-1)/3
         diag0 = (self.x[2:n] - self.x[0:n-2]) / 3.0
 
         # the upper diagonal, k=1;  (x_i+1 - x_i)/6
@@ -136,7 +148,7 @@ class CSpline:
 
         # above the upper diagonal, k=2; 1/(x_i+1 - x_i)
         diag2 = 1.0 / (self.x[2:n] - self.x[1:n-1])
-        
+
         gmatrix = self.form_tridiag_matrix(
             diag0, diag1[:-1], diag2[:-2], k1=0, k2=1, k3=2
         )
@@ -150,7 +162,7 @@ class CSpline:
         # gmatrix will have size [(n-2) x n]
         gmatrix = np.c_[gmatrix, col1, col2]
 
-        return gmatrix[:n-2,:]
+        return gmatrix[:n-2, :]
 
     def form_tridiag_matrix(self, u, v, w, k1=-1, k2=0, k3=1):
 
@@ -161,12 +173,12 @@ class CSpline:
         n = self.x.shape[0]
 
         Sk = self.calculate_Sk_functions(n, xgrid, self.Lmatrix)
-    
+
         ygrid = Sk.dot(self.y)
-        
+
         if return_deriv:
             return ygrid, Sk
-        
+
         return ygrid
 
     def calculate_coeff_A(self, xgrid, xi, xi1):
@@ -178,7 +190,7 @@ class CSpline:
         return (xgrid - xi) / (xi1 - xi)
 
     def calculate_coeff_C(self, xgrid, xi, xi1):
-        
+
         ai = self.calculate_coeff_A(xgrid, xi, xi1)
 
         return (ai ** 3 - ai) * ((xi - xi1) ** 2) * (1.0 / 6.0)
@@ -198,15 +210,20 @@ class CSpline:
         inds = np.where(inds != 0, inds, 1)
         inds = np.where(inds < n, inds, n-1)
         x_in = 1*(xgrid >= self.x[0]) | 1*(xgrid <= self.x[n-1])
-        
+
         Sk = np.zeros((xgrid.shape[0], n))
 
-        for i in range(0, n):
-            acoef = self.calculate_coeff_A(xgrid, self.x[inds], self.x[inds-1]) * (1*(i == inds))
-            bcoef = self.calculate_coeff_B(xgrid, self.x[inds], self.x[inds-1]) * (1*(i == inds-1))
-            ccoef = self.calculate_coeff_C(xgrid, self.x[inds], self.x[inds-1]) * L[i, inds] * x_in
-            dcoef = self.calculate_coeff_D(xgrid, self.x[inds], self.x[inds-1]) * L[i, inds-1] * x_in
+        a = self.calculate_coeff_A(xgrid, self.x[inds], self.x[inds-1])
+        b = self.calculate_coeff_B(xgrid, self.x[inds], self.x[inds-1])
+        c = self.calculate_coeff_C(xgrid, self.x[inds], self.x[inds-1])
+        d = self.calculate_coeff_D(xgrid, self.x[inds], self.x[inds-1])
 
-            Sk[:,i] = acoef + bcoef + ccoef + dcoef
+        for i in range(0, n):
+            acoef = a * (1*(i == inds))
+            bcoef = b * (1*(i == inds-1))
+            ccoef = c * L[i, inds] * x_in
+            dcoef = d * L[i, inds-1] * x_in
+
+            Sk[:, i] = acoef + bcoef + ccoef + dcoef
 
         return Sk

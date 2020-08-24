@@ -2,23 +2,20 @@ import io
 import os
 import re
 import logging
-from collections import OrderedDict
-
 import numpy as np
+from more_itertools import unique_everseen
+from collections import OrderedDict
+from constants import Const
 
-#to check if C loader is present on current machine
+# to check if C loader is present on current machine
 # /path/to/python -c "import ruamel.yaml; print(ruamel.yaml.__with_libyaml__)"
 
-import ruamel.yaml
+# import ruamel.yaml
 from ruamel.yaml import YAML
-
 yaml = YAML(typ='rt', pure=False)
 
-#if ruamel.yaml.__with_libyaml__:
+# if ruamel.yaml.__with_libyaml__:
 #    yaml = YAML(typ='rt', pure=False)
-
-from more_itertools import unique_everseen
-from constants import Const
 
 
 class MoleculeData:
@@ -27,7 +24,7 @@ class MoleculeData:
 
         self.imasses = None
         self.molecule_names = None
-        self.pars = (0,1)
+        self.pars = (0, 1)
         self.niso = None
         self.rots = None
         self.rot_values = None
@@ -87,11 +84,11 @@ class MoleculeData:
 
         self.jqnumbers = np.unique(np.hstack(
             (
-                self.jqnumbers, 
+                self.jqnumbers,
                 np.arange(rots[0], rots[1]+1.0, dtype=np.float64)
             )
         ))
-    
+
     @property
     def jvalues(self):
 
@@ -104,7 +101,7 @@ class MoleculeData:
         self.jqnumbers = np.unique(
             np.hstack((self.jqnumbers, rot_values))
         )
-    
+
     @property
     def referencej(self):
 
@@ -148,35 +145,40 @@ class MoleculeData:
         molecule_data = re.search(r'(\d+)(\D+)(\d+)(\D+)', molecule).groups()
 
         if len(molecule_data) != 4:
-            raise SystemExit(f'Error: Molecule {molecule} not in the correct format')
+            raise SystemExit(
+                f'Error: Molecule {molecule} not in the correct format'
+            )
 
         atoms = (molecule_data[1], molecule_data[3])
         mnumbers = (int(molecule_data[0]), int(molecule_data[2]))
 
-        database_def = 'Atomic_Weights_and_Isotopic_Compositions_for_All_Elements_NIST.ascii'
-        database = database or database_def
+        def_db = 'Atomic_Weights_and_Isotopic_' + \
+            'Compositions_for_All_Elements_NIST.ascii'
+        database = database or def_db
 
-        with open(database, 'r') as db:
-            atomic_masses = db.read()
+        with open(database, 'r') as dbs:
+            atom_masses = dbs.read()
 
-        atom_mass1 = self.match_atomic_mass(atomic_masses, atoms[0], mnumbers[0])
-        atom_mass2 = self.match_atomic_mass(atomic_masses, atoms[1], mnumbers[1])
+        atom_mass1 = self.match_atomic_mass(atom_masses, atoms[0], mnumbers[0])
+        atom_mass2 = self.match_atomic_mass(atom_masses, atoms[1], mnumbers[1])
 
         rmass = atom_mass1 * atom_mass2 / (atom_mass1 + atom_mass2)
 
-        self.atomic_masses.append((atom_mass1, atom_mass2))
+        self.atom_masses.append((atom_mass1, atom_mass2))
         self.atomic_symbols.append((atoms[0], atoms[1]))
         self.atomic_mass_nums.append((mnumbers[0], mnumbers[1]))
 
         return rmass
 
-    def match_atomic_mass(self, atomic_masses, symbol, mnumber):
+    def match_atomic_mass(self, atom_masses, symbol, mnumber):
 
-        pattern_str = f'Atomic\s+Symbol\s+=\s+{symbol}[\r\n]Mass\s+Number\s+=\s+{mnumber}'
-        pattern_str += '[\r\n]Relative\s+Atomic\s+Mass\s+=\s+\d+\.\d+'
-        pattern = re.compile(pattern_str)
+        pattern = re.compile(
+            fr'Atomic\s+Symbol\s+=\s+{symbol}[\r\n]'
+            fr'Mass\s+Number\s+=\s+{mnumber}'
+            fr'[\r\n]Relative\s+Atomic\s+Mass\s+=\s+\d+\.\d+'
+        )
 
-        atom_data = re.findall(pattern, atomic_masses)
+        atom_data = re.findall(pattern, atom_masses)
 
         if len(atom_data) != 1:
             raise SystemExit('Error: Incorrect matching or nothing found.')
@@ -196,7 +198,8 @@ class MoleculeData:
         except Exception as e:
             raise SystemExit(e)
 
-    def _read_exp_data_with_markers(self, exp_file, channels, markers, average):
+    def _read_exp_data_with_markers(self, exp_file, channels,
+                                    markers, average):
 
         ndata = np.genfromtxt(
             exp_file, max_rows=1, comments='#'
@@ -207,34 +210,38 @@ class MoleculeData:
         )
 
         # filter by marker
-        marker_mask = np.in1d(exp_data[:, 6], \
-            np.fromiter(markers, dtype=np.int64))
+        marker_mask = np.in1d(
+            exp_data[:, 6], np.fromiter(markers, dtype=np.int64)
+        )
         exp_data = exp_data[marker_mask]
 
         # filter by parity
         if len(self.pars) == 1:
-            parity_mask = np.in1d(exp_data[:, 4], \
-                np.fromiter(self.pars, dtype=np.int64))
+            parity_mask = np.in1d(
+                exp_data[:, 4], np.fromiter(self.pars, dtype=np.int64)
+            )
             exp_data = exp_data[parity_mask]
 
         # filter by J
-        rot_mask = np.in1d(exp_data[:, 2], \
-            np.fromiter(self.jqnumbers, dtype=np.float64))
+        rot_mask = np.in1d(
+            exp_data[:, 2], np.fromiter(self.jqnumbers, dtype=np.float64)
+        )
         exp_data = exp_data[rot_mask]
 
         # filter by state
         state_numbers = np.arange(1, len(channels)+1, dtype=np.int64)
-        state_mask = np.in1d(exp_data[:, -1], \
-            np.fromiter(state_numbers, dtype=np.float64))
+        state_mask = np.in1d(
+            exp_data[:, -1], np.fromiter(state_numbers, dtype=np.float64)
+        )
         exp_data = exp_data[state_mask]
 
-        exp_data[:,0] = np.arange(1.0, exp_data.shape[0]+1)
+        exp_data[:, 0] = np.arange(1.0, exp_data.shape[0]+1)
 
         if average:
             self._average_experimental_data(exp_data, exp_file)
 
         return exp_data
-    
+
     def _read_experimental_data(self, exp_file, average):
 
         with open(exp_file, 'r') as expf:
@@ -253,13 +260,14 @@ class MoleculeData:
         # TODO: to account for different isotopes
         # TODO: weighted average of the exp uncer.
 
-        # sort experimental data by v then by J then by parity and then by state
+        # sort experimental data by v then by J
+        # then by parity and then by state
         exp_data = exp_data[np.lexsort((
-            exp_data[:,-1], exp_data[:,4], 
-            exp_data[:,2], exp_data[:,1]
+            exp_data[:, -1], exp_data[:, 4],
+            exp_data[:, 2], exp_data[:, 1]
         ))]
 
-        exp_extract = exp_data[:,[1,2,4,-1]]
+        exp_extract = exp_data[:, [1, 2, 4, -1]]
         unique_data, inds, counts = np.unique(
             exp_extract, axis=0, return_index=True, return_counts=True
         )
@@ -270,40 +278,40 @@ class MoleculeData:
         # rep_gen = (exp_data[~np.any(exp_extract-row, axis=1)] \
         #   for row in unique_data[counts>1])
 
-        for row in (unique_data[counts>1]):
+        for row in (unique_data[counts > 1]):
             item = exp_data[~np.any(exp_extract-row, axis=1)]
 
             avg_item = np.concatenate((
-                    item[0,[0,1,2]], 
-                    np.array([np.average(item[:,3])]), 
-                    item[0,[4]], 
-                    np.array([np.average(item[:,5])]), 
-                    item[0,[6,7]]
-                ), 
+                    item[0, [0, 1, 2]],
+                    np.array([np.average(item[:, 3])]),
+                    item[0, [4]],
+                    np.array([np.average(item[:, 5])]),
+                    item[0, [6, 7]]
+                ),
                 axis=0
-            )[np.newaxis,:]
-            
+            )[np.newaxis, :]
+
             mask = np.column_stack((
-                avg_data[:,[1,2,4,7]] == avg_item[:,[1,2,4,7]], 
+                avg_data[:, [1, 2, 4, 7]] == avg_item[:, [1, 2, 4, 7]],
                 np.full((avg_data.shape[0], 4), True)
             ))
 
             mask = np.all(mask, axis=1)
             avg_data[mask] = avg_item
 
-        avg_data[:,0] = np.arange(1.0, avg_data.shape[0]+1)
+        avg_data[:, 0] = np.arange(1.0, avg_data.shape[0]+1)
 
         self._save_averaged_experimental_data(exp_data, exp_file, avg_data)
 
     def _save_averaged_experimental_data(self, exp_data, exp_file, avg_data):
 
-        header = str(avg_data.shape[0]) + '\n' + '# markers: ' +\
+        header = str(avg_data.shape[0]) + '\n' + '# markers: ' + \
             np.array2string(
-                np.unique(exp_data[:,6]),
-                formatter={'float_kind':lambda x: "%d" % x}
+                np.unique(exp_data[:, 6]),
+                formatter={'float_kind': lambda x: "%d" % x}
             )[1:-1]
 
-        fmt = 2*['%5.1d'] + ['%7.1f', '%15.6f', '%7.1d', '%11.5f'] + 2*['%6.1d']
+        fmt = 2*['%5d'] + ['%7.1f', '%15.6f', '%7d', '%11.5f'] + 2*['%6d']
 
         fname, fext = os.path.splitext(exp_file)
         avg_file = fname + '_averaged' + fext
@@ -337,7 +345,7 @@ class Channel:
             if channel.filep not in cls.unique_pfiles:
 
                 if channel.model == cls.models[1] or \
-                    channel.model == cls.models[2]:
+                  channel.model == cls.models[2]:
                     _, U, fixedU = cls._get_pointwise_data(channel.filep)
                 elif channel.model == cls.models[3]:
                     U, fixedU = cls._get_morse_data(channel.filep)
@@ -378,7 +386,7 @@ class Channel:
 
             if channel.model == cls.models[1] or \
                channel.model == cls.models[2]:
-               
+
                 channel.R, channel.U, channel.fixedU = \
                     cls._get_pointwise_data(channel.filep)
 
@@ -407,14 +415,14 @@ class Channel:
                 try:
                     channel.U, channel.fixedU = \
                         cls._get_custom_pot_data(channel.filep)
-            
+
                     channel.npnts = channel.U.shape[0]
                     channel.cfunc = channel.custom_function
                 except TypeError as te:
                     print(te)
             else:
                 raise SystemExit(f'Invalid potential model {channel.model}')
-        
+
         # TODO: remove this
         cls.pnames = list(
             unique_everseen([ch.filep for i, ch in enumerate(channels)])
@@ -424,7 +432,7 @@ class Channel:
     def _get_pointwise_data(cls, filep):
 
         pot = np.loadtxt(filep, skiprows=1)
-        R = pot[:, 0] / Const.bohr 
+        R = pot[:, 0] / Const.bohr
         U = pot[:, 1] / Const.hartree
 
         # set default third column if it's not provided
@@ -443,7 +451,8 @@ class Channel:
 
         morse_data = dict(map(str.strip, s.split('=')) for s in morse_data)
         npt = len(morse_data)
-        for md in morse_data.items(): morse_data[md[0]] = md[1].split()
+        for md in morse_data.items():
+            morse_data[md[0]] = md[1].split()
 
         def_fixed = False
         if len(list(morse_data.values())[0]) >= 2:
@@ -451,7 +460,7 @@ class Channel:
 
         # TODO: check for key error
 
-        mapp = { 0: 'Te', 1: 'De', 2: 'a', 3: 're' }
+        mapp = {0: 'Te', 1: 'De', 2: 'a', 3: 're'}
         U, fixedU = np.zeros(npt), np.zeros(npt, dtype=np.int64)
 
         U[0] = float(morse_data[mapp[0]][0]) / Const.hartree
@@ -462,7 +471,7 @@ class Channel:
         if def_fixed:
             for i in range(0, 4):
                 fixedU[i] = int(morse_data[mapp[i]][1])
-            
+
         return U, fixedU
 
     @classmethod
@@ -475,17 +484,20 @@ class Channel:
 
         emo_data = dict(map(str.strip, s.split('=')) for s in emo_data)
         npt = len(emo_data)
-        for md in emo_data.items(): emo_data[md[0]] = md[1].split()
+        for md in emo_data.items():
+            emo_data[md[0]] = md[1].split()
 
         def_fixed = False
         if len(list(emo_data.values())[0]) >= 2:
             def_fixed = True
 
-        bparams = dict(filter(lambda x: x[0].lower().startswith('b'), emo_data.items()))
+        bparams = dict(
+            filter(lambda x: x[0].lower().startswith('b'), emo_data.items())
+        )
 
         # TODO: check for key error
 
-        mapp = { 0: 'Te', 1: 'De', 2: 'p', 3: 're' }
+        mapp = {0: 'Te', 1: 'De', 2: 'p', 3: 're'}
 
         U, fixedU = np.zeros(npt), np.zeros(npt, dtype=np.int64)
 
@@ -495,9 +507,11 @@ class Channel:
         U[3] = float(emo_data[mapp[3]][0]) / Const.bohr
 
         # all beta coefficients have dimentions 1/distance
-        bvalues = list(map(lambda x: float(x[0]) * Const.bohr, bparams.values()))
+        bvalues = list(
+            map(lambda x: float(x[0]) * Const.bohr, bparams.values())
+        )
         ni, nb = 4, len(bvalues)
-        
+
         U[ni:ni+nb] = bvalues
 
         if def_fixed:
@@ -509,21 +523,21 @@ class Channel:
             fixedU[ni:ni+nb] = bfixed
 
         return U, fixedU
-    
+
     @classmethod
     def _get_mlr_data(cls, filep):
-        
+
         """Get parameters for Morse/Long-Range function
 
         Args:
             filep (string): the name of the potential file
 
         Returns:
-            tuple of two numpy arrays: the parameter values and free/fixed values
+            tuple of numpy arrays: the parameter values and free/fixed values
 
         Remarks:
-            1. The coefficients B, C and D should be defined form the first up to 
-            the highest reqired coefficient. The ignored ones should be set to zero. 
+            1. The coefficients B, C, D should be defined form the first up
+            to the highest reqired one. The ignored ones should be set to zero.
             2. The number of C and D coefficients should be the same
             3. The beta coefficients have dimentions 1/distance
         """
@@ -535,25 +549,38 @@ class Channel:
 
         mlr_data = dict(map(str.strip, s.split('=')) for s in mlr_data)
         npt = len(mlr_data)
-        for md in mlr_data.items(): mlr_data[md[0]] = md[1].split()
+        for md in mlr_data.items():
+            mlr_data[md[0]] = md[1].split()
 
         def_fixed = False
         if len(list(mlr_data.values())[0]) >= 2:
             def_fixed = True
 
-        bparams = dict(filter(lambda x: x[0].lower().startswith('b'), mlr_data.items()))
-        cparams = dict(filter(lambda x: x[0].lower().startswith('c'), mlr_data.items()))
-        dparams = dict(filter(lambda x: x[0].lower().startswith('d'), mlr_data.items()))
+        bparams = dict(
+            filter(lambda x: x[0].lower().startswith('b'), mlr_data.items())
+        )
+        cparams = dict(
+            filter(lambda x: x[0].lower().startswith('c'), mlr_data.items())
+        )
+        dparams = dict(
+            filter(lambda x: x[0].lower().startswith('d'), mlr_data.items())
+        )
 
         # remove De
-        dparams = dict(filter(lambda x: x[0].lower() != 'de', dparams.items()))
+        dparams = dict(
+            filter(lambda x: x[0].lower() != 'de', dparams.items())
+        )
 
         # remove binf
-        bparams = dict(filter(lambda x: x[0].lower() != 'binf', bparams.items()))
+        bparams = dict(
+            filter(lambda x: x[0].lower() != 'binf', bparams.items())
+        )
 
         # TODO: check for key error
 
-        mapp = { 0: 'Te', 1: 'De', 2: 'p', 3: 'q', 4: 'rref', 5: 're', 6: 'binf'}
+        mapp = {
+            0: 'Te', 1: 'De', 2: 'p', 3: 'q', 4: 'rref', 5: 're', 6: 'binf'
+        }
 
         U, fixedU = np.zeros(npt), np.zeros(npt, dtype=np.int64)
 
@@ -565,11 +592,17 @@ class Channel:
         U[5] = float(mlr_data[mapp[5]][0]) / Const.bohr
         U[6] = float(mlr_data[mapp[6]][0]) * Const.bohr
 
-        # TODO: check dimenstions of C and D parameters - will not work correctly!
+        # TODO: check dimenstions of C and D parameters - they are not correct!
 
-        bvalues = list(map(lambda x: float(x[0]) * Const.bohr, bparams.values()))
-        cvalues = list(map(lambda x: float(x[0]), cparams.values()))
-        dvalues = list(map(lambda x: float(x[0]), dparams.values()))
+        bvalues = list(
+            map(lambda x: float(x[0]) * Const.bohr, bparams.values())
+        )
+        cvalues = list(
+            map(lambda x: float(x[0]), cparams.values())
+        )
+        dvalues = list(
+            map(lambda x: float(x[0]), dparams.values())
+        )
 
         ni, nb, nc, nd = 7, len(bvalues), len(cvalues), len(dvalues)
 
@@ -584,12 +617,12 @@ class Channel:
 
             for i in range(0, ni):
                 fixedU[i] = int(mlr_data[mapp[i]][1])
-            
+
             fixedU[ni:ni+nb] = bfixed
             fixedU[ni+nb:ni+nb+nc] = cfixed
             fixedU[ni+nb+nc:ni+nb+nc+nd] = dfixed
 
-        #channel.npnts = ni + nb + nc + nd
+        # channel.npnts = ni + nb + nc + nd
 
         return U, fixedU
 
@@ -602,29 +635,31 @@ class Channel:
             filep (string): The name of the potential file
 
         Returns:
-            tuple of two numpy arrays: 
+            tuple of two numpy arrays:
                 the values of the parameters and the free/fixed values
 
         Remarks:
-            1. The custom function should accept exactly 2 input parameters. The first will 
-            contain the parameters and the second is the grid points and should return one 
-            parameter - the values of the function on the grid points
+            1. The custom function should accept exactly 2 input parameters.
+            The first one is an array containing the parameters and the
+            second one is the grid points and should return one parameter-
+            the values of the function on the grid points.
             3. The parameters should be in au units!
-            4. The length of the returned array should be equal to the number of grid points
+            4. Returned array has size equal to the number of grid points.
             5. A column for free/fixed value should alywas be defined
-            6. The order in which they are defined does not matter - they will be ordered by 
-            the number after the keyword 'param'!
+            6. The order in which the parameters are defined does not matter-
+            they will be ordered by the number after the keyword 'param'!
         """
 
-         # TODO: ignore comments and empty lines
+        # TODO: ignore comments and empty lines
 
         with open(filep, 'r') as fps:
             data = fps.read().strip().split('\n')
 
         data = OrderedDict(map(str.strip, s.split('=')) for s in data)
         data = OrderedDict(sorted(data.items()))
-        
-        for md in data.items(): data[md[0]] = md[1].split()
+
+        for md in data.items():
+            data[md[0]] = md[1].split()
 
         npt = len(data)
 
@@ -645,17 +680,18 @@ class Channel:
         for channel in cls.unique_channels:
 
             if channel.model == cls.models[1] or \
-                channel.model == cls.models[2]:
+              channel.model == cls.models[2]:
+
                 npnts = channel.U.shape[0]
                 xpnts = channel.R * Const.bohr
                 fix = channel.fixedU
                 st, en = onpnts, onpnts + npnts
-                
+
                 np.savetxt(
-                    channel.filep, 
+                    channel.filep,
                     np.column_stack([xpnts, ypar[st:en] * Const.hartree, fix]),
-                    header=str(npnts), 
-                    comments='', 
+                    header=str(npnts),
+                    comments='',
                     fmt=['%20.12f', '%25.14f', '%6d']
                 )
 
@@ -669,10 +705,20 @@ class Channel:
                 Te, De, a, re = ypar[st:en]
 
                 with open(channel.filep, 'w') as fp:
-                    fp.write(f'Te = {Te*Const.hartree:>17.8e}{channel.fixedU[0]:>10}\n')
-                    fp.write(f'De = {De*Const.hartree:>17.8e}{channel.fixedU[1]:>10}\n')
-                    fp.write(f'a  = {a:>17.8f}{channel.fixedU[2]:>10}\n')
-                    fp.write(f're = {re*Const.bohr:>17.8f}{channel.fixedU[3]:>10}\n')
+                    fp.write(
+                        f'Te = {Te*Const.hartree:>17.8e}'
+                        f'{channel.fixedU[0]:>10}\n'
+                    )
+                    fp.write(
+                        f'De = {De*Const.hartree:>17.8e}'
+                        f'{channel.fixedU[1]:>10}\n'
+                    )
+                    fp.write(
+                        f'a  = {a:>17.8f}{channel.fixedU[2]:>10}\n'
+                    )
+                    fp.write(
+                        f're = {re*Const.bohr:>17.8f}{channel.fixedU[3]:>10}\n'
+                    )
 
                 cls.tot_npts += npnts
                 onpnts = en
@@ -691,7 +737,8 @@ class Channel:
                 with open(channel.filep, 'w') as fp:
                     for i in range(0, npnts):
                         fp.write(
-                            f'param{i+1} = {params[i]:>17.8e}{channel.fixedU[i]:>10}\n'
+                            f'param{i+1} = {params[i]:>17.8e}'
+                            f'{channel.fixedU[i]:>10}\n'
                         )
 
                 cls.tot_npts += npnts
@@ -732,9 +779,8 @@ class Coupling:
                 list(map(str.split, coupling_data[coupling.label]))
             )
 
-            if coupling.model == 'pointwise' or \
-                coupling.model == 'cspline':
-                
+            if coupling.model == 'pointwise' or coupling.model == 'cspline':
+
                 coupling.xc = np.fromiter(
                     map(float, params[:, 0]), dtype=np.float64
                 ) / Const.bohr
@@ -747,8 +793,7 @@ class Coupling:
                     map(int, params[:, 2]), dtype=np.int64
                 )
 
-            elif coupling.model == 'constant' or \
-                coupling.model == 'custom':
+            elif coupling.model == 'constant' or coupling.model == 'custom':
 
                 coupling.yc = np.fromiter(
                     map(float, params[:, 0]), dtype=np.float64
@@ -767,7 +812,7 @@ class Coupling:
 
     @classmethod
     def _get_couplings_data(cls):
-        
+
         try:
             with open(cls.cpl_file, 'r') as inps:
                 try:
@@ -837,12 +882,11 @@ class Coupling:
         for cp in couplings:
             new_item = []
 
-            if cp.model == cls.models[1] or \
-                cp.model == cls.models[2]:
+            if cp.model == cls.models[1] or cp.model == cls.models[2]:
 
                 for item in cpl_data[cp.label]:
                     sitem = item.split()
-                    
+
                     new_item.append(
                         f'{float(sitem[0]):10.12f} {float(ypar[cpar]):24.14f} '
                         f'{int(sitem[2]):7d}'.lstrip()
@@ -851,14 +895,15 @@ class Coupling:
             else:
                 for item in cpl_data[cp.label]:
                     sitem = item.split()
-                    
+
                     new_item.append(
-                        f'{float(ypar[cpar]):18.12f} {int(sitem[1]):3d}'.lstrip()
+                        f'{float(ypar[cpar]):18.12f} '
+                        f'{int(sitem[1]):3d}'.lstrip()
                     )
                     cpar += 1
 
             cpl_data[cp.label] = new_item
-            
+
         with io.open(cls.cpl_file, 'w', encoding='utf8') as stream:
             yaml.dump(cpl_data, stream=stream)
 
@@ -869,14 +914,14 @@ class Validator:
         pass
 
     @classmethod
-    def validate(cls, molecule_data=None, grid=None, 
-        channels=None, couplings=None, fitting=None):
+    def validate(cls, molecule_data=None, grid=None,
+                 channels=None, couplings=None, fitting=None):
 
         if molecule_data is not None:
 
             if molecule_data.masses is None and molecule_data.molecule is None:
                 logging.error(
-                    f'At least one of the required parameters ' 
+                    f'At least one of the required parameters '
                     f'{molecule_data.massses} or {molecule_data.molecule}'
                     f'should be set.'
                 )
@@ -884,12 +929,12 @@ class Validator:
 
             if molecule_data.masses is not None:
                 cls._check_masses(molecule_data.masses)
-            
+
             if molecule_data.molecule is not None:
                 cls._check_molecule(molecule_data.molecule)
 
             if molecule_data.nisotopes is None:
-                logging.error(f'The required parameter "nisotopes" is missing.')
+                logging.error('The required parameter "nisotopes" is missing.')
                 raise SystemExit()
 
             if molecule_data.jrange is not None:
@@ -907,7 +952,9 @@ class Validator:
                 cls._check_parity(molecule_data.parities)
         if grid is not None:
             # TODO: split this to several methods
-            cls._check_grid_data(grid.rgrid, grid.npoints, grid.alpha, grid.rbar)
+            cls._check_grid_data(
+                grid.rgrid, grid.npoints, grid.alpha, grid.rbar
+            )
         if channels is not None:
             pass
         if couplings is not None:
@@ -925,7 +972,9 @@ class Validator:
             raise SystemExit(te)
         else:
             if isinstance(iterable, str):
-                raise SystemExit(f'The type of {iterable} must not be a string.')
+                raise SystemExit(
+                    f'The type of {iterable} must not be a string.'
+                )
 
     @classmethod
     def _check_masses(cls, masses):
@@ -937,7 +986,7 @@ class Validator:
         except ValueError as ve:
             logging.error(f'Masses={masses} raised an error')
             raise SystemExit(ve)
-    
+
     @classmethod
     def _check_molecule(cls, molecule):
 
@@ -959,13 +1008,13 @@ class Validator:
 
         if len(parities) > 2:
             raise IndexError(
-                f'Only one or two possible parity={parities} values are allowed.'
+                f'Only One or two parity={parities} values are allowed.'
             )
 
     @classmethod
     def _check_parity_values(cls, parities):
 
-        if not set(parities).issubset(set([0,1])):
+        if not set(parities).issubset(set([0, 1])):
             raise ValueError(
                 f'0 and/or 1 are the only possible parity={parities} values.'
             )
@@ -986,7 +1035,7 @@ class Validator:
             for x in [jmin, jmax]:
                 cls._check_type_int_or_float(x)
         except TypeError as te:
-            logging.error(f'The type of "jrange" raised an error')
+            logging.error('The type of "jrange" raised an error')
             raise SystemExit(te)
 
         try:
@@ -1000,14 +1049,16 @@ class Validator:
     def _check_jrange_values(self, jmin, jmax):
 
         if jmin >= jmax:
-            raise ValueError(f'jmax={jmax} should be greater than jmin={jmin}.')
+            raise ValueError(
+                f'jmax={jmax} should be greater than jmin={jmin}.'
+            )
 
     @classmethod
     def _check_jrange_length(self, jrange):
 
         if len(jrange) != 2:
             raise IndexError(
-                f'Exactly two values should be specfied for jrange={jrange} parameter'
+                f'Two values should be specfied for jrange={jrange} parameter'
             )
 
     @classmethod
@@ -1018,7 +1069,9 @@ class Validator:
     def _check_jqnumbers(cls, jqnumbers):
 
         if len(jqnumbers) == 0:
-            raise SystemExit('Error: The properties jrange/jvalues are not set')
+            raise SystemExit(
+                'Error: The properties jrange/jvalues are not set'
+            )
 
     @classmethod
     def _check_referencej(cls, refj):
@@ -1041,12 +1094,12 @@ class Validator:
                 cls._check_type_int_or_float(x)
         except TypeError as te:
             logging.error(
-                f'Incorrect type for parameters "rrange" and/or "npoints".'
+                'Incorrect type for parameters "rrange" and/or "npoints".'
             )
             raise SystemExit(te)
 
         try:
-            cls._check_negative_values([rmax, rmin, ngrid, rbar]) # rbar?
+            cls._check_negative_values([rmax, rmin, ngrid, rbar])  # rbar?
             cls._check_grid_values(rmin, rmax)
         except ValueError as ve:
             logging.error(
@@ -1059,8 +1112,9 @@ class Validator:
 
         if len(rrange) != 2:
             raise IndexError(
-                f'Exactly two values should be specified for rrange={rrange} parameter.'
+                f'Two values should be specified for rrange={rrange}.'
             )
+
     @classmethod
     def _check_grid_values(cls, rmin, rmax):
 
@@ -1068,6 +1122,7 @@ class Validator:
             raise ValueError(
                 f'rmax={rmax} should be greater than rmin={rmin}.'
             )
+
     @classmethod
     def _check_type_int_or_float(cls, param):
 
@@ -1095,10 +1150,8 @@ class Validator:
         if ml.nch == 0:
             raise ValueError('At least one channel should be defined.')
 
-
         cls._check_type_iterable(ml.energy_subset_index)
 
         cls._check_type_iterable(ml.energy_subset_value)
 
-        # TODO: check if model 'custom' is defined and custom_func is missing
-
+    # TODO: check if model 'custom' is defined and custom_func is missing

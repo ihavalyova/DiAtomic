@@ -1,5 +1,4 @@
 import math
-import time
 import os
 
 import numpy as np
@@ -54,7 +53,7 @@ class MoleculeLevels:
         self.rgrid2 = np.square(self.rgrid)
         self.ugrid = np.zeros(self.nch * self.ngrid)
         self.fgrid = np.zeros(self.ncp * self.ngrid)
-        
+
         self.pot_enr = np.zeros((self.nch*self.ngrid, self.nch*self.ngrid))
         self.kin_enr = np.zeros_like(self.pot_enr)
 
@@ -62,7 +61,7 @@ class MoleculeLevels:
 
         # total number of potential parameters
         self._ctot = 0
-        
+
         # spline derivatives
         self.sderiv = None
 
@@ -73,7 +72,8 @@ class MoleculeLevels:
         self.evec_dir = os.path.join(Utils.get_current_dir(), 'eigenvectors')
         self.wavef_dir = os.path.join(Utils.get_current_dir(), 'wavefunctions')
 
-        #self.evectors = np.zeros(((self.nch*self.ngrid)**2, len(jqnumbers)*self.vmax))
+        # self.evectors = np.zeros(
+        # ((self.nch*self.ngrid)**2, len(jqnumbers)*self.vmax))
 
     def calculate_channels_on_grid(self, ypar=None):
 
@@ -87,12 +87,16 @@ class MoleculeLevels:
         for ch in range(1, self.nch+1):
 
             # built-in cubic spline function
-            if self.channels[ch-1].model.lower() == Channel.models[1]: # 'pointwise':
-                self.calculate_pointwise_pec_on_grid(ch, ypar, pot_ranges, index)
+            if self.channels[ch-1].model.lower() == Channel.models[1]:
+                self.calculate_pointwise_pec_on_grid(
+                    ch, ypar, pot_ranges, index
+                )
 
             # cubic spline function using with custom implementation
             if self.channels[ch-1].model.lower() == Channel.models[2]:
-                self.calculate_custom_pointwise_pec_on_grid(ch, ypar, pot_ranges, index)
+                self.calculate_custom_pointwise_pec_on_grid(
+                    ch, ypar, pot_ranges, index
+                )
 
             # Morse potential function
             if self.channels[ch-1].model.lower() == Channel.models[3]:
@@ -113,17 +117,17 @@ class MoleculeLevels:
             # determine _ctot value
             if self.channels[ch-1].filep not in unique:
                 unique.add(self.channels[ch-1].filep)
-                
+
                 self._ctot += self.channels[ch-1].npnts
 
     def calculate_pointwise_pec_on_grid(self, ch, ypar, pot_ranges, index):
 
-        #xpnts, ypnts = self.calculate_pec_points(ch, ypar, pot_ranges, index)
+        # xpnts, ypnts = self.calculate_pec_points(ch, ypar, pot_ranges, index)
 
         xpnts = self.channels[ch-1].R
-                
-        # ypar contains parameters from the potentials and they have to be 
-        # distrubited over the different channels if running the fit
+
+        # ypar contains parameters from all potentials and they
+        # have to be transformed to the different channels
         if ypar is not None:
             pname = self.channels[ch-1].filep
             npt = self.channels[ch-1].npnts
@@ -144,7 +148,8 @@ class MoleculeLevels:
         cs = CubicSpline(xpnts, ypnts, bc_type='natural', extrapolate=True)
         self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = cs(self.rgrid)
 
-    def calculate_custom_pointwise_pec_on_grid(self, ch, ypar, pot_ranges, index):
+    def calculate_custom_pointwise_pec_on_grid(self, ch, ypar, pot_ranges,
+                                               index):
 
         xpnts = self.channels[ch-1].R
         ypnts = self.calculate_pec_points(ch, ypar, pot_ranges, index)
@@ -153,7 +158,7 @@ class MoleculeLevels:
         self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid], Sk = \
             cs(self.rgrid, return_deriv=True)
 
-        self.sderiv = Sk * Const.hartree ##???
+        self.sderiv = Sk * Const.hartree  # ???
 
     def calculate_pec_points(self, ch, ypar, pot_ranges, index):
 
@@ -176,14 +181,14 @@ class MoleculeLevels:
             ypnts = self.channels[ch-1].U
 
         return ypnts
-    
+
     def calculate_Morse_pec_on_grid(self, ch, ypar, pot_ranges, index):
 
         ypnts = self.calculate_pec_points(ch, ypar, pot_ranges, index)
 
         self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = \
             self.VMorse(ypnts, self.rgrid)
-    
+
     def VMorse(self, params, rgrid):
 
         Te, De, a, re = params
@@ -211,7 +216,7 @@ class MoleculeLevels:
         return vemo
 
     def calculate_MLR_pec_on_grid(self, ch, ypar, pot_ranges, index):
-        
+
         if ypar is not None:
             pass
         else:
@@ -233,8 +238,8 @@ class MoleculeLevels:
         cparams = np.array(params[ni+nb:ni+nb+nc])[::-1]
         dparams = np.array(params[ni+nb+nc:ni+nb+nc+nd])[::-1]
 
-        yrp = (np.power(rgrid, p) - rref ** p) / (np.power(rgrid, p) + rref ** p)
-        yrq = (np.power(rgrid, q) - rref ** q) / (np.power(rgrid, q) + rref ** q)
+        yrp = (np.power(rgrid, p) - rref**p) / (np.power(rgrid, p) + rref**p)
+        yrq = (np.power(rgrid, q) - rref**q) / (np.power(rgrid, q) + rref**q)
 
         bmlj = yrp * binf + (1.0 - yrp) * np.polyval(bparams, yrq)
 
@@ -253,20 +258,20 @@ class MoleculeLevels:
         ulr = 0
         for i in range(0, cparams.shape[0]):
             ulr += dparams[i] * (cparams[i] / np.power(r, i+1))
-        
+
         return ulr
 
     def calculate_custom_pec_on_grid(self, ch, ypar, pot_ranges, index):
 
         ypnts = self.calculate_pec_points(ch, ypar, pot_ranges, index)
-    
+
         self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = \
             self.channels[ch-1].cfunc(ypnts, self.rgrid)
 
     def calculate_couplings_on_grid(self, ypar=None):
 
         # pass by reference
-        yrange = { 'start': self._ctot, 'end': self._ctot }
+        yrange = {'start': self._ctot, 'end': self._ctot}
 
         for cp in range(0, self.ncp):
 
@@ -276,7 +281,9 @@ class MoleculeLevels:
 
             # custom implementation of cubic spline function
             if self.couplings[cp].model.lower() == Coupling.models[2]:
-                self.calculate_custom_pointwise_couplings_on_grid(cp, yrange, ypar)
+                self.calculate_custom_pointwise_couplings_on_grid(
+                    cp, yrange, ypar
+                )
 
             # constant coupling value
             if self.couplings[cp].model.lower() == Coupling.models[3]:
@@ -309,7 +316,7 @@ class MoleculeLevels:
         yrange['end'] = yrange['start'] + self.couplings[cp].npnts
 
         if ypar is None:
-            ypnts = self.couplings[cp].yc     
+            ypnts = self.couplings[cp].yc
         else:
             ypnts = ypar[yrange['start']:yrange['end']]
 
@@ -336,7 +343,7 @@ class MoleculeLevels:
     def calculate_custom_coupling_on_grid(self, cp, yrange, ypar):
 
         ypnts = self.calculate_coupling_points(cp, yrange, ypar)
-    
+
         self.fgrid[cp*self.ngrid:(cp+1)*self.ngrid] = \
             self.couplings[cp].cfunc(ypnts, self.rgrid)
 
@@ -380,17 +387,18 @@ class MoleculeLevels:
             tuple of numpy arrays: the computed eigenvalues and eigenvectors
 
         Remarks:
-            ARAPCK procedure is the most efficient and suitable for finding 
-            the largest eigenvalues of a sparse matrix. If the smallest 
-            eigenvalues are desired the it is recommended to use a shift-invert mode. 
-            This mode transforms the eigenvalue problem to an eqivalent problem 
-            in which the small eigenvalues u become the large eigenvalues v: v = 1 / u
+            ARAPCK procedure is the most efficient and suitable for finding
+            the largest eigenvalues of a sparse matrix. If the smallest
+            eigenvalues are desired then it is recommended to use a
+            shift-invert mode. It transforms the eigenvalue problem to
+            an eqivalent problem with shifted eigenvalues in which the
+            small eigenvalues u become the large eigenvalues v: v = 1 / u
         """
 
         evalues, evecs = sp.sparse.linalg.eigsh(
-            self.hmatrix, 
+            self.hmatrix,
             k=self.arpack_k,
-            which=self.arpack_which.upper(), 
+            which=self.arpack_which.upper(),
             sigma=self.arpack_sigma,
             return_eigenvectors=True
         )
@@ -418,7 +426,7 @@ class MoleculeLevels:
             16: 'file_eigenvalues',
         }
 
-    def calculateLevels(self, ypar=None, **kwargs):
+    def calculate_levels(self, ypar=None, **kwargs):
 
         # ypar is only for internal use
 
@@ -460,7 +468,10 @@ class MoleculeLevels:
             self.emaxv = self.energy_subset_value[-1] / Const.hartree
             self.evalues_subsetv = (self.eminv, self.emaxv)
 
-        self.calculate_eigenvalues(ypar)
+        chi2, rms, rmsd = self.calculate_eigenvalues(ypar)
+
+        print(f'Chi Square = {chi2:<18.8f} | RMS = {rms:<15.8f}cm-1')
+        # f'\nRMSD = {rmsd:.8f}'
 
     def calculate_eigenvalues(self, ypar=None):
 
@@ -471,10 +482,10 @@ class MoleculeLevels:
 
         if self.ncp != 0:
             self.calculate_couplings_on_grid(ypar=ypar)
-        
+
         interact = Interaction(self.ngrid, self.nch, self.rgrid2)
         count = 0
-        
+
         for iso in self.nisotopes:
             self.evals_predicted = np.array([], ndmin=2, dtype=np.float64)
 
@@ -487,18 +498,18 @@ class MoleculeLevels:
                 shiftE = [0.0]
 
                 for jrot in self.jqnumbers:
-    
+
                     self.calculate_potential_energy(jrot, par, mass, dd)
-                    
+
                     self.hmatrix = self.kin_enr + self.pot_enr
-                        
+
                     pert_matrix = interact.get_perturbations(
-                        jrot, mass, par, self.channels, self.couplings, 
+                        jrot, mass, par, self.channels, self.couplings,
                         self.fgrid, dd, self.Gy2
                     )
 
-                    #pert_matrix = pert_matrix*np.tile(self.Gy2,(pert_matrix.shape[0],5))
-                
+                    # pmatrix = pmatrix*np.tile(self.Gy2,(pmatrix.shape[0],5))
+
                     self.hmatrix += pert_matrix
 
                     evalues, evecs = self.eig_funcs[self.eig_decomp]()
@@ -508,27 +519,43 @@ class MoleculeLevels:
                     vibnums = self.assign_vibrational_number(states)
 
                     if self.store_evecs:
-                        #jrange = np.linspace(js, je, num=(je-js)+1.0, dtype=np.float, endpoint=True)
+                        # jrange = np.linspace(js, je,
+                        # num=(je-js)+1.0, dtype=np.float, endpoint=True)
 
-                        #self._save_eigenvectors(jrot, par, iso, evecs[:, 0:evalues.shape[0]], vibnums, states)
-                        
+                        # self._save_eigenvectors(
+                        #   jrot, par, iso,
+                        #   evecs[:, 0:evalues.shape[0]],
+                        #   vibnums, states
+                        # )
+
                         os.makedirs(self.evec_dir, exist_ok=True)
                         fname = f'evector_{str(count)}.dat'
-                        np.savetxt(os.path.join(self.evec_dir, fname), evecs, newline='\n', fmt='%15.8e')
+                        np.savetxt(
+                            os.path.join(self.evec_dir, fname),
+                            evecs, newline='\n', fmt='%15.8e'
+                        )
                         count += 1
 
-                    calc_data = self.arange_levels(jrot, par, iso, shiftE, evalues)
+                    calc_data = self.arange_levels(
+                        jrot, par, iso, shiftE, evalues
+                    )
 
-                    calc_data = np.column_stack((calc_data, ccoefs, states, vibnums)
+                    calc_data = np.column_stack(
+                        (calc_data, ccoefs, states, vibnums)
                     ).reshape(evalues.shape[0], -1)
 
-                    self.evals_predicted = np.append(self.evals_predicted, calc_data
+                    self.evals_predicted = np.append(
+                        self.evals_predicted, calc_data
                     ).reshape(-1, calc_data.shape[1])
 
             nlambda = self.get_lambda_values()
             omega = self.get_omega_values()
 
-            self.evals_predicted = np.column_stack((self.evals_predicted, nlambda, omega))
+            self.evals_predicted = np.column_stack(
+                (self.evals_predicted, nlambda, omega)
+            )
+
+            chi2, rms, rmsd = 0.0, 0.0, 0.0
 
             if self.exp_data is not None:
                 self.out_data = np.array([], dtype=np.float64)
@@ -536,14 +563,8 @@ class MoleculeLevels:
                 self.identify_levels()
 
                 chi2, rms, rmsd = self.calculate_stats(
-                    self.out_data[:,8], self.out_data[:,7], 
-                    self.out_data[:,10], self.is_weighted
-                )
-
-                print(
-                    f'\nChi Square = {chi2:.8f}'
-                    f'\nRMS = {rms:.8f} cm-1' 
-                    f'\nRMSD = {rmsd:.8f}\n'
+                    self.out_data[:, 8], self.out_data[:, 7],
+                    self.out_data[:, 10], self.is_weighted
                 )
 
                 append = False if iso == 1 else True
@@ -568,13 +589,15 @@ class MoleculeLevels:
             else:
                 if self.sort_predicted is not None:
                     self.sort_predicted_data()
-    
+
                 self.save_all_calculated_data()
+
+        return chi2, rms, rmsd
 
     def get_evecs_indicies(self):
 
-        """find the indices of the computed eigenvectors corresponding 
-        to the selected eiegenvalues which will be used in the computation 
+        """find the indices of the computed eigenvectors corresponding
+        to the selected eiegenvalues which will be used in the computation
         of partial derivatives based on the Hellman-Feynman theorem
 
         Returns:
@@ -583,14 +606,14 @@ class MoleculeLevels:
         # TODO: will not work for different isotopes
 
         evecs_index, _ = self.get_indices_of_matching_rows_simple(
-            self.evals_predicted[:,[0,1,2,-3,-4,-1,-2]], 
-            self.out_data[:,[8,2,6,1,-1,3,5]]
+            self.evals_predicted[:, [0, 1, 2, -3, -4, -1, -2]],
+            self.out_data[:, [8, 2, 6, 1, -1, 3, 5]]
         )
 
         # all eigenvectors should be calculated
         evecs_index = evecs_index % self.ngrid
         evecs_index1 = self.group_increasing_sequences(evecs_index)
-        
+
         evecs_index1 = list(evecs_index1)
 
         return evecs_index1
@@ -601,9 +624,9 @@ class MoleculeLevels:
         col1, col2, col3, col4, col5, col6 = self.sort_predicted
 
         self.evals_predicted = self.evals_predicted[np.lexsort((
-                self.evals_predicted[:,col6], self.evals_predicted[:,col5],
-                self.evals_predicted[:,col4], self.evals_predicted[:,col3], 
-                self.evals_predicted[:,col2], self.evals_predicted[:,col1]
+                self.evals_predicted[:, col6], self.evals_predicted[:, col5],
+                self.evals_predicted[:, col4], self.evals_predicted[:, col3],
+                self.evals_predicted[:, col2], self.evals_predicted[:, col1]
         ))]
 
     def sort_output_data(self):
@@ -612,9 +635,9 @@ class MoleculeLevels:
         col1, col2, col3, col4, col5, col6 = self.sort_output
 
         self.out_data = self.out_data[np.lexsort((
-                self.out_data[:,col6], self.out_data[:,col5],
-                self.out_data[:,col4], self.out_data[:,col3], 
-                self.out_data[:,col2], self.out_data[:,col1]
+                self.out_data[:, col6], self.out_data[:, col5],
+                self.out_data[:, col4], self.out_data[:, col3],
+                self.out_data[:, col2], self.out_data[:, col1]
         ))]
 
     def group_increasing_sequences(self, iseq):
@@ -628,19 +651,19 @@ class MoleculeLevels:
     def get_lambda_values(self):
 
         return np.fromiter(map(
-            lambda x: self.channels[x-1].nlambda, 
-            np.int64(self.evals_predicted[:,-2])), 
+            lambda x: self.channels[x-1].nlambda,
+            np.int64(self.evals_predicted[:, -2])),
             dtype=np.int64
         )
 
     def get_omega_values(self):
 
         return np.fromiter(map(
-            lambda x: self.channels[x-1].omega, 
-            np.int64(self.evals_predicted[:,-2])), 
+            lambda x: self.channels[x-1].omega,
+            np.int64(self.evals_predicted[:, -2])),
             dtype=np.float64
         )
-     
+
     def arange_levels(self, jrot, par, iso, shiftE, evalues):
 
         if jrot == self.jqnumbers[0] and self.refj is not None:
@@ -657,7 +680,7 @@ class MoleculeLevels:
                 np.full((evalues.shape[0],), par),
                 np.full((evalues.shape[0],), iso),
         ))
-    
+
         return calc_data
 
     def calculate_kinetic_energy_fourier(self, mass):
@@ -676,16 +699,18 @@ class MoleculeLevels:
         di = np.diag_indices(self.ngrid)
 
         sinf_mtx = np.sin((ij_mtx * np.pi) / self.ngrid)
-        sinf_mtx[di] = 1.0 # set diagonal to some temporary nonzero value 
+        sinf_mtx[di] = 1.0  # set diagonal to some temporary nonzero value
 
-        self.kin_enr[0:self.ngrid, 0:self.ngrid] = (np.power(-1.0, ij_mtx) * h2) / (ml * np.power(sinf_mtx, 2))
-        self.kin_enr[di] = (h2 / ml) * n2 
+        self.kin_enr[0:self.ngrid, 0:self.ngrid] = \
+            (np.power(-1.0, ij_mtx) * h2) / (ml * np.power(sinf_mtx, 2))
+        self.kin_enr[di] = (h2 / ml) * n2
 
         for ch in range(2, self.nch+1):
             ind1 = (ch-1)*self.ngrid
             ind2 = ch*self.ngrid
 
-            self.kin_enr[ind1:ind2, ind1:ind2] = self.kin_enr[0:self.ngrid, 0:self.ngrid]
+            self.kin_enr[ind1:ind2, ind1:ind2] = \
+                self.kin_enr[0:self.ngrid, 0:self.ngrid]
 
     def calculate_kinetic_energy_sinc(self, mass):
 
@@ -699,10 +724,11 @@ class MoleculeLevels:
         ij_sum = ij_grid[0] + ij_grid[1]
         di = np.diag_indices(self.ngrid)
 
-        # set diagonal to some temporary nonzero value 
-        ij_diff[di] = 1.0 
+        # set diagonal to some temporary nonzero value
+        ij_diff[di] = 1.0
 
-        self.kin_enr[0:self.ngrid,0:self.ngrid] = (2.0 * np.power(-1.0, ij_sum)) / np.power(ij_diff, 2)
+        self.kin_enr[0:self.ngrid, 0:self.ngrid] = \
+            (2.0 * np.power(-1.0, ij_sum)) / np.power(ij_diff, 2)
         self.kin_enr[di] = pi2 / 3.0
         self.kin_enr = self.kin_enr * (h2 / h**2)
 
@@ -710,12 +736,13 @@ class MoleculeLevels:
             ind3 = (ch-1)*self.ngrid
             ind4 = ch*self.ngrid
 
-            self.kin_enr[ind3:ind4, ind3:ind4] = self.kin_enr[0:self.ngrid, 0:self.ngrid]
+            self.kin_enr[ind3:ind4, ind3:ind4] = \
+                self.kin_enr[0:self.ngrid, 0:self.ngrid]
 
         self.kin_enr[di] = self.kin_enr[di] - (h2 * self.Fy)
 
     def calculate_kinetic_energy_FD5(self, mass):
-        
+
         # the first and last 2 eigenvalues are wrong
         pc = 1.0
         h2 = (pc ** 2) / (2.0 * mass)
@@ -730,15 +757,19 @@ class MoleculeLevels:
         d2 = np.empty(self.ngrid-2)
         d2.fill(1.0/12.0)
 
-        self.kin_enr[0:self.ngrid,0:self.ngrid] = \
+        self.kin_enr[0:self.ngrid, 0:self.ngrid] = \
             (h2/(step**2)) * self.form_five_diagonal_symm_matrix(d0, d1, d2)
-        self.kin_enr[0, 0] = self.kin_enr[self.ngrid-1, self.ngrid-1] = 29.0 / 12.0
+
+        corner_coef = 29.0 / 12.0
+        self.kin_enr[0, 0] = corner_coef
+        self.kin_enr[self.ngrid-1, self.ngrid-1] = corner_coef
 
         for ch in range(2, self.nch+1):
             ind3 = (ch-1)*self.ngrid
             ind4 = ch*self.ngrid
 
-            self.kin_enr[ind3:ind4, ind3:ind4] = self.kin_enr[0:self.ngrid, 0:self.ngrid]
+            self.kin_enr[ind3:ind4, ind3:ind4] = \
+                self.kin_enr[0:self.ngrid, 0:self.ngrid]
 
     def form_five_diagonal_symm_matrix(self, a, b, c, k1=0, k2=1, k3=2):
 
@@ -750,7 +781,7 @@ class MoleculeLevels:
         denom = 2.0 * mass * self.rgrid2
 
         for ch in range(0, self.nch):
-            ctype = self.channels[ch].model
+            # ctype = self.channels[ch].model
             lam = self.channels[ch].nlambda
             sigma = self.channels[ch].nsigma
             omega = self.channels[ch].omega
@@ -763,40 +794,42 @@ class MoleculeLevels:
             i1 = ch*self.ngrid
             i2 = (ch+1)*self.ngrid
 
-            self.pot_enr[i1:i2, i1:i2][dd] = self.Gy2 * (self.ugrid[i1:i2] + (num / denom))
+            self.pot_enr[i1:i2, i1:i2][dd] = \
+                self.Gy2 * (self.ugrid[i1:i2] + (num / denom))
 
     def get_coupling_coefficients(self, evecs):
-        # used to assign state to the computed levels 
+        # used to assign state to the computed levels
         # based on the largest coupling coefficient
 
         ccoefs = np.zeros((evecs.shape[1], self.nch))
         evecs = np.power(evecs, 2)
 
         for k in range(0, self.nch):
-            ccoefs[:,k] = evecs[k*self.ngrid:(k+1)*self.ngrid, :].sum(axis=0)
+            ccoefs[:, k] = evecs[k*self.ngrid:(k+1)*self.ngrid, :].sum(axis=0)
 
         return ccoefs
 
     def assign_vibrational_number(self, states):
 
         vibns = np.empty(states.shape)
-        vibns_tmp = np.empty(states.shape); vibns_tmp.fill(-1)
+        vibns_tmp = np.empty(states.shape)
+        vibns_tmp.fill(-1)
 
         for i, state in enumerate(states):
             vibns_tmp[state] += 1
             vibns[i] = vibns_tmp[state]
 
         return vibns
-    
+
     def identify_levels(self):
-        
+
         # select scheme for identification of calculated levels
 
         if self.identify == 0:
             self.get_output_identified_by_energy1()
 
         # slow, not recommended for large dataset
-        elif self.identify == 1: 
+        elif self.identify == 1:
             self.get_output_identified_by_energy2()
 
         # fast but not recommended when exp. data contains repeated levels
@@ -806,7 +839,7 @@ class MoleculeLevels:
         elif self.identify == 3:
             self.get_output_identified_by_coupling_coeffs2()
 
-    def view1D(self, a, b): # a, b are arrays
+    def view1D(self, a, b):  # a, b are arrays
 
         a = np.ascontiguousarray(a)
         b = np.ascontiguousarray(b)
@@ -828,59 +861,68 @@ class MoleculeLevels:
 
         A, B = self.view1D(a, b)
         sidxB = B.argsort()
-        mask = np.isin(A,B)
+        mask = np.isin(A, B)
         cm = A[mask]
         idx0 = np.flatnonzero(mask)
-        idx1 = sidxB[np.searchsorted(B,cm, sorter=sidxB)]
-        
+        idx1 = sidxB[np.searchsorted(B, cm, sorter=sidxB)]
+
         # idx0 : indices in A, idx1 : indices in B
         return idx0, idx1
 
     def get_indices_of_matching_rows_simple(self, a, b):
 
         A, B = self.view1D(a, b)
-        inds = np.argwhere(A[:,None] == B)
+        inds = np.argwhere(A[:, None] == B)
 
-        return inds[:,0], inds[:,1]
+        return inds[:, 0], inds[:, 1]
 
     def filter_data_by_coupling_coeffs(self):
 
         emask = \
-            np.in1d(self.exp_data[:,1], self.evals_predicted[:,-3]) & \
-            np.in1d(self.exp_data[:,2], self.evals_predicted[:,1]) & \
-            np.in1d(self.exp_data[:,4], self.evals_predicted[:,2]) & \
-            np.in1d(self.exp_data[:,-1], self.evals_predicted[:,-4]) & \
-            np.in1d(np.floor_divide(self.exp_data[:,-2], 10) + 1, self.evals_predicted[:,3])
+            np.in1d(self.exp_data[:, 1], self.evals_predicted[:, -3]) & \
+            np.in1d(self.exp_data[:, 2], self.evals_predicted[:, 1]) & \
+            np.in1d(self.exp_data[:, 4], self.evals_predicted[:, 2]) & \
+            np.in1d(self.exp_data[:, -1], self.evals_predicted[:, -4]) & \
+            np.in1d(
+                np.floor_divide(self.exp_data[:, -2], 10) + 1,
+                self.evals_predicted[:, 3]
+            )
 
         self.exp_data = self.exp_data[emask]
 
         cmask = \
-            np.in1d(self.evals_predicted[:,-3], self.exp_data[:,1]) & \
-            np.in1d(self.evals_predicted[:,1], self.exp_data[:,2]) & \
-            np.in1d(self.evals_predicted[:,2], self.exp_data[:,4]) & \
-            np.in1d(self.evals_predicted[:,-4], self.exp_data[:,-1]) & \
-            np.in1d(self.evals_predicted[:,3], np.floor_divide(self.exp_data[:,-2], 10) + 1)
+            np.in1d(self.evals_predicted[:, -3], self.exp_data[:, 1]) & \
+            np.in1d(self.evals_predicted[:, 1], self.exp_data[:, 2]) & \
+            np.in1d(self.evals_predicted[:, 2], self.exp_data[:, 4]) & \
+            np.in1d(self.evals_predicted[:, -4], self.exp_data[:, -1]) & \
+            np.in1d(
+                self.evals_predicted[:, 3],
+                np.floor_divide(self.exp_data[:, -2], 10) + 1
+            )
 
-        self.evals_predicted = self.evals_predicted[cmask] 
+        self.evals_predicted = self.evals_predicted[cmask]
 
-        #sort data by v then by J then by parity and then by state, then by energy
+        # sort data by v then by J then by parity then by state, then by energy
         # self.exp_data = self.exp_data[
-        #     np.lexsort((self.exp_data[:,3], self.exp_data[:,-1], 
+        #     np.lexsort((self.exp_data[:,3], self.exp_data[:,-1],
         #     self.exp_data[:,4], self.exp_data[:,2], self.exp_data[:,1]))
         # ]
 
         # self.evals_predicted = self.evals_predicted[
-        #     np.lexsort((self.evals_predicted[:,0], self.evals_predicted[:,-2], 
-        #     self.evals_predicted[:,2], self.evals_predicted[:,1], self.evals_predicted[:,-1]))
+        #     np.lexsort((
+        #             self.evals_predicted[:, 0], self.evals_predicted[:, -2],
+        #             self.evals_predicted[:, 2], self.evals_predicted[:, 1],
+        #             self.evals_predicted[:, -1]
+        #     ))
         # ]
 
         i1, i2 = self.get_indices_of_matching_rows_argsorted(
-            self.exp_data[:,[1,2,4,-1]], 
-            self.evals_predicted[:,[-3,1,2,-4]]
+            self.exp_data[:, [1, 2, 4, -1]],
+            self.evals_predicted[:, [-3, 1, 2, -4]]
         )
 
-        #self.exp_data = self.exp_data[i1]
-        #self.evals_predicted = self.evals_predicted[i2]
+        # self.exp_data = self.exp_data[i1]
+        # self.evals_predicted = self.evals_predicted[i2]
 
         exp_data_ext = self.exp_data[i1]
         calc_data_ext = self.evals_predicted[i2]
@@ -890,85 +932,94 @@ class MoleculeLevels:
     def filter_data_by_energy_diff(self):
 
         emask = \
-            np.in1d(self.exp_data[:,2], self.evals_predicted[:,1]) & \
-            np.in1d(self.exp_data[:,4], self.evals_predicted[:,2]) & \
-            np.in1d(np.floor_divide(self.exp_data[:,-2], 10) + 1, self.evals_predicted[:,3])
+            np.in1d(self.exp_data[:, 2], self.evals_predicted[:, 1]) & \
+            np.in1d(self.exp_data[:, 4], self.evals_predicted[:, 2]) & \
+            np.in1d(
+                np.floor_divide(self.exp_data[:, -2], 10) + 1,
+                self.evals_predicted[:, 3]
+            )
 
         self.exp_data = self.exp_data[emask]
 
         cmask = \
-            np.in1d(self.evals_predicted[:,1], self.exp_data[:,2]) & \
-            np.in1d(self.evals_predicted[:,2], self.exp_data[:,4]) & \
-            np.in1d(self.evals_predicted[:,3], np.floor_divide(self.exp_data[:,-2], 10) + 1)
+            np.in1d(self.evals_predicted[:, 1], self.exp_data[:, 2]) & \
+            np.in1d(self.evals_predicted[:, 2], self.exp_data[:, 4]) & \
+            np.in1d(
+                self.evals_predicted[:, 3],
+                np.floor_divide(self.exp_data[:, -2], 10) + 1
+            )
 
         self.evals_predicted = self.evals_predicted[cmask]
 
-        #sort data by v then by J then by parity and then by state, then by energy
+        # sort data by v then by J then by parity then by state, then by energy
         # self.exp_data = self.exp_data[
-        #     np.lexsort((self.exp_data[:,3], self.exp_data[:,-1], 
+        #     np.lexsort((self.exp_data[:,3], self.exp_data[:,-1],
         #     self.exp_data[:,4], self.exp_data[:,2], self.exp_data[:,1]))
         # ]
 
         # self.evals_predicted = self.evals_predicted[
-        #     np.lexsort((self.evals_predicted[:,0], self.evals_predicted[:,-2], 
-        #     self.evals_predicted[:,2], self.evals_predicted[:,1], self.evals_predicted[:,-1]))
+        #     np.lexsort((
+        #         self.evals_predicted[:, 0], self.evals_predicted[:, -2],
+        #         self.evals_predicted[:, 2], self.evals_predicted[:, 1],
+        #         self.evals_predicted[:, -1]
+        #     ))
         # ]
 
         i1, i2 = self.get_indices_of_matching_rows_simple(
-            self.exp_data[:,[2,4]], 
-            self.evals_predicted[:,[1,2]]
+            self.exp_data[:, [2, 4]],
+            self.evals_predicted[: [1, 2]]
         )
 
         exp_data_ext = self.exp_data[i1]
-        #self.evals_predicted = self.evals_predicted[i2]
+        # self.evals_predicted = self.evals_predicted[i2]
         calc_data_ext = self.evals_predicted[i2]
 
         return exp_data_ext, calc_data_ext
 
     def get_output_identified_by_energy1(self):
-        
+
         exp_data_ext, calc_data_ext = self.filter_data_by_energy_diff()
-        
-        coupled_coeffs = calc_data_ext[:,4:-4]
+
+        coupled_coeffs = calc_data_ext[:, 4:-4]
 
         nlambda = np.fromiter(map(
-            lambda x: self.channels[x-1].nlambda, 
-            np.int64(exp_data_ext[:,-1])), 
+            lambda x: self.channels[x-1].nlambda,
+            np.int64(exp_data_ext[:, -1])),
             dtype=np.int64
         )
 
         nsigma = np.fromiter(map(
-            lambda x: self.channels[x-1].nsigma, 
-            np.int64(exp_data_ext[:,-1])), 
+            lambda x: self.channels[x-1].nsigma,
+            np.int64(exp_data_ext[:, -1])),
             dtype=np.float64
         )
 
         omega = np.fromiter(map(
-            lambda x: self.channels[x-1].omega, 
-            np.int64(exp_data_ext[:,-1])), 
+            lambda x: self.channels[x-1].omega,
+            np.int64(exp_data_ext[:, -1])),
             dtype=np.float64
         )
 
         out_data_ext = np.column_stack((
-            exp_data_ext[:,1],
-            exp_data_ext[:,2],
+            exp_data_ext[:, 1],
+            exp_data_ext[:, 2],
             omega, nsigma, nlambda,
-            exp_data_ext[:,4],
-            exp_data_ext[:,6],
-            calc_data_ext[:,0],
-            exp_data_ext[:,3],
-            calc_data_ext[:,0] - exp_data_ext[:,3],
-            exp_data_ext[:,5],
+            exp_data_ext[:, 4],
+            exp_data_ext[:, 6],
+            calc_data_ext[:, 0],
+            exp_data_ext[:, 3],
+            calc_data_ext[:, 0] - exp_data_ext[:, 3],
+            exp_data_ext[:, 5],
             coupled_coeffs,
-            exp_data_ext[:,-1],
+            exp_data_ext[:, -1],
         ))
 
         # sort by the absolute value of exp. and calc. energy differences
-        out_data_ext = out_data_ext[np.abs(out_data_ext[:,9]).argsort()]
-        out_data_ext = out_data_ext[0:self.exp_data.shape[0],:]
-        
+        out_data_ext = out_data_ext[np.abs(out_data_ext[:, 9]).argsort()]
+        out_data_ext = out_data_ext[0:self.exp_data.shape[0], :]
+
         _, inds = np.unique(
-            out_data_ext[:,[0,1,5,8,-1]], axis=0, return_index=True
+            out_data_ext[:, [0, 1, 5, 8, -1]], axis=0, return_index=True
         )
 
         self.out_data = out_data_ext[inds]
@@ -977,63 +1028,65 @@ class MoleculeLevels:
     def get_output_identified_by_coupling_coeffs1(self):
 
         # self.exp_data = self.exp_data[self.exp_data[:,3].argsort()]
-        # self.evals_predicted = self.evals_predicted[self.evals_predicted[:,0].argsort()]
+        # self.evals_predicted = \
+        # self.evals_predicted[self.evals_predicted[:,0].argsort()]
 
         exp_data_ext, calc_data_ext = self.filter_data_by_coupling_coeffs()
 
-        cstates = calc_data_ext[:,-4]
-        coupled_coeffs = calc_data_ext[:,4:-4]
+        cstates = calc_data_ext[:, -4]
+        coupled_coeffs = calc_data_ext[:, 4:-4]
 
         nlambda = np.fromiter(map(
-            lambda x: self.channels[x-1].nlambda, 
-            np.int64(cstates)), 
+            lambda x: self.channels[x-1].nlambda,
+            np.int64(cstates)),
             dtype=np.int64
         )
 
         nsigma = np.fromiter(map(
-            lambda x: self.channels[x-1].nsigma, 
-            np.int64(cstates)), 
+            lambda x: self.channels[x-1].nsigma,
+            np.int64(cstates)),
             dtype=np.float64
         )
 
         omega = np.fromiter(map(
-            lambda x: self.channels[x-1].omega, 
-            np.int64(cstates)), 
+            lambda x: self.channels[x-1].omega,
+            np.int64(cstates)),
             dtype=np.float64
         )
 
         self.out_data = np.column_stack((
-            calc_data_ext[:,-3],                       # cv
-            calc_data_ext[:,1],                        # cj
-            omega, nsigma, nlambda,                    # qn
-            calc_data_ext[:,2],                        # cp
-            exp_data_ext[:,6],                         # em
-            calc_data_ext[:,0],                        # ce
-            exp_data_ext[:,3],                         # ee
-            calc_data_ext[:,0] - exp_data_ext[:,3],    # delta
-            exp_data_ext[:,5],                         # eu
-            coupled_coeffs,                            # cc
-            cstates                                    # cst
+            calc_data_ext[:, -3],                       # cv
+            calc_data_ext[:, 1],                        # cj
+            omega, nsigma, nlambda,                     # qn
+            calc_data_ext[:, 2],                        # cp
+            exp_data_ext[:, 6],                         # em
+            calc_data_ext[:, 0],                        # ce
+            exp_data_ext[:, 3],                         # ee
+            calc_data_ext[:, 0] - exp_data_ext[:, 3],   # delta
+            exp_data_ext[:, 5],                         # eu
+            coupled_coeffs,                             # cc
+            cstates                                     # cst
         ))
 
     def get_output_identified_by_coupling_coeffs2(self):
 
         # self.exp_data = self.exp_data[self.exp_data[:, 3].argsort()]
-        # self.evals_predicted = self.evals_predicted[self.evals_predicted[:, 0].argsort()]
+        # self.evals_predicted = \
+        # self.evals_predicted[self.evals_predicted[:, 0].argsort()]
 
         self.filter_data_by_coupling_coeffs()
 
         used_data = []
 
-        for expd in self.exp_data[:,1:]:
+        for expd in self.exp_data[:, 1:]:
             ev, ej, ee, ep, eu, em, es = expd
 
-            for cn, calcd in enumerate(self.evals_predicted[:,:-2]):
+            for cn, calcd in enumerate(self.evals_predicted[:, :-2]):
 
                 ce, cj, cp, iso = calcd[0:4]
                 cc = calcd[4:-2]
                 cs, cv = calcd[-2:]
-                
+
                 if cj == ej and cp == ep and np.int64(cv) == np.int64(ev) and \
                    np.int64(cs) == np.int64(es) and \
                    np.int64(iso) == np.int64(em / 10) + 1 and \
@@ -1059,14 +1112,15 @@ class MoleculeLevels:
     def get_output_identified_by_energy2(self):
 
         # self.exp_data = self.exp_data[self.exp_data[:, 3].argsort()]
-        # self.evals_predicted = self.evals_predicted[self.evals_predicted[:, 0].argsort()]
-        #start1 = time.time()
+        # self.evals_predicted = \
+        # self.evals_predicted[self.evals_predicted[:, 0].argsort()]
+        # start1 = time.time()
 
-        #self.filter_data_for_energy_identification()
+        # self.filter_data_for_energy_identification()
 
         used_data = []
 
-        for expd in self.exp_data[:,1:]:
+        for expd in self.exp_data[:, 1:]:
 
             ev, ej, ee, ep, eu, em, es = expd
 
@@ -1077,16 +1131,16 @@ class MoleculeLevels:
             is_diffe_min = False
             cnum = 0
 
-            for calcn, calcd in enumerate(self.evals_predicted[:,:-2]):
+            for calcn, calcd in enumerate(self.evals_predicted[:, :-2]):
                 ce, cj, cp, iso = calcd[0:4]
                 cc = calcd[4:-2]
 
                 diffe = abs(ee - ce)
-                
+
                 if cj == ej and cp == ep and \
                    np.int64(iso) == np.int64(em / 10) + 1:
-                   #and ev <= self.emaxi:  #and calcn not in used_data:
-                    
+                    # and ev <= self.emaxi:  #and calcn not in used_data:
+
                     if diffe < min_diffe:
                         is_diffe_min = False
                         min_diffe = diffe
@@ -1107,7 +1161,7 @@ class MoleculeLevels:
                 # line will be an array of type object not np.float64
                 used_data.append(cnum)
                 line = np.array([vib, rot, omg, sig, lam, *args, *ccoefs, st])
-                
+
                 self.out_data = np.append(self.out_data, line)
 
         self.out_data = self.out_data.reshape(-1, 12+self.nch)
@@ -1122,40 +1176,49 @@ class MoleculeLevels:
 
         evec_extended = np.vstack((vibnums, states, evector))
 
-        #np.savetxt(efile, np.column_stack((self.rgrid, evector)), newline='\n', fmt='%15.8e')
+        # np.savetxt(efile,
+        # np.column_stack((self.rgrid, evector)), newline='\n', fmt='%15.8e')
         np.savetxt(efile, evec_extended, newline='\n', fmt='%15.8e')
 
     # TODO: Is this needed here?
-    def interpolate_wavefunction(self, ninter=200, jrange=(0,1), pars=(1,), vrange=(0,1), iso=(1,)): 
+    def interpolate_wavefunction(self, ninter=200, jrange=(0, 1), pars=(1,),
+                                 vrange=(0, 1), iso=(1,)):
 
         igrid, istep = np.linspace(
             self.rmin,
             self.rmax,
             num=ninter,
-            endpoint=False, # ??
+            endpoint=False,  # ??
             retstep=True
         )
 
-        efiles = [f'evector_J{j}_{k}_{i}.dat' for j in jrange for k in pars for i in iso]
+        efiles = [
+            f'evector_J{j}_{k}_{i}.dat'
+            for j in jrange for k in pars for i in iso
+        ]
 
-        for efile in efiles: #os.listdir(self.evec_dir):
+        for efile in efiles:  # os.listdir(self.evec_dir):
             nvib = np.arange(vrange[0], vrange[1] + 1, dtype=np.int64)
-            evec = np.loadtxt(os.path.join(self.evec_dir, efile), usecols=tuple(nvib+1)) # skip zero column
+            evec = np.loadtxt(
+                os.path.join(self.evec_dir, efile),
+                usecols=tuple(nvib+1)
+            )  # skip zero column
             arr = []
 
-            for col in nvib: #range(0, nvib):
+            for col in nvib:  # range(0, nvib):
                 for row in range(0, ninter):
                     index = 0
                     sum_arg = 0.0
                     for j in range(0, self.nch*self.ngrid):
-                        
+
                         if j % self.ngrid == 0:
                             index += 1
 
-                        if abs(igrid[row] - self.rgrid[j-index*self.ngrid]) < 1e-15:
+                        expr = igrid[row] - self.rgrid[j-index*self.ngrid]
+                        if abs(expr) < 1e-15:
                             sinc = 1.0
                         else:
-                            arg = (math.pi / istep) * (igrid[row] - self.rgrid[j-index*self.ngrid])
+                            arg = (math.pi / istep) * expr
                             sinc = math.sin(arg) / arg
 
                         sum_arg += evec[j][col] * sinc
@@ -1164,9 +1227,8 @@ class MoleculeLevels:
 
             wavefunc = np.array(arr).reshape(len(nvib), ninter).T
             nwavefunc = wavefunc / wavefunc.sum(axis=0, keepdims=1)
-        
-            self.save_wavefunctions(np.column_stack((igrid, nwavefunc)))
 
+            self.save_wavefunctions(np.column_stack((igrid, nwavefunc)))
 
     def save_wavefunctions(self, wavefunc):
 
@@ -1181,7 +1243,7 @@ class MoleculeLevels:
     def calculate_stats(self, yobs, ycal, yunc, is_weighted):
 
         diff_square = np.square(yobs - ycal)
-        
+
         # calculate chi square
         if not is_weighted:
             weights = 1.0 / np.square(yunc)
@@ -1202,12 +1264,14 @@ class MoleculeLevels:
     def save_output_data(self, append, stats):
 
         cc = 'CC'
-        cc_names = ''.join(map(lambda x: f'{cc+str(x):>9}', range(1, self.nch+1)))
+        cc_names = ''.join(map(
+            lambda x: f'{cc+str(x):>9}', range(1, self.nch+1))
+        )
 
         names = [
-            'No', 'v', 'J', 'omega', 'sigma', \
-            'lambda', 'parity', 'marker', \
-            'Ecalc', 'Eexp', 'delta', \
+            'No', 'v', 'J', 'omega', 'sigma',
+            'lambda', 'parity', 'marker',
+            'Ecalc', 'Eexp', 'delta',
             'unc', cc_names, 'state'
         ]
 
@@ -1217,11 +1281,12 @@ class MoleculeLevels:
             ''.join(map(lambda x: '{:>11}'.format(x), names[11:]))
 
         self.out_data = np.c_[
-            np.arange(self.ninit, self.out_data.shape[0]+self.ninit), self.out_data
+            np.arange(self.ninit, self.out_data.shape[0]+self.ninit),
+            self.out_data
         ]
 
         fmt = [
-            '%7d', '%7d', '%7.1f', '%7.1f', '%7.1f', '%6d', '%6d', \
+            '%7d', '%7d', '%7.1f', '%7.1f', '%7.1f', '%6d', '%6d',
             '%6d', '%15.6f', '%14.6f', '%12.6f', '%10.4f'
         ] + self.nch*['%8.3f'] + ['%5d']
 
@@ -1250,15 +1315,22 @@ class MoleculeLevels:
 
     def save_all_calculated_data(self):
 
-        cols = [-3] + list(range(0, self.evals_predicted.shape[1]-3)) + [-2,-1]
-        eigv_data = self.evals_predicted[:,cols]
-        eigv_data = np.c_[np.arange(1.0, self.evals_predicted.shape[0]+1), eigv_data]
-        
+        cols = [-3] + list(
+            range(0, self.evals_predicted.shape[1]-3)
+        ) + [-2, -1]
+
+        eigv_data = self.evals_predicted[:, cols]
+        eigv_data = np.c_[
+            np.arange(1.0, self.evals_predicted.shape[0]+1), eigv_data
+        ]
+
         cc = 'CC'
-        cc_names = ''.join(map(lambda x: f'{cc+str(x):>9}', range(1, self.nch+1)))
+        cc_names = ''.join(map(
+            lambda x: f'{cc+str(x):>9}', range(1, self.nch+1))
+        )
 
         names = [
-            'No', 'v', 'Ecalc', 'J', 'parity', ' marker', \
+            'No', 'v', 'Ecalc', 'J', 'parity', ' marker',
             cc_names, 'state', 'lambda', 'omega'
         ]
 
@@ -1266,13 +1338,13 @@ class MoleculeLevels:
             '{:>7}'.format(names[0]) + \
             ''.join(map(lambda x: '{:>4}'.format(x), names[1])) + \
             ''.join(map(lambda x: '{:>11}'.format(x), names[2:4])) + \
-            ''.join(map(lambda x: '{:>8}'.format(x), names[4:])) 
+            ''.join(map(lambda x: '{:>8}'.format(x), names[4:]))
 
-        fmt = ['%7.1d', '%3.1d', '%14.6f', '%7.1f', '%5.1d', '%6.1d'] + \
+        fm = ['%7.1d', '%3.1d', '%14.6f', '%7.1f', '%5.1d', '%6.1d'] + \
             self.nch*['%9.3f'] + 2*['%6.1d'] + ['%8.2f']
 
         np.savetxt(
-            self.file_predicted, eigv_data, comments='#', header=header, fmt=fmt
+            self.file_predicted, eigv_data, comments='#', header=header, fmt=fm
         )
 
     def save_additional_data(self):
@@ -1282,8 +1354,14 @@ class MoleculeLevels:
         with open(self.info_outfile, 'w') as outf:
             outf.write(f'{30*"#"} Grid and Molecule Data {30*"#"}\n\n')
             outf.write(f'{sp}Number of Grid Points = {self.ngrid:<5d}\n\n')
-            outf.write(f'{sp}Rmin = {self.rmin*Const.bohr:>10.8f} Angstrom = {self.rmin:>10.8f} Bohr\n')
-            outf.write(f'{sp}Rmax = {self.rmax*Const.bohr:>10.8f} Angstrom = {self.rmax:>10.8f} Bohr\n\n')
+            outf.write(
+                f'{sp}Rmin = {self.rmin*Const.bohr:>10.8f} '
+                f'Angstrom = {self.rmin:>10.8f} Bohr\n'
+            )
+            outf.write(
+                f'{sp}Rmax = {self.rmax*Const.bohr:>10.8f} '
+                f'Angstrom = {self.rmax:>10.8f} Bohr\n\n'
+            )
 
             rgrid_str = np.array2string(self.rgrid)
             outf.write(f'{sp}Grid Points:\n{sp}{rgrid_str}\n\n')
@@ -1292,22 +1370,34 @@ class MoleculeLevels:
 
             outf.write(f'\n{sp}Number of Isotopes = {len(self.masses):>15d}\n')
             for im, mass in enumerate(self.masses):
-                outf.write(f' {sp}{im+1}. {mass:>10.9} au = {mass/Const.massau:>10.9} amu\n')
-            
+                outf.write(
+                    f' {sp}{im+1}. {mass:>10.9} au = '
+                    f'{mass/Const.massau:>10.9} amu\n'
+                )
+
             outf.write(f'\n{sp}Rotational Qunatum Numbers = ')
             outf.write(', '.join(map(str, self.jqnumbers)))
-            outf.write(f'\n{sp}Number of Calculated Eigenvalues = {len(self.evals_predicted):>15d}')
-            outf.write(f'\n{sp}Number of Selected Eigenvalues = {len(self.out_data):>15d}')
-            #outf.write(f'\n{sp}Maximum Number of Eigenvalues = {self.emaxi}')
+            outf.write(
+                f'\n{sp}Number of Calculated Eigenvalues = '
+                f'{len(self.evals_predicted):>15d}'
+            )
+            outf.write(
+                f'\n{sp}Number of Selected Eigenvalues = '
+                f'{len(self.out_data):>15d}'
+            )
+            # outf.write(f'\n{sp}Maximum Number of Eigenvalues = {self.emaxi}')
 
             ofj = True if self.refj is not None else False
             outf.write(f'\n{sp}Shift Energies = {ofj}')
-            if ofj: outf.write(f' by Level J = {self.refj}')
+            if ofj:
+                outf.write(f' by Level J = {self.refj}')
 
             outf.write(f'\n{sp}Levels with Parity = ')
             outf.write(', '.join(map(lambda x: 'e' if x else 'f', self.pars)))
 
-            outf.write(f'\n{sp}File with Experimental Data --- {self.exp_file}\n')
+            outf.write(
+                f'\n{sp}File with Experimental Data --- {self.exp_file}\n'
+            )
 
             outf.write(f'\n{30*"#"} Channels Data {30*"#"}\n')
             outf.write(f'\n{sp}Number of Channels = {self.nch}\n')
@@ -1320,29 +1410,41 @@ class MoleculeLevels:
                 outf.write(f'{sp:>9}Parameters:\n')
                 if ch.model == 'pointwise':
                     for i in range(0, len(ch.R)):
-                        outf.writelines(f'{sp} {ch.R[i]:>15.10f}{sp}{ch.U[i]*Const.hartree:>15.10f}\n')
+                        outf.writelines(
+                            f'{sp} {ch.R[i]:>15.10f}{sp}'
+                            f'{ch.U[i]*Const.hartree:>15.10f}\n'
+                        )
 
             outf.write(f'\n{30*"#"} Couplings Data {30*"#"}\n')
             outf.write(f'\n{sp}Number of Couplings = {self.ncp}')
-            outf.write(f'\n{sp}Hamiltonian Matrix Size = {self.nch*self.ngrid}x{self.nch*self.ngrid}\n')
+            outf.write(
+                f'\n{sp}Hamiltonian Matrix Size = '
+                f'{self.nch*self.ngrid}x{self.nch*self.ngrid}\n'
+            )
             outf.write(f'\n{30*"#"} Coupling Functions on Grid {30*"#"}\n\n')
 
-        fgrid_cols = np.hstack((self.rgrid[:,np.newaxis], self.fgrid.reshape(self.ncp, self.ngrid).T))
+        fgrid_cols = np.hstack((
+            self.rgrid[:, np.newaxis],
+            self.fgrid.reshape(self.ncp, self.ngrid).T
+        ))
 
-        enames = 'N', 'v', 'Ecalc', 'J', 'parity', 'marker', 'state'
-        eheader = '{:>7}'.format(enames[0]) + \
-            ''.join(map(lambda x: '{:>6}'.format(x), enames[1])) + \
-            ''.join(map(lambda x: '{:>14}'.format(x), enames[2:3])) + \
-            ''.join(map(lambda x: '{:>11}'.format(x), enames[3:4])) + \
-            ''.join(map(lambda x: '{:>8}'.format(x), enames[4:]))
+        # enames = 'N', 'v', 'Ecalc', 'J', 'parity', 'marker', 'state'
+        # eheader = '{:>7}'.format(enames[0]) + \
+        #     ''.join(map(lambda x: '{:>6}'.format(x), enames[1])) + \
+        #     ''.join(map(lambda x: '{:>14}'.format(x), enames[2:3])) + \
+        #     ''.join(map(lambda x: '{:>11}'.format(x), enames[3:4])) + \
+        #     ''.join(map(lambda x: '{:>8}'.format(x), enames[4:]))
 
-        efmt = ['%7.1d', '%3.1d', '%14.6f', '%7.1f', '%4.1d', '%4.1d']
+        # efmt = ['%7.1d', '%3.1d', '%14.6f', '%7.1f', '%4.1d', '%4.1d']
 
         with open(self.info_outfile, 'a') as outf:
             np.savetxt(outf, fgrid_cols, fmt=fgrid_cols.shape[1] * ['%16.10f'])
             outf.write(f'\n\n{20*"#"} Experimental data {20*"#"}\n\n')
-            outf.write(f'\nNumber of used experimental data = {len(self.exp_data)}\n')
-            #np.savetxt(outf, self.exp_data, comments='', header=eheader, fmt=efmt)
-            #outf.write(f'\n\n{20*"#"} Eigenvalues {20*"#"}\n\n')
-            #np.savetxt(outf, eigv_data, comments='', header=header, fmt=fmt)
-
+            outf.write(
+                f'\nNumber of used experimental data = {len(self.exp_data)}\n'
+            )
+            # np.savetxt(
+            #   outf, self.exp_data, comments='', header=eheader, fmt=efmt
+            # )
+            # outf.write(f'\n\n{20*"#"} Eigenvalues {20*"#"}\n\n')
+            # np.savetxt(outf, eigv_data, comments='', header=header, fmt=fmt)

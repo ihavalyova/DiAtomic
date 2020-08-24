@@ -10,17 +10,17 @@ class Utils:
     @classmethod
     def createBackup(cls, ref_file):
 
-        backup_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), '.backup')
-        
+        backup_folder = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), '.backup'
+        )
+
         os.makedirs(backup_folder, exist_ok=True)
 
         fname, fext = os.path.splitext(ref_file)
-        
+
         name_bkp = '_'.join([fname, 'bkp', cls.getDatetime()]) + fext
 
         shutil.copy2(ref_file, os.path.join(backup_folder, name_bkp))
-
-        #print(f'Backup file {name_bkp} created for: {ref_file} at {backup_folder}')
 
     @classmethod
     def getDatetime(cls):
@@ -39,22 +39,17 @@ class Utils:
     def get_current_dir(cls):
 
         # will not work if the program is used as a module
-        #return os.path.abspath(os.path.dirname(__file__))
+        # return os.path.abspath(os.path.dirname(__file__))
 
         return os.getcwd()
 
     # @classmethod
     # def calculate_rms(cls, yobs, ycal):
-
     #     s = np.sum(np.square(yobs-ycal)) / yobs.shape[0]
-
     #     return math.sqrt(s)
-
     # @classmethod
     # def calculate_dimless_rms(cls, yobs, ycal, yunc, weighting):
-
     #     diff_square = np.square(yobs - ycal)
-        
     #     if not weighting:
     #         weights = 1.0 / np.square(yunc)
     #     else:
