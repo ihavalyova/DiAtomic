@@ -194,7 +194,7 @@ $$
 The kinetic energy matrix elements are then computed:
 
 $$
-    T_{ij} = \frac{\hbar^2}{2\mu \Delta R^2} \times
+T_{ij} = \frac{\hbar^2}{2\mu \Delta R^2} \times
 \begin{dcases}
     \frac{5}{2}, & j = i\\
     -\frac{4}{3}, &  j = i\pm 1\\
