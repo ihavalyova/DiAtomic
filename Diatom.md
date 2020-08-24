@@ -181,7 +181,7 @@ The second derivative of the wavefunction with respect to the internuclear dista
 
 The kinetic energy matrix elements are then computed:
 
-<p align="center"><img src="/tex/9e1e2e9e534b86f622bbcd09962b9776.svg?invert_in_darkmode&sanitize=true" align=middle width=368.15905499999997pt height=38.973783749999996pt/></p>
+<p align="center"><img src="/tex/61aed5171cdfab840798493b73480e95.svg?invert_in_darkmode&sanitize=true" align=middle width=368.15905499999997pt height=38.973783749999996pt/></p>
 
 This is a banded symmetric matrix. The potential energy matrix is diagonal:
 
