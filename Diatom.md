@@ -1,11 +1,15 @@
 
-- [**Diatomic** module: what is it used for?](#diatomic-module-what-is-it-used-for)
-- [**Diatom** module: how to install and setup?](#diatom-module-how-to-install-and-setup)
+- [**DiAtom** module: what is it used for?](#diatom-module-what-is-it-used-for)
+- [**DiAtom**  module: how to install and setup?](#diatom-module-how-to-install-and-setup)
 - [Diatomic molecule: basic theoretical concepts](#diatomic-molecule-basic-theoretical-concepts)
   - [The total Hamiltonian and basis functions](#the-total-hamiltonian-and-basis-functions)
   - [The Scrodinger equation for a single state and coupled system of states](#the-scrodinger-equation-for-a-single-state-and-coupled-system-of-states)
   - [The interaction terms and their matrix elements](#the-interaction-terms-and-their-matrix-elements)
-  - [Methods for solving the Schrodinger equation](#methods-for-solving-the-schrodinger-equation)
+  - [Methods for solution of the Schrodinger equation](#methods-for-solution-of-the-schrodinger-equation)
+      - [Uniform grid](#uniform-grid)
+      - [Nonuniform grid](#nonuniform-grid)
+      - [Sinc basis](#sinc-basis)
+      - [Fourier basis](#fourier-basis)
   - [Potential Energy function models (PECs models)](#potential-energy-function-models-pecs-models)
 - [Computing Energy Eigenvalues](#computing-energy-eigenvalues)
   - [Molecule Data Object Definition](#molecule-data-object-definition)
@@ -30,13 +34,13 @@
 - [Plotting](#plotting)
 
 
-# **Diatomic** module: what is it used for?
-The Python package **```Diatomic```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
+# **DiAtom** module: what is it used for?
+The Python package **```DiAtom```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
 The current functionality covered by the program includes:
 * ..
 * ..
 
-Just as an example of what you can do with **```Diatomic```** module, if you have a set of potentials for a couple of molecular electronic states represented by points (abinitio, RKR and etc.) and want to see how they look you can do something like:
+Just as an example of what you can do with **```DiAtom```** module, if you have a set of potentials for a couple of molecular electronic states represented by points (abinitio, RKR and etc.) and want to see how they look you can do something like:
 <!-- 
 ```python
 p = diatom.Plotting()
@@ -49,16 +53,16 @@ or even simpler:
 import glob
 
 p = diatom.Plotting()
-p.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=120, xlim=(None, 18))
+p.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=120, xlim=(2.5, 16), ylim=(9e3, 2.5e4))
 ```
 assuming your potential files are in the current directory.
 
 
 ![image info](./kcs_potential_points.svg)
 
-# **Diatom** module: how to install and setup?
+# **DiAtom**  module: how to install and setup?
 
-**```Diatom```** module can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
+**```DiAtom```**  module can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
 
 ```console
 pip install diatom
@@ -104,24 +108,26 @@ to make the file executable and run it. To execute the file from the interactive
 In [1]: run main.py
 ```
 
-The **```Diatom```** package is extensivly tested on Linux platform but works under Windows and MacOS as well.
+The **```DiAtom```** module is extensivly tested on Linux platform but works under Windows and MacOS as well.
 
 # Diatomic molecule: basic theoretical concepts
 
 ## The total Hamiltonian and basis functions
 
-The total Hamiltonian of a diatomic molecule in the rotating molecular frame with origin at the center of mass of the molecule can be written as a sum of several terms:
+The total Hamiltonian of a diatomic molecule in the rotating molecule-fixed coordinate system with origin at the center of mass of the molecule can be written as a sum of several terms:
 
 <p align="center"><img src="/tex/0befcf4d6f64295f51648ed6605604bf.svg?invert_in_darkmode&sanitize=true" align=middle width=381.66411525pt height=16.438356pt/></p>
 
-where the each of the terms is defined as follows:
+where <img src="/tex/88eff123eb81302eced70d075cfd831d.svg?invert_in_darkmode&sanitize=true" align=middle width=49.06969154999999pt height=24.65753399999998pt/> and <img src="/tex/1565b8417026bdbae4f63e0a7df02e21.svg?invert_in_darkmode&sanitize=true" align=middle width=90.41667525pt height=24.65753399999998pt/> are the vibrational and rotational part of the total nuclear kinetic energy operator in spherical polar coordinates, <img src="/tex/c3a1d7f8e57bd6a18adbaa8585b1b61b.svg?invert_in_darkmode&sanitize=true" align=middle width=40.47569294999999pt height=24.65753399999998pt/> is the kinetic energy of the electrons, 
+
+<p align="center"><img src="/tex/33361e7842bc9784188a404d33d61dfb.svg?invert_in_darkmode&sanitize=true" align=middle width=107.76820724999999pt height=16.438356pt/></p>
 
 ## The Scrodinger equation for a single state and coupled system of states
-...
+
 <!-- omit in toc -->
 ### Single channel approximation for an isolated state
 
-The energy eigenvalues of single isolated state of diatomic molecule can be obtained by solving the radial Schrodinger equation
+The energy eigenvalues of single isolated state of a diatomic molecule can be obtained by solving the radial Schrodinger equation
 
 <p align="center"><img src="/tex/04ec33ae2ec81c77f6d478424e026fe4.svg?invert_in_darkmode&sanitize=true" align=middle width=428.47916925pt height=40.11819404999999pt/></p>
 
@@ -132,12 +138,64 @@ with internuclear distance labeled with <img src="/tex/1e438235ef9ec72fc51ac5025
 
 ## The interaction terms and their matrix elements
 
-## Methods for solving the Schrodinger equation
+The most important operators and their matrix elements are:
+
+- Spin-Orbit
+
+- L-Uncoupling
+
+- Spin-Uncoupling
+
+- Spin-Electornic
+
+- Spin-Rotation
+
+- Spin-Spin
+
+- <img src="/tex/b23332f99af850a48831f80dbf681ed6.svg?invert_in_darkmode&sanitize=true" align=middle width=11.41554479999999pt height=22.465723500000017pt/> and <img src="/tex/9432d83304c1eb0dcb05f092d30a767f.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> Doubling
+
+## Methods for solution of the Schrodinger equation
+
+Finite-Difference and Fourier Grid Hamiltonain (DVR type method) are the most frequently applied methods for numerical solution of the 1D Schordinger equation for single and coupled channels problems in molecular spectroscopy. In both methods the wavefunction is approximated over an equidistant or non-equidistant grid of points.
+
+#### Uniform grid
+
+In this case the grid points <img src="/tex/6660896e4379722ff79bba94961b201c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.132374049999992pt height=22.465723500000017pt/> in the interval from <img src="/tex/3076bed5ea0f6f7be4dcc194b5375a3b.svg?invert_in_darkmode&sanitize=true" align=middle width=36.92324789999999pt height=22.465723500000017pt/> to <img src="/tex/ea449f9e9a48e2959872aac8fa65e1ca.svg?invert_in_darkmode&sanitize=true" align=middle width=38.73108029999999pt height=22.465723500000017pt/> are determined by:
+
+<p align="center"><img src="/tex/6f277b0df057cb1fe10512647772c30a.svg?invert_in_darkmode&sanitize=true" align=middle width=292.75927724999997pt height=16.438356pt/></p>
+
+where <img src="/tex/83b80e12323c9ced450508d7bd3822a5.svg?invert_in_darkmode&sanitize=true" align=middle width=23.169583799999987pt height=22.465723500000017pt/> is the number of grid points and <img src="/tex/5385180385f31e03adfa5256148b06bb.svg?invert_in_darkmode&sanitize=true" align=middle width=23.66048849999999pt height=22.465723500000017pt/> is the grid step
+
+<p align="center"><img src="/tex/f17deb669038ee0be520dfb23a4a35c0.svg?invert_in_darkmode&sanitize=true" align=middle width=145.76189265pt height=36.09514755pt/></p>
+
+#### Nonuniform grid
+
+
+
+<!-- omit in toc -->
+  ### Finite-Difference Method (FD)
+
+The second derivative of the wavefunction with respect to the internuclear distance is approximated by five-point central difference schema:
+
+<p align="center"><img src="/tex/ad06c975f5915bd636d67109e3ca03c9.svg?invert_in_darkmode&sanitize=true" align=middle width=465.42534059999997pt height=39.452455349999994pt/></p>
+
+The kinetic energy matrix elements are then computed:
+
+<p align="center"><img src="/tex/9e1e2e9e534b86f622bbcd09962b9776.svg?invert_in_darkmode&sanitize=true" align=middle width=368.15905499999997pt height=38.973783749999996pt/></p>
+
+This is a banded symmetric matrix. The potential energy matrix is diagonal:
+
+<p align="center"><img src="/tex/8f9f8303492ff77504d46be1964f9256.svg?invert_in_darkmode&sanitize=true" align=middle width=105.12704895pt height=17.031940199999998pt/></p>
+
+
 <!-- omit in toc -->
   ### Fourier Grid Hamiltonian (FGH)
 
-<!-- omit in toc -->
-  ### Finite Difference Method (FD)
+FGH is a type of a collocation (or pseudospectral) method since the solution is approximated over a special grid points called collocation points.
+
+#### Sinc basis
+
+#### Fourier basis
 
 ## Potential Energy function models (PECs models)
 - Pointwise potential
@@ -148,7 +206,7 @@ with internuclear distance labeled with <img src="/tex/1e438235ef9ec72fc51ac5025
   The Morse potential function is defined as:
 
   <p align="center"><img src="/tex/32aad865ba81d6b7c52a0cb268f1a101.svg?invert_in_darkmode&sanitize=true" align=middle width=217.99017239999998pt height=19.526994300000002pt/></p>
-  where Te is the term value energy??, <img src="/tex/1876b29402de38408e13f33010df5c24.svg?invert_in_darkmode&sanitize=true" align=middle width=19.84651514999999pt height=22.465723500000017pt/> measures the energy from the bottom of the potential to the dissociation limit (it different from the dissociation energy)
+  where <img src="/tex/d374a50b5b4324e84b1ade9e26ae25e3.svg?invert_in_darkmode&sanitize=true" align=middle width=15.84310529999999pt height=22.465723500000017pt/> is the term value, <img src="/tex/1876b29402de38408e13f33010df5c24.svg?invert_in_darkmode&sanitize=true" align=middle width=19.84651514999999pt height=22.465723500000017pt/> measures the energy from the bottom of the potential to the dissociation limit (it is not the dissociation energy)
   <img src="/tex/8217ed3c32a785f0b5aad4055f432ad8.svg?invert_in_darkmode&sanitize=true" align=middle width=10.16555099999999pt height=22.831056599999986pt/> is a constant and <img src="/tex/7b6a7362f072c7598f6fdb54363c97e8.svg?invert_in_darkmode&sanitize=true" align=middle width=13.65323849999999pt height=14.15524440000002pt/> is the equilibrium internuclear distance.
 
    - EMO (Expanded Morse Oscillator) potential
@@ -187,14 +245,14 @@ Part of the input information about the molecule should be defined by the follow
 <!-- omit in toc -->
 ### Reduced masses and isotopes
 
-- **```molecule```** - defines one or more isotopic forms of the same molecule by specifing their symbols
-  - it should be an iterable of type list or tuple of strings.
-  - each defined item inside this iterable represents a symbol corresponding to diffrent isotope of the same molecule. 
-  - the molecule symbols should be specified by thier atomic symbols and each mass number put in front of them; only spaces between the symbols are allowed.
-  - The reduced masses for each isotope will be computed by looking for their atomic masses in an existing database (ascii file) available from
-  https://www.nist.gov/pml/atomic-weights-and-isotopic-compositions-relative-atomic-masses
-  - this property does not determine which and how many isotopes will be included in the calculations (refer to the property **```nisotopes```** below) but only defines the masses by the symbols.
-  - it is not mandatory
+There are two ways for specifing the reduced mass.
+
+- **```molecule```** - defines one or more isotopic forms of the same molecule by specifing their chemical symbols
+  - each defined item corresponds to a diffrent isotope of the same molecule.
+  - the molecule symbols should be in the format: 'M1A1M2A2' where M1/M2 are the mass numbers and A1/A2 are the chemical symbols of the first/second atom (spaces are allowed).
+  - The reduced masses for each isotope will be computed automatically: the program uses an atomic database available from https://www.nist.gov/pml/atomic-weights-and-isotopic-compositions-relative-atomic-masses
+  - this property does not determine which and how many isotopes will be included in the calculations (refer to the property **```nisotopes```** below) but only defines the isotopes by the symbols.
+  - it should be an iterable of type list or tuple of strings and is not mandatory
 
 In the following example the symbols for three of the isotopes of NiH molecule - <img src="/tex/a01778636bb5ed1e24e91614821128df.svg?invert_in_darkmode&sanitize=true" align=middle width=43.15082309999999pt height=26.76175259999998pt/>, <img src="/tex/f04c8e60a7fed2786b83de051f533185.svg?invert_in_darkmode&sanitize=true" align=middle width=43.15082309999999pt height=26.76175259999998pt/> and <img src="/tex/bfb4aef268944889b9a31b9123d21404.svg?invert_in_darkmode&sanitize=true" align=middle width=43.15082309999999pt height=26.76175259999998pt/> are defined as: 
 
@@ -202,25 +260,22 @@ In the following example the symbols for three of the isotopes of NiH molecule -
 # define the symbols for three isotopes
 mdata.molecule = ['58Ni1H', '60Ni1H', '62Ni1H']
 
-# this is also a valid syntax
-mdata.molecule = ['58Ni 1H']
-mdata.molecule = ['58 Ni 1 H']
+# and this also works
+mdata.molecule = ['58 Ni 1 H', '60Ni 1H', '62 Ni 1H']
 ```
 
-- **```masses```** - defines the reduced masses for one or more isotopes of the molecule by specifing their numerical values comupted beforehand. 
-
-  - use when the automatic computation of the reduced masses is not preffered
-  - it should be an iterable of type list or tuple of float numbers.
-  - each defined item inside this iterable represents the reduced mass for a different isotope computed by <img src="/tex/a5f91a48b545c00d9b57f59247ed65e8.svg?invert_in_darkmode&sanitize=true" align=middle width=190.2203985pt height=24.65753399999998pt/> in amu units.
+- **```masses```** - defines one or more isotopic forms of the same molecule by specifing the values of their reduced masses
+  - each defined item represents the reduced mass for each isotope computed by <img src="/tex/a5f91a48b545c00d9b57f59247ed65e8.svg?invert_in_darkmode&sanitize=true" align=middle width=190.2203985pt height=24.65753399999998pt/> in amu units.
   - this property does not determine which and how many isotopes will be included in the calculations (refer to the property **```nisotopes```** below) but only defines their masses.
-  - it is not mandatory
+  - use when the automatic computation of the reduced masses is not preffered
+  - it should be an iterable of type list or tuple of float numbers and is not mandatory
 
 ```python
 # define the reduced masses for three of NiH isotopes
 mdata.masses = [0.990592988928, 0.991157254368, 0.991686280089]
 
 # or from the masses of the separate atoms
-mA, mB = 1.00782503223, 34.968852682
+mA, mB = 1.00782503223, 57.94453305
 mdata.masses = [mA * mB / (mA + mB)]
 ```
 
@@ -228,35 +283,34 @@ mdata.masses = [mA * mB / (mA + mB)]
 
 > **_NOTE:_** The properties **```molecule```**/**```masses```** and **```nisotopes```** are closely connected.
 
-- **```nisotopes```** - tells which isotopes to be included in the compuations by providing their numbers
-  - it should be a list or tuple of integer numbers
-  - a list of numbers each corresponding to an isotope with mass defined by the property **```masses```**. In other words the values of this property are indicies of the property **```masses```** counting from 1.
-  - the values starts from 1 up to the number of masses in **```masses```**
-  - it is mandatory
+- **```nisotopes```** - the indecies of isotopes which to be included in the compuations
+  - each number corresponds to the index of an isotope in the list of defined masses either by the property **```molecule```** or by the property **```masses```** 
+  - the caounting starts from 1 up to the number of masses in **```molecule```** or **```masses```**
+  - it should be a list or tuple of integer numbers and is mandatory.
 
-The energies only for the second and the third isotope will be computed in this example:
+In this example the computations will be performed only for the second and the third isotope:
 ```python
 # define the masses of 3 isotopes
 mdata.molecule = ['58Ni1H', '60Ni1H', '62Ni1H']
 
-# but compute only for the second and the third one
-mdata.nisotopes = [2,3]
+# but compute only for the 2nd and the 3rd one
+mdata.nisotopes = [2, 3]
 ```
 
 <!-- omit in toc -->
 ### Values of the rotational quantum number J
 
-- **```jrange```** - defines a continious sequence of J values by specifing the inital and the final values.
+- **```jrange```** - defines a sequence of rotational qunatum numbers on a given interval.
 
+  - specify the initial and the final J value of the required range of rotational quantum numbers which to be used in the computations
   - it is an iterable of type list or tuple containing only 2 elements (integer or float numbers)
-  - the two elements are the initial and the final J value of the required range of rotational quantum numbers which to be used in the computations
 
 ```python
 # the J values will be: 0, 1, 2, 3, 4 and 5
 mdata.jrange = (0, 5)
 ```
 
-- **```jvalues```** - defines a specific set of values for J
+- **```jvalues```** - defines a specific set of values for the rotational qunatum number
 
   - it could be a single number or list of numbers defined as type list/tuple of integer or float numbers
 
@@ -277,11 +331,11 @@ mdata.jvalues = (10.5, 12.5, 15.5, 16.5)
 <!-- omit in toc -->
 ### Parity labels
 
-- **```parities```** - tells which parity levels to be computed. 
+- **```parities```** - which parity levels to be computed. 
   - levels with one or both e/f parity labels can be computed. 
-  - we use a convention for designating the parity labels with numbers 0 and 1 for f and e respectivly.
+  - we use a convention for designating the parity labels with numbers 1/0 for e/f.
   - it accepts a sinle value or tuple/list of one or two values of integer type (0 or 1).
-  - not mandatory - if it is not set both e- and f-levels will be computed by default.
+  - not mandatory; if it is not set both e- and f-levels will be computed by default.
 
 ```python
 # both e- and f-levels will be computed
@@ -294,9 +348,9 @@ mdata.parities = 1
 <!-- omit in toc -->
 ### Reference level
 
-- **```referenceJ```** - a reference J level which energy will be used for shifting all other levels
+- **```referenceJ```** - a reference J level whose energy will be used for shifting all levels during the computations
   - the energies of all levels will be shifted by the energy of the level having this J value
-  - in the general case the e/f levels and levels corresponding to diffrent isotopes might be shifted with diffrent energy
+  - if this property is set, in general the e/f levels and and also the levels corresponding to diffrent isotopes might be shifted with diffrent energy
   - integer or float number
 
 - **```referenceE```** - a reference energy value which will be used for shifting all levels
@@ -309,38 +363,36 @@ mdata.referenceJ = 2.5
 ```
 
 ```python
-mdata.referenceE = 1000
+mdata.referenceE = 1000.
 ```
-None of them is mandatory.
-
-If both of these parameters are specified simultaneously, **```referenceJ```** will be used.
+None of them is mandatory. **```referenceJ```** has higher proprity if both of them are specified simultaneously.
 
 ## Grid Object Definition
 
-Will define a grid of points on the internuclear distance R.
 
-To set all parameters releated to the defininiton of the grid we need to initilize the grid object. This can be done if we call the **```Grid```** constructor and pass the required arguments. Two types of grids are supported:
+To set the parameters releated to the defininiton of the grid we need to instanciate a new object of type **```Grid```**. Uniform and non-uniform types of grids are supported.
+
 <!-- omit in toc -->
 ### Uniform grid
 
-An equdistant set of points will be generated on which all subsequent calculations will be performed. The grid points <img src="/tex/6660896e4379722ff79bba94961b201c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.132374049999992pt height=22.465723500000017pt/> in the interval from <img src="/tex/3076bed5ea0f6f7be4dcc194b5375a3b.svg?invert_in_darkmode&sanitize=true" align=middle width=36.92324789999999pt height=22.465723500000017pt/> to <img src="/tex/ea449f9e9a48e2959872aac8fa65e1ca.svg?invert_in_darkmode&sanitize=true" align=middle width=38.73108029999999pt height=22.465723500000017pt/> are determined by:
-
-<p align="center"><img src="/tex/6f277b0df057cb1fe10512647772c30a.svg?invert_in_darkmode&sanitize=true" align=middle width=292.75927724999997pt height=16.438356pt/></p>
-
-where <img src="/tex/83b80e12323c9ced450508d7bd3822a5.svg?invert_in_darkmode&sanitize=true" align=middle width=23.169583799999987pt height=22.465723500000017pt/> is the number of grid points and <img src="/tex/5385180385f31e03adfa5256148b06bb.svg?invert_in_darkmode&sanitize=true" align=middle width=23.66048849999999pt height=22.465723500000017pt/> is the grid step
-
-<p align="center"><img src="/tex/f17deb669038ee0be520dfb23a4a35c0.svg?invert_in_darkmode&sanitize=true" align=middle width=145.76189265pt height=36.09514755pt/></p>
-
-The required arguments in this case are:
+An equdistant set of points will be generated on which all subsequent calculations will be performed. The required arguments that are needed to initilize the **```Grid```** object in this case are:
 
 - **```npoints```** - the number of grid points
     - It should be a positive integer number
 
 - **```rgrid```** - the range of R values.
-    - We need to specify the initial $R_{min}$ and the final $R_{max}$ values of the R grid.
+    - We need to specify the initial and the final values of the R grid.
     - It accepts a tuple/list containing two integer or float numbers
 
 The above two arguments are mandatory.
+
+This example shows how to initialize the grid object for uniform grid.
+```python
+# create a uniform grid of points
+grid = diatom.Grid(npoints=100, rgrid=(1.0, 3.0))
+```
+
+Another (optional) parameter that we may provide here is:
 
 - **```solver```** - the method used for solution of the Schrodinger equation
     - The initialization of the grid depends on which solver method is selected.
@@ -349,20 +401,12 @@ The above two arguments are mandatory.
       - **```'fourier'```**
       - **```'fd5'```**
 
-      If one of the values **```'sinc'```** or **```'fourier'```** is selected then FGH (Fourier Grid Hamiltonian) method will be used for the solution of the Schrodinger equation.
-
-      If 'fd5' option is selected the Schrodinger equation will be solved by Finite Diffrence method using...
-
-      These two methods are the most frequently applied when the Schrodinger equation is solving for coupled channels problems in diatomic molecular spectroscopy.
+      If one of the values **```'sinc'```** or **```'fourier'```** is selected then FGH (Fourier Grid Hamiltonian) method will be used for the solution of the Schrodinger equation. If 'fd5' option is selected the Schrodinger equation will be solved by Finite Diffrence method.
     - **```solver='sinc'```** is set by default.
 
 > **_NOTE:_** All parameters in program with values of type string are case-insensitive.
 
-This example shows how the grid object should be initialized for uniform grid.
-```python
-# create a uniform grid of points
-grid = diatom.Grid(npoints=100, rgrid=(1.0, 3.0), solver='sinc')
-```
+
 <!-- omit in toc -->
 ### Nonuniform grid
 For the generation of the nonuniform grid an analytical mapping procedure is appled.
@@ -426,7 +470,7 @@ Each channel have to be defined as an object of type **```Channel```**. The para
 
 - **```model```** - defines the potential energy function model (PECs model)
   - It could be a pointwise function, builtin analytical potential function or custom analytical potential function (defined by the user). The possible values are:
-    - **```'pointwise'```** : pointwise potential with cubic spline interpolation using internal Python implementation
+    - **```'pointwise'```** : pointwise potential with cubic spline interpolation using the **```scipy```** builtin class <a href="https://yaml.org/" target="_blank">scipy.interpolate.CubicSpline</a>
     - **```'cspline'```** : pointwise potential with cubic spline interpolation using our own implementation
     - **```'Morse'```** : analytical Morse potential
     - **```'EMO'```** : analytical EMO (Expanded Morse Oscilator) potential
@@ -770,7 +814,7 @@ If we need the eigenvalues and the eigenvectors only in a certain interval of va
 
   - The default value is set to **```'evr'```** which in general is the recommended choice. **```'evx'```** is faster when only a few of the eigenvalues are desired.
 
-  > **_NOTE:_**  **```subset_by_index```** and **```subset_by_value```** cannot be used together with **```'ev'```** and **```'evd'```** because they compute all eigenvalues.
+  > **_NOTE:_**  **```energy_subset_index```** and **```energy_subset_value```** cannot be used together with **```'ev'```** and **```'evd'```** because they compute all eigenvalues.
 
     ```python
     mlevels.calculate_levels(eig_decomp='lapack', lap_driver='evx')
@@ -900,7 +944,7 @@ Here all eigenvalues and eigenvectors for J=1,2,3,4 and 5 with both e/f parity l
 
 # Fitting of the Calculated Energy Levels
 
-The **```Diatomic```** module has several implemented procedures for weighted least-squares fitting of the calculated to the experimental energy levels. In all cases what we want to minimize is the difference between the experimental (observed) energies and the calculated ones. Therefore we define the <img src="/tex/a67d576e7d59b991dd010277c7351ae0.svg?invert_in_darkmode&sanitize=true" align=middle width=16.837900199999993pt height=26.76175259999998pt/> function as:
+The **```DiAtom```** module has several implemented procedures for weighted least-squares fitting of the calculated to the experimental energy levels. In all cases what we want to minimize is the difference between the experimental (observed) energies and the calculated ones. Therefore we define the <img src="/tex/a67d576e7d59b991dd010277c7351ae0.svg?invert_in_darkmode&sanitize=true" align=middle width=16.837900199999993pt height=26.76175259999998pt/> function as:
 
 <p align="center"><img src="/tex/8ec442e942723e367a844cc07ec2a05b.svg?invert_in_darkmode&sanitize=true" align=middle width=200.27529884999998pt height=47.8235406pt/></p>
 
@@ -921,7 +965,7 @@ The first parameter is the created **```MoleculeLevels```** object and the secon
 
 ## SVD Fit
 
-In general it is not recommended to solve the above linear system by the method of the normal equations (that uses the matrix inverse) since the matrix A is singular mainly because of the following problem. Sometimes there exist two or more linear combinations of functions with the fitted parameters that can be added to the model functions without changing the <img src="/tex/a67d576e7d59b991dd010277c7351ae0.svg?invert_in_darkmode&sanitize=true" align=middle width=16.837900199999993pt height=26.76175259999998pt/> value. This is an indication of a linear dependance between the model functions (the data matrix will be singular) and also means that there exist two or more sets of parameters that fit the data equally well. In this cases it is recommended to use the Singular Value Decomposition (SVD). In SVD the matrix <img src="/tex/53d147e7f3fe6e47ee05b88b166bd3f6.svg?invert_in_darkmode&sanitize=true" align=middle width=12.32879834999999pt height=22.465723500000017pt/> (n x m) is represented as a product of three matrices <img src="/tex/348ca4b32b3c0af83c00431b016dfad9.svg?invert_in_darkmode&sanitize=true" align=middle width=78.404007pt height=27.91243950000002pt/>, two unitary (or orthogonal in the real case) matrices U (n x n) and V (m x m) and one diagonal matrix <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> (n x m). This is known as full SVD. When <img src="/tex/180688a8c2192e65c9812628d22d321f.svg?invert_in_darkmode&sanitize=true" align=middle width=46.21760714999999pt height=20.908638300000003pt/> (more data then parameters), <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> will have at most m nonzero rows then a more compact representation is possible: <img src="/tex/3652fbbfd63546aca5a4a0537748d81f.svg?invert_in_darkmode&sanitize=true" align=middle width=78.40398554999999pt height=31.141535699999984pt/> where <img src="/tex/c827023fcc3b2c873aae402363f41328.svg?invert_in_darkmode&sanitize=true" align=middle width=13.01596064999999pt height=31.141535699999984pt/> (n x m) is a submatrix of U and <img src="/tex/d4261132636819ae7c6f4039dafc4016.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=31.141535699999984pt/> (m x m) is the nonzero submatrix of <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/>. This is known as "economy" SVD. The U and V matrices are called right and left singular vectors and the diagonal elments of <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> are called singular values. It is important that the singular values are hierarchically aranged from the largest to the smallest i.e. <img src="/tex/73f03081ed485c91b9becde40212c0a5.svg?invert_in_darkmode&sanitize=true" align=middle width=139.52397194999998pt height=20.908638300000003pt/>...
+In general it is not recommended to solve the above linear system by the method of the normal equations (that uses the matrix inverse) since the matrix A is singular mainly because of the following problem. Sometimes there exist two or more linear combinations of functions with the fitted parameters that can be added to the model functions without changing the <img src="/tex/a67d576e7d59b991dd010277c7351ae0.svg?invert_in_darkmode&sanitize=true" align=middle width=16.837900199999993pt height=26.76175259999998pt/> value. This is an indication of a linear dependance between the model functions (the data matrix will be singular) and also means that there exist two or more sets of parameters that fit the data equally well. In this cases it is recommended to use the Singular Value Decomposition (SVD). In SVD the matrix <img src="/tex/53d147e7f3fe6e47ee05b88b166bd3f6.svg?invert_in_darkmode&sanitize=true" align=middle width=12.32879834999999pt height=22.465723500000017pt/> (n x m) is represented as a product of three matrices <img src="/tex/348ca4b32b3c0af83c00431b016dfad9.svg?invert_in_darkmode&sanitize=true" align=middle width=78.404007pt height=27.91243950000002pt/>, two unitary (or orthogonal in the real case) matrices U (n x n) and V (m x m) and one diagonal matrix <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> (n x m). This is known as full SVD. When <img src="/tex/180688a8c2192e65c9812628d22d321f.svg?invert_in_darkmode&sanitize=true" align=middle width=46.21760714999999pt height=20.908638300000003pt/> (more data than parameters), <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> will have at most m nonzero rows and more compact representation is possible: <img src="/tex/3652fbbfd63546aca5a4a0537748d81f.svg?invert_in_darkmode&sanitize=true" align=middle width=78.40398554999999pt height=31.141535699999984pt/> where <img src="/tex/c827023fcc3b2c873aae402363f41328.svg?invert_in_darkmode&sanitize=true" align=middle width=13.01596064999999pt height=31.141535699999984pt/> is (n x m) submatrix of U and <img src="/tex/d4261132636819ae7c6f4039dafc4016.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=31.141535699999984pt/> is the (m x m) submatrix of <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/>. This is known as "economy" SVD. The U and V matrices are called right and left singular vectors and the diagonal elments of <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> are called singular values. It is important that the singular values are hierarchically aranged from the largest to the smallest i.e. <img src="/tex/73f03081ed485c91b9becde40212c0a5.svg?invert_in_darkmode&sanitize=true" align=middle width=139.52397194999998pt height=20.908638300000003pt/>...
 
 The singular values are different from zero when the model functions are linearly independant.
 
@@ -954,7 +998,7 @@ To find the least-squares solution **```run_svd```** calls <a href="https://docs
 
 ## Minuit Fit
 
-**```Diatomic```** provides an option to call the Minuit library in C++ via the Python frontend **```iminuit```**. It works with the Minuit Migrad subroutine for local function minimization. In addition to that it is able to estimate the uncertainty in the fitted parameters by computing the covariance and correlation matrices using two different algorithms and procedures called Hesse and Minos.
+**```DiAtom```** provides an option to call the Minuit library in C++ via the Python frontend **```iminuit```**. It works with the Minuit Migrad subroutine for local function minimization. In addition to that it is able to estimate the uncertainty in the fitted parameters by computing the covariance and correlation matrices using two different algorithms and procedures called Hesse and Minos.
 
 To run the Minuit Fit we should call the method **```run_minuit```** through the created **```Fitting```** object. This method has only optional parameters:
 
