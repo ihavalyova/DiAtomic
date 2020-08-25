@@ -1148,7 +1148,6 @@ The output looks like:
 
 We can use the program to further analyize and plot the experimental and computed data.
 
-
 ```python
 # this function returns the experimental data as numpy array
 exp_data = mdata.get_exp_data()
