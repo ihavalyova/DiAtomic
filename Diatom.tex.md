@@ -6,10 +6,6 @@
   - [The Scrodinger equation for a single state and coupled system of states](#the-scrodinger-equation-for-a-single-state-and-coupled-system-of-states)
   - [The interaction terms and their matrix elements](#the-interaction-terms-and-their-matrix-elements)
   - [Methods for solution of the Schrodinger equation](#methods-for-solution-of-the-schrodinger-equation)
-      - [Uniform grid](#uniform-grid)
-      - [Nonuniform grid](#nonuniform-grid)
-      - [Sinc basis](#sinc-basis)
-      - [Fourier basis](#fourier-basis)
   - [Potential Energy function models (PECs models)](#potential-energy-function-models-pecs-models)
 - [Computing Energy Eigenvalues](#computing-energy-eigenvalues)
   - [Molecule Data Object Definition](#molecule-data-object-definition)
@@ -58,7 +54,7 @@ p.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=120, xlim=(2.5
 assuming your potential files are in the current directory.
 
 
-![image info](./kcs_potential_points.svg)
+![KCs_potentials](./plotting/kcs_potential_points.svg)
 
 # **DiAtom**  module: how to install and setup?
 
@@ -164,6 +160,7 @@ The most important operators and their matrix elements are:
 
 Finite-Difference and Fourier Grid Hamiltonain (DVR type method) are the most frequently applied methods for numerical solution of the 1D Schordinger equation for single and coupled channels problems in molecular spectroscopy. In both methods the wavefunction is approximated over an equidistant or non-equidistant grid of points.
 
+<!-- omit in toc -->
 #### Uniform grid
 
 In this case the grid points $R_i$ in the interval from $R_{min}$ to $R_{max}$ are determined by:
@@ -178,6 +175,7 @@ $$
 \Delta_{R} = \frac{R_{max} - R_{min}}{N_{R} - 1}
 $$
 
+<!-- omit in toc -->
 #### Nonuniform grid
 
 
@@ -214,8 +212,10 @@ $$
 
 FGH is a type of a collocation (or pseudospectral) method since the solution is approximated over a special grid points called collocation points.
 
+<!-- omit in toc -->
 #### Sinc basis
 
+<!-- omit in toc -->
 #### Fourier basis
 
 ## Potential Energy function models (PECs models)
@@ -889,7 +889,9 @@ Similarly **```arpack_k```**, **```arpack_which```** and  **```arpack_sigma```**
 ### Output Format and Storing Options
 
 
-- **```store_predicted```** - save all computed eigenvalues in file
+- **```store_predicted```** - save _all_ computed eigenvalues in file
+  - the value of this parameter is the name of the file in which the eigenvalues will be written
+  - if no value is set or if the value is **```None```** then the default filename will be used which is '**evalues_predicted.dat**'
 
 The file looks like:
 
@@ -903,20 +905,21 @@ The file looks like:
       6   5    1503.471257     1.0     0      1     1.000      1      0     0.00
 ```
   
-- **```store_info```** - save more detailed information regarding the comutaions in a file
-  - may be used for debugging purpose
+- **```store_info```** - save more detailed information regarding the computations
+  - useful for debugging purpose
   
 - **```store_evecs```** - save the computed eigenvectors in files
 
 - **```sort_output```** - sort the selected eigenvalues before saving them by providing column numbers
 
-- **```sort_predicted```** - sort all computed eigenvalues before saving them by providing column numbers
+- **```sort_predicted```** - sort all computed eigenvalues before saving them 
+  - the numbers of the columns in desired 
 
 ## Examples
 
 <!-- omit in toc -->
-### The minimal working example
-An example with the minimal set of nessecary parameters for running a single channel computations with Morse function is presented.
+### The minimal working example: Morse potential for $\mathrm{H}_2$ molecule
+This is an example with the minimal set of nessecary parameters for running a single channel computations with the Morse potential for $\mathrm{H}_2$ molecule.
 
 It is done with only a few lines of code.
 
@@ -926,14 +929,14 @@ It is done with only a few lines of code.
 import diatom
 
 mdata = diatom.MoleculeData()
-mdata.molecule = ['58Ni1H']
+mdata.molecule = ['1H1H']
 mdata.nisotopes = [1]
-mdata.jrange = (1, 5)
+mdata.jrange = (0, 1)
 
-grid = diatom.Grid(npoints=100, rgrid=(1.0, 3.0))
+grid = diatom.Grid(npoints=170, rgrid=(0.3, 2.5))
 
 ch1 = diatom.Channel(
-    filep='morse_HCl.pot',
+    filep='morse_H2.pot',
     model='morse',
     nlambda=0,
     sigma=0,
@@ -946,32 +949,204 @@ diatom.Channel.set_channel_parameters(channels)
 mlevels = diatom.MoleculeLevels(mdata, grid, channels)
 mlevels.calculate_levels()
 ```
-The content of the input potential file:
+The content of the potential file 'morse_H2.pot' is the following:
+```python
+Te =   0.0000000          0
+De =   3.8276634e+04      0
+a  =   1.9419600          0
+re =   0.7419100          0
 ```
-Te =    1.00000000e-05   0
-De =    1.00000000e+01   0
-a  =    1.00000000       0
-re =    1.27463182       0
-```
-Here all eigenvalues and eigenvectors for J=1,2,3,4 and 5 with both e/f parity labels will be computed with the 'sinc' option of FGH method. The computed eigenvalues will be stored in file called 'eigenvalues_all.dat'. The first few lines of this file look like
+Here all eigenvalues and eigenvectors for J=0 and J=1 with both e/f parity labels will be computed with using the 'sinc' method. The computed eigenvalues will be stored in file called 'evalues_predicted.dat'.
+The first few lines of this file look like
 
+```python
+#     No  v      Ecalc          J   parity  marker   CC1    state  lambda   omega
+      1   0    2165.954681     0.0     0      1     1.000      1      0     0.00
+      2   1    6308.624389     0.0     0      1     1.000      1      0     0.00
+      3   2   10198.976338     0.0     0      1     1.000      1      0     0.00
+      4   3   13837.015745     0.0     0      1     1.000      1      0     0.00
+      5   4   17222.753191     0.0     0      1     1.000      1      0     0.00
+      6   5   20356.205017     0.0     0      1     1.000      1      0     0.00
+      7   6   23237.390221     0.0     0      1     1.000      1      0     0.00
+      8   7   25866.323436     0.0     0      1     1.000      1      0     0.00
 ```
-#     No   v      Ecalc          J  parity  marker      CC1   state  lambda   omega
-      1   0      56.113986     1.0     0      1     1.000      1      0     0.00
-      2   1     180.940849     1.0     0      1     1.000      1      0     0.00
-      3   2     387.925302     1.0     0      1     1.000      1      0     0.00
-      4   3     677.259248     1.0     0      1     1.000      1      0     0.00
-      5   4    1049.088043     1.0     0      1     1.000      1      0     0.00
-      6   5    1503.471257     1.0     0      1     1.000      1      0     0.00
-      7   6    2040.431414     1.0     0      1     1.000      1      0     0.00
-      8   7    2659.982664     1.0     0      1     1.000      1      0     0.00
+
+Then we can plot the potential:
+
+```python
+plot = diatom.Plotting()
+plot.plot_potentials_on_grid(mlevels, show=True, fformat='svg')
 ```
+
+![Morse potential H2](./plotting/potential_morse_H2.svg)
 
 <!-- omit in toc -->
-### Another example
+### Another example: EMO potential for ...
+
+
 
 <!-- omit in toc -->
-### A more complex example
+### A more complex example: pointwise potentials for $^2\Sigma^+$, $^2\Pi$ and $^2\Delta$ states of NiH molecule
+
+The complex of the three doublet electronic states $^2\Sigma^+$, $^2\Pi$ and $^2\Delta$ for NiH molecule is an example of strongly perturbed and coupled states by various interactions. The three electronic states are described by five channels and in this example only five of all interactions are accounted for.
+
+```python
+#!/usr/bin/env python
+
+import diatom
+
+mdata = diatom.MoleculeData()
+mdata.molecule = ['58Ni1H']
+mdata.nisotopes = [1]
+mdata.jrange = (0.5, 12.5)
+mdata.referencej = 2.5
+mdata.parities = 0, 1
+mdata.set_exp_data('nih_exp.dat', markers=[5])
+
+grid = diatom.Grid(npoints=170, rgrid=(0.75, 3.0), solver='sinc')
+
+vpot = 'nih_sigma.pot'
+wpot = 'nih_pi.pot'
+xpot = 'nih_delta.pot'
+
+ch1 = diatom.Channel(
+    filep=vpot,
+    model='pointwise',
+    nlambda=0,
+    sigma=0.5,
+    multiplicity=2
+)
+
+ch2 = diatom.Channel(
+    filep=wpot,
+    model='pointwise',
+    nlambda=1,
+    sigma=-0.5,
+    multiplicity=2
+)
+
+ch3 = diatom.Channel(
+    filep=wpot,
+    model='pointwise',
+    nlambda=1,
+    sigma=0.5,
+    multiplicity=2
+)
+
+ch4 = diatom.Channel(
+    filep=xpot,
+    model='pointwise',
+    nlambda=2,
+    sigma=-0.5,
+    multiplicity=2
+)
+
+ch5 = diatom.Channel(
+    filep=xpot,
+    model='pointwise',
+    nlambda=2,
+    sigma=0.5,
+    multiplicity=2
+)
+
+channels = [ch1, ch2, ch3, ch4, ch5]
+diatom.Channel.set_channel_parameters(channels)
+
+cp1 = diatom.Coupling(
+    interact=((2, 2), (3, 3)),
+    coupling=('spin-orbit', 'spin-orbit'),
+    model='pointwise',
+    multiplier=(-1.0, 1.0),
+    label='SO_Pi'
+)
+
+cp2 = diatom.Coupling(
+    interact=((4, 4), (5, 5)),
+    coupling=('spin-orbit', 'spin-orbit'),
+    model='pointwise',
+    multiplier=(-1.0, 1.0),
+    label='SO_Delta'
+)
+
+cp3 = diatom.Coupling(
+    interact=(1, 2),
+    coupling='spin-orbit',
+    model='pointwise',
+    multiplier=1.0,
+    label='SO_Sigma_Pi'
+)
+
+cp4 = diatom.Coupling(
+    interact=(3, 4),
+    coupling='spin-orbit',
+    model='pointwise',
+    multiplier=1.0,
+    label='SO_Sigma_Delta'
+)
+
+cp5 = diatom.Coupling(
+    interact=((2, 4), (3, 5), (3, 4)),
+    coupling=('LJ', 'LJ', 'SL'),
+    model='pointwise',
+    multiplier=(2.0, 2.0, 2.0),
+    label='LJ_Pi_Delta'
+)
+
+couplings = [cp1, cp2, cp3, cp4, cp5]
+diatom.Coupling.set_coupling_parameters('couplings.dat', couplings)
+
+mlevels = diatom.MoleculeLevels(mdata, grid, channels, couplings=couplings)
+mlevels.calculate_levels(energy_subset_value=(0, 7000.), identify=0)
+```
+
+```yaml
+SO_Pi:
+- 0.750000000000      -300.71901701285799       0
+- 1.250000000000      -300.59347903145402       0
+- 1.500000000000      -295.33299681003803       0
+- 2.000000000000      -304.13289200589099       0
+- 2.500000000000      -301.78320985488801       0
+- 3.000000000000      -301.49811571690401       0
+SO_Delta:
+- 0.750000000000      -606.45610689008595       0
+- 1.250000000000      -593.55453482886696       0
+- 1.500000000000      -599.03808570186402       0
+- 2.000000000000      -606.92282658440399       0
+- 2.500000000000      -603.70988681001700       0
+- 3.000000000000      -602.90906506719705       0
+SO_Sigma_Pi:
+- 0.750000000000      -620.71974693075003       0
+- 1.500000000000      -645.86464080798601       0
+- 2.000000000000      -716.97127978362300       0
+- 2.500000000000      -735.96722850460196       0
+- 3.000000000000      -740.41087084696699       0
+SO_Sigma_Delta:
+- 0.750000000000      -590.84142865184197       0
+- 1.500000000000      -600.45207379396902       0
+- 2.000000000000      -606.05480585440398       0
+- 2.500000000000      -605.57223541150302       0
+- 3.000000000000      -603.00000000000000       0
+LJ_Pi_Delta:
+- 0.750000000000         1.23969597272800       0
+- 1.200000000000         0.94539092137400       0
+- 1.500000000000         0.99276646115100       0
+- 2.000000000000         1.23560350766500       0
+- 5.000000000000         1.00000000000000       0
+```
+
+The output looks like:
+
+```python
+#    No       v       J   omega   sigma  lambda  parity  marker   Ecalc           Eexp          delta        unc       CC1      CC2      CC3      CC4      CC5      state
+      1       0     2.5     2.5     0.5      2      0      5        0.000000       0.000000     0.000000     0.0050    0.000    0.000    0.000    0.000    1.000     5
+      2       0     2.5     2.5     0.5      2      1      5        0.000000       0.000000     0.000000     0.0050    0.000    0.000    0.000    0.000    1.000     5
+      3       0     3.5     2.5     0.5      2      0      5       54.246138      53.827000     0.419138     0.0050    0.000    0.000    0.001    0.000    0.999     5
+      4       0     3.5     2.5     0.5      2      1      5       54.246138      53.827000     0.419138     0.0050    0.000    0.000    0.001    0.000    0.999     5
+      5       0     4.5     2.5     0.5      2      0      5      123.918310     122.962000     0.956310     0.0050    0.000    0.000    0.001    0.000    0.999     5
+      6       0     4.5     2.5     0.5      2      1      5      123.918310     122.962000     0.956310     0.0050    0.000    0.000    0.001    0.000    0.999     5
+```
+
+Afterwards ...
 
 # Fitting of the Calculated Energy Levels
 
@@ -1074,6 +1249,8 @@ Not yet implemented
 ## Einstein A coefficient and Radiative Lifetime
 
 # Plotting
+
+The program provides some basic and simple plotting functions.
 
 ![Hamiltonian matrix colormesh](./hcolormesh.png)
 
