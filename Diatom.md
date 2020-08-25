@@ -1135,7 +1135,7 @@ _, ax = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(11, 5))
 
 ax[0].plot(fdata[:, 2], fdata[:, 3], 'bo', fillstyle='none')
 ax[0].set_xlabel('J')
-ax.set_ylabel(r'Energy (cm<img src="/tex/db982724014b78c648c5d008c86b3d09.svg?invert_in_darkmode&sanitize=true" align=middle width=16.82656799999999pt height=26.76175259999998pt/>)')
+ax.set_ylabel(r'Energy (cm$^{-3}$)')
 
 ax[1].plot(edata[:, 2], edata[:, 3], 'ro', fillstyle='none')
 ax[1].set_xlabel('J')
@@ -1154,7 +1154,7 @@ for v in vs:
         ax1.plot(f[:, 2], f[:, 3], color='green', marker='X', fillstyle='none', markersize=6, linewidth=0.2)
 
 ax1.set_xlabel('J')
-ax1.set_ylabel(r'Energy (cm<img src="/tex/db982724014b78c648c5d008c86b3d09.svg?invert_in_darkmode&sanitize=true" align=middle width=16.82656799999999pt height=26.76175259999998pt/>)')
+ax1.set_ylabel(r'Energy (cm$^{-3}$)')
 plt.show()
 ```
 
