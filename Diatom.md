@@ -674,23 +674,20 @@ The couplings file uses a <a href="https://yaml.org/" target="_blank">YAML</a> s
 
 ```yaml
 cp1:
-- 0.75000000  -300.731917268926   0
-- 1.25000000  -300.188348980659   0
-- 1.50000000  -295.722686487558   0
-- 2.00000000  -305.071069853626   0
-- 3.00000000  -301.500000000000   0
+- 0.750000000000      -606.45610689008595       0
+- 1.250000000000      -593.55453482886696       0
+- 1.500000000000      -599.03808570186402       0
+- 2.000000000000      -606.92282658440399       0
+- 2.500000000000      -603.70988681001700       0
+- 3.000000000000      -602.90906506719705       0
+- 5.000000000000      -603.00000000000000       0
 cp2:
-- 0.75000000  -606.439130285529   0
-- 1.25000000  -594.031805306883   0
-- 1.50000000  -599.307655859103   0
-- 2.00000000  -607.563537893363   0
-- 3.00000000  -603.000000000000   0
-cp3:
-- 0.75000000     1.024663995832   0
-- 1.20000000     1.223710979140   0
-- 1.50000000     1.003797203439   0
-- 2.00000000     0.995600549099   0
-- 3.00000000     1.000000000000   0
+- 0.750000000000         0.02157527230695       0
+- 1.500000000000         0.00110018854657       0
+- 2.000000000000        -0.01268353489511       0
+- 2.500000000000        -0.04232747723667       0
+- 3.000000000000         0.00105314077299       0
+- 5.000000000000         0.00001000000000       0
 ```
 
 ----
@@ -726,16 +723,17 @@ The only required parameter is the name of the file containing the experimental 
 #### Structure of the experimental data file
 
 ```python
-450
-1    0    6.5    306.935000   0    0.0050   5    5    
-2    0    7.5    421.631000   1    0.0050   5    5    
-3    0    7.5    421.631000   0    0.0050   5    5    
-4    0    8.5    551.354000   1    0.0050   5    5    
-5    0    8.5    551.354000   0    0.0050   5    5    
-6    0    9.5    696.031000   0    0.0050   5    5    
-7    0    9.5    695.987000   1    0.0050   5    5    
-8    0   10.5    855.503000   0    0.0050   5    5    
-9    0   10.5    855.445000   1    0.0050   5    5 
+298
+      1       0     2.5        0.000000      1        0.0050   5        5   
+      2       0     2.5        0.000000      0        0.0050   5        5   
+      3       0     3.5       53.827000      1        0.0050   5        5   
+      4       0     3.5       53.827000      0        0.0050   5        5   
+      5       0     4.5      122.962000      1        0.0050   5        5   
+      6       0     4.5      122.962000      0        0.0050   5        5   
+      7       0     5.5      207.352000      1        0.0050   5        5   
+      8       0     5.5      207.352000      0        0.0050   5        5   
+      9       0     6.5      306.935000      1        0.0050   5        5   
+     10       0     6.5      306.935000      0        0.0050   5        5
 ```
 
 The first row is either the total number of data in the file or the first n of them that should be read. The columns are as follows: counter, the vibrational quantum number, the rotational qunatum number, the experimental energy value, parity label (0 or 1), experimental uncertainty, marker and state. Levels with markers between 0 and 9 belong to the first isotope, levels with merkers between 10 and 19 belong to the second isotope and so on.
@@ -887,7 +885,8 @@ The file looks like:
 ## Examples
 
 <!-- omit in toc -->
-### The minimal working example: Morse potential for <img src="/tex/67ee5b6741d3b4139212bbf0588a9e3f.svg?invert_in_darkmode&sanitize=true" align=middle width=18.881345999999994pt height=22.465723500000017pt/> molecule
+### The minimal working example: Morse potential for <img src="/tex/67ee5b6741d3b4139212bbf0588a9e3f.svg?invert_in_darkmode&sanitize=true" align=middle width=18.881345999999994pt height=22.465723500000017pt/>
+
 This is an example with the minimal set of nessecary parameters for running a single channel computations with the Morse potential for <img src="/tex/67ee5b6741d3b4139212bbf0588a9e3f.svg?invert_in_darkmode&sanitize=true" align=middle width=18.881345999999994pt height=22.465723500000017pt/> molecule.
 
 It is done with only a few lines of code.
@@ -950,12 +949,12 @@ plot.plot_potentials_on_grid(mlevels, show=True, fformat='svg')
 ![Morse potential H2](./plotting/potential_morse_H2.svg)
 
 <!-- omit in toc -->
-### Another example: EMO potential for ...
+### Another example: KCs ...
 
 
 
 <!-- omit in toc -->
-### A more complex example: pointwise potentials for <img src="/tex/8207f29c059ad1741b922ed20deb57b7.svg?invert_in_darkmode&sanitize=true" align=middle width=29.338013099999987pt height=26.76175259999998pt/>, <img src="/tex/8cbc30f07cc338dcb4d7b09bb011e028.svg?invert_in_darkmode&sanitize=true" align=middle width=19.70325884999999pt height=26.76175259999998pt/> and <img src="/tex/b6ccdd799b87869964f3c3d42b645c41.svg?invert_in_darkmode&sanitize=true" align=middle width=21.07313174999999pt height=26.76175259999998pt/> states of NiH molecule
+### A more complex example: pointwise potentials for <img src="/tex/8207f29c059ad1741b922ed20deb57b7.svg?invert_in_darkmode&sanitize=true" align=middle width=29.338013099999987pt height=26.76175259999998pt/>, <img src="/tex/8cbc30f07cc338dcb4d7b09bb011e028.svg?invert_in_darkmode&sanitize=true" align=middle width=19.70325884999999pt height=26.76175259999998pt/> and <img src="/tex/b6ccdd799b87869964f3c3d42b645c41.svg?invert_in_darkmode&sanitize=true" align=middle width=21.07313174999999pt height=26.76175259999998pt/> states of NiH
 
 The complex of the three doublet electronic states <img src="/tex/8207f29c059ad1741b922ed20deb57b7.svg?invert_in_darkmode&sanitize=true" align=middle width=29.338013099999987pt height=26.76175259999998pt/>, <img src="/tex/8cbc30f07cc338dcb4d7b09bb011e028.svg?invert_in_darkmode&sanitize=true" align=middle width=19.70325884999999pt height=26.76175259999998pt/> and <img src="/tex/b6ccdd799b87869964f3c3d42b645c41.svg?invert_in_darkmode&sanitize=true" align=middle width=21.07313174999999pt height=26.76175259999998pt/> for NiH molecule is an example of strongly perturbed and coupled states by various interactions. The three electronic states are described by five channels and in this example only five of all interactions are accounted for.
 
@@ -974,9 +973,9 @@ mdata.set_exp_data('nih_exp.dat', markers=[5])
 
 grid = diatom.Grid(npoints=170, rgrid=(0.75, 3.0), solver='sinc')
 
-vpot = 'nih_sigma.pot'
-wpot = 'nih_pi.pot'
-xpot = 'nih_delta.pot'
+vpot = 'v_nih.pot'
+wpot = 'w_nih.pot'
+xpot = 'x_nih.pot'
 
 ch1 = diatom.Channel(
     filep=vpot,
@@ -1026,7 +1025,7 @@ cp1 = diatom.Coupling(
     coupling=('spin-orbit', 'spin-orbit'),
     model='pointwise',
     multiplier=(-1.0, 1.0),
-    label='SO_Pi'
+    label='SO_WW'
 )
 
 cp2 = diatom.Coupling(
@@ -1034,7 +1033,7 @@ cp2 = diatom.Coupling(
     coupling=('spin-orbit', 'spin-orbit'),
     model='pointwise',
     multiplier=(-1.0, 1.0),
-    label='SO_Delta'
+    label='SO_XX'
 )
 
 cp3 = diatom.Coupling(
@@ -1042,7 +1041,7 @@ cp3 = diatom.Coupling(
     coupling='spin-orbit',
     model='pointwise',
     multiplier=1.0,
-    label='SO_Sigma_Pi'
+    label='SO_VW'
 )
 
 cp4 = diatom.Coupling(
@@ -1050,7 +1049,7 @@ cp4 = diatom.Coupling(
     coupling='spin-orbit',
     model='pointwise',
     multiplier=1.0,
-    label='SO_Sigma_Delta'
+    label='SO_VX'
 )
 
 cp5 = diatom.Coupling(
@@ -1058,7 +1057,7 @@ cp5 = diatom.Coupling(
     coupling=('LJ', 'LJ', 'SL'),
     model='pointwise',
     multiplier=(2.0, 2.0, 2.0),
-    label='LJ_Pi_Delta'
+    label='LJ_WX'
 )
 
 couplings = [cp1, cp2, cp3, cp4, cp5]
@@ -1068,34 +1067,35 @@ mlevels = diatom.MoleculeLevels(mdata, grid, channels, couplings=couplings)
 mlevels.calculate_levels(energy_subset_value=(0, 7000.), identify=0)
 ```
 
+The couplings file looks like this
 ```yaml
-SO_Pi:
+SO_WW:
 - 0.750000000000      -300.71901701285799       0
 - 1.250000000000      -300.59347903145402       0
 - 1.500000000000      -295.33299681003803       0
 - 2.000000000000      -304.13289200589099       0
 - 2.500000000000      -301.78320985488801       0
 - 3.000000000000      -301.49811571690401       0
-SO_Delta:
+SO_XX:
 - 0.750000000000      -606.45610689008595       0
 - 1.250000000000      -593.55453482886696       0
 - 1.500000000000      -599.03808570186402       0
 - 2.000000000000      -606.92282658440399       0
 - 2.500000000000      -603.70988681001700       0
 - 3.000000000000      -602.90906506719705       0
-SO_Sigma_Pi:
+SO_VW:
 - 0.750000000000      -620.71974693075003       0
 - 1.500000000000      -645.86464080798601       0
 - 2.000000000000      -716.97127978362300       0
 - 2.500000000000      -735.96722850460196       0
 - 3.000000000000      -740.41087084696699       0
-SO_Sigma_Delta:
+SO_VX:
 - 0.750000000000      -590.84142865184197       0
 - 1.500000000000      -600.45207379396902       0
 - 2.000000000000      -606.05480585440398       0
 - 2.500000000000      -605.57223541150302       0
 - 3.000000000000      -603.00000000000000       0
-LJ_Pi_Delta:
+LJ_WX:
 - 0.750000000000         1.23969597272800       0
 - 1.200000000000         0.94539092137400       0
 - 1.500000000000         0.99276646115100       0
@@ -1115,7 +1115,60 @@ The output looks like:
       6       0     4.5     2.5     0.5      2      1      5      123.918310     122.962000     0.956310     0.0050    0.000    0.000    0.001    0.000    0.999     5
 ```
 
-Afterwards ...
+We can use the program to further analyize and plot the experimental and computed data.
+
+
+```python
+# this function returns the experimental data as numpy array
+exp_data = mdata.get_exp_data()
+
+# then write some code to plot them as function of J
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+exp_data = mdata.get_exp_data()
+
+fdata = exp_data[exp_data[:, 4] == 0]
+edata = exp_data[exp_data[:, 4] == 1]
+
+# plot experimental data on two separate plots for e and f
+_, ax = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(13, 6))
+
+ax[0].plot(fdata[:, 2], fdata[:, 3], 'bo', fillstyle='none')
+ax[0].set_xlabel('J')
+ax[0].set_ylabel(r'<img src="/tex/3c49b11772dee8f573c1293ba07a41c8.svg?invert_in_darkmode&sanitize=true" align=middle width=31.19877584999999pt height=22.465723500000017pt/> ' + r'[<img src="/tex/ce4a4e7aa846bff848d8bee38fde0abc.svg?invert_in_darkmode&sanitize=true" align=middle width=43.219286549999985pt height=26.76175259999998pt/>')
+
+ax[1].plot(edata[:, 2], edata[:, 3], 'ro', fillstyle='none')
+ax[1].set_xlabel('J')
+
+plt.tight_layout()
+plt.show()
+```
+
+```python
+# or plot all of them in one plot for each vibrational level and state 
+_, ax = plt.subplots(figsize=(11, 7))
+vs = np.unique(exp_data[:, 1])
+ss = np.unique(exp_data[:, -1])
+
+for v in vs:
+    for s in ss:
+        f = fdata[(fdata[:, 1] == v) & (fdata[:, -1] == s)]
+        e = edata[(edata[:, 1] == v) & (edata[:, -1] == s)]
+        ax.plot(e[:, 2], e[:, 3], color='blue', marker='o', fillstyle='none', markersize=8, linewidth=0.2)
+        ax.plot(f[:, 2], f[:, 3], color='green', marker='X', fillstyle='none', markersize=6, linewidth=0.2)
+        
+        
+ax.set_xlabel('J')
+ax.set_ylabel(r'<img src="/tex/3c49b11772dee8f573c1293ba07a41c8.svg?invert_in_darkmode&sanitize=true" align=middle width=31.19877584999999pt height=22.465723500000017pt/> ' + r'[<img src="/tex/ce4a4e7aa846bff848d8bee38fde0abc.svg?invert_in_darkmode&sanitize=true" align=middle width=43.219286549999985pt height=26.76175259999998pt/>')
+
+plt.tight_layout()
+plt.show()
+```
+
+![Experimental data plot](./plotting/exp_date_ef.png)
+![Experimental data plot](./plotting/exp_date_ef_vs.svg)
 
 # Fitting of the Calculated Energy Levels
 
@@ -1211,6 +1264,6 @@ Not yet implemented
 
 The program provides some basic and simple plotting functions.
 
-![Hamiltonian matrix colormesh](./hcolormesh.png)
+![Hamiltonian matrix colormesh](./plotting/hcolormesh.png)
 
 <!-- ## Cross-section -->
