@@ -1117,7 +1117,6 @@ The output looks like:
 
 We can use the program to further analyize and plot the experimental and computed data.
 
-
 ```python
 # this function returns the experimental data as numpy array
 exp_data = mdata.get_exp_data()
@@ -1128,27 +1127,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 exp_data = mdata.get_exp_data()
-
 fdata = exp_data[exp_data[:, 4] == 0]
 edata = exp_data[exp_data[:, 4] == 1]
 
-# plot experimental data on two separate plots for e and f
-_, ax = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(13, 6))
+# plot exp data on two plots for e and f
+_, ax = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(11, 5))
 
 ax[0].plot(fdata[:, 2], fdata[:, 3], 'bo', fillstyle='none')
 ax[0].set_xlabel('J')
-ax[0].set_ylabel(r'<img src="/tex/3c49b11772dee8f573c1293ba07a41c8.svg?invert_in_darkmode&sanitize=true" align=middle width=31.19877584999999pt height=22.465723500000017pt/> ' + r'[<img src="/tex/ce4a4e7aa846bff848d8bee38fde0abc.svg?invert_in_darkmode&sanitize=true" align=middle width=43.219286549999985pt height=26.76175259999998pt/>')
+ax.set_ylabel(r'Energy (cm<img src="/tex/db982724014b78c648c5d008c86b3d09.svg?invert_in_darkmode&sanitize=true" align=middle width=16.82656799999999pt height=26.76175259999998pt/>)')
 
 ax[1].plot(edata[:, 2], edata[:, 3], 'ro', fillstyle='none')
 ax[1].set_xlabel('J')
-
-plt.tight_layout()
 plt.show()
-```
 
-```python
 # or plot all of them in one plot for each vibrational level and state 
-_, ax = plt.subplots(figsize=(11, 7))
+_, ax1 = plt.subplots(figsize=(9, 6))
 vs = np.unique(exp_data[:, 1])
 ss = np.unique(exp_data[:, -1])
 
@@ -1156,18 +1150,15 @@ for v in vs:
     for s in ss:
         f = fdata[(fdata[:, 1] == v) & (fdata[:, -1] == s)]
         e = edata[(edata[:, 1] == v) & (edata[:, -1] == s)]
-        ax.plot(e[:, 2], e[:, 3], color='blue', marker='o', fillstyle='none', markersize=8, linewidth=0.2)
-        ax.plot(f[:, 2], f[:, 3], color='green', marker='X', fillstyle='none', markersize=6, linewidth=0.2)
-        
-        
-ax.set_xlabel('J')
-ax.set_ylabel(r'<img src="/tex/3c49b11772dee8f573c1293ba07a41c8.svg?invert_in_darkmode&sanitize=true" align=middle width=31.19877584999999pt height=22.465723500000017pt/> ' + r'[<img src="/tex/ce4a4e7aa846bff848d8bee38fde0abc.svg?invert_in_darkmode&sanitize=true" align=middle width=43.219286549999985pt height=26.76175259999998pt/>')
+        ax1.plot(e[:, 2], e[:, 3], color='blue', marker='o', fillstyle='none', markersize=8, linewidth=0.2)
+        ax1.plot(f[:, 2], f[:, 3], color='green', marker='X', fillstyle='none', markersize=6, linewidth=0.2)
 
-plt.tight_layout()
+ax1.set_xlabel('J')
+ax1.set_ylabel(r'Energy (cm<img src="/tex/db982724014b78c648c5d008c86b3d09.svg?invert_in_darkmode&sanitize=true" align=middle width=16.82656799999999pt height=26.76175259999998pt/>)')
 plt.show()
 ```
 
-![Experimental data plot](./plotting/exp_date_ef.png)
+![Experimental data plot](./plotting/exp_date_ef.svg)
 ![Experimental data plot](./plotting/exp_date_ef_vs.svg)
 
 # Fitting of the Calculated Energy Levels
