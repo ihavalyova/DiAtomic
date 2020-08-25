@@ -1159,27 +1159,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 exp_data = mdata.get_exp_data()
-
 fdata = exp_data[exp_data[:, 4] == 0]
 edata = exp_data[exp_data[:, 4] == 1]
 
-# plot experimental data on two separate plots for e and f
-_, ax = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(13, 6))
+# plot exp data on two plots for e and f
+_, ax = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(11, 5))
 
 ax[0].plot(fdata[:, 2], fdata[:, 3], 'bo', fillstyle='none')
 ax[0].set_xlabel('J')
-ax[0].set_ylabel(r'$\mathrm{E_{exp}}$ ' + r'[$\mathrm{cm^{-1}}]$')
+ax.set_ylabel(r'Energy (cm$^{-3}$)')
 
 ax[1].plot(edata[:, 2], edata[:, 3], 'ro', fillstyle='none')
 ax[1].set_xlabel('J')
-
-plt.tight_layout()
 plt.show()
-```
 
-```python
 # or plot all of them in one plot for each vibrational level and state 
-_, ax = plt.subplots(figsize=(11, 7))
+_, ax1 = plt.subplots(figsize=(9, 6))
 vs = np.unique(exp_data[:, 1])
 ss = np.unique(exp_data[:, -1])
 
@@ -1187,18 +1182,15 @@ for v in vs:
     for s in ss:
         f = fdata[(fdata[:, 1] == v) & (fdata[:, -1] == s)]
         e = edata[(edata[:, 1] == v) & (edata[:, -1] == s)]
-        ax.plot(e[:, 2], e[:, 3], color='blue', marker='o', fillstyle='none', markersize=8, linewidth=0.2)
-        ax.plot(f[:, 2], f[:, 3], color='green', marker='X', fillstyle='none', markersize=6, linewidth=0.2)
-        
-        
-ax.set_xlabel('J')
-ax.set_ylabel(r'$\mathrm{E_{exp}}$ ' + r'[$\mathrm{cm^{-1}}]$')
+        ax1.plot(e[:, 2], e[:, 3], color='blue', marker='o', fillstyle='none', markersize=8, linewidth=0.2)
+        ax1.plot(f[:, 2], f[:, 3], color='green', marker='X', fillstyle='none', markersize=6, linewidth=0.2)
 
-plt.tight_layout()
+ax1.set_xlabel('J')
+ax1.set_ylabel(r'Energy (cm$^{-3}$)')
 plt.show()
 ```
 
-![Experimental data plot](./plotting/exp_date_ef.png)
+![Experimental data plot](./plotting/exp_date_ef.svg)
 ![Experimental data plot](./plotting/exp_date_ef_vs.svg)
 
 # Fitting of the Calculated Energy Levels
