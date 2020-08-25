@@ -23,6 +23,7 @@ class MoleculeLevels:
         self.nisotopes = md.nisotopes
         self.refj = md.referencej
         self.refE = md.refE
+        self.exp_data = md.exp_data
         self.exp_file = md.exp_file
         self.ngrid = grid.ngrid
         self.rmin = grid.rmin
@@ -46,8 +47,6 @@ class MoleculeLevels:
             'lapack': self.lapack_eig_decomposition,
             'arpack': self.arpack_eig_decomposition
         }
-
-        self.exp_data = data
         self.ninit = 1
 
         self.rgrid2 = np.square(self.rgrid)
@@ -267,6 +266,18 @@ class MoleculeLevels:
 
         self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = \
             self.channels[ch-1].cfunc(ypnts, self.rgrid)
+
+    def get_potential_on_grid(self):
+
+        return self.ugrid
+
+    def get_grid_points(self):
+
+        return self.rgrid
+
+    def get_couplings_on_grid(self):
+
+        return self.fgrid
 
     def calculate_couplings_on_grid(self, ypar=None):
 
@@ -967,7 +978,7 @@ class MoleculeLevels:
 
         i1, i2 = self.get_indices_of_matching_rows_simple(
             self.exp_data[:, [2, 4]],
-            self.evals_predicted[: [1, 2]]
+            self.evals_predicted[:, [1, 2]]
         )
 
         exp_data_ext = self.exp_data[i1]

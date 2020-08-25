@@ -31,6 +31,7 @@ class MoleculeData:
         self.refj = None
         self.refE = None
         self.exp_file = None
+        self.exp_data = None
         self.atomic_masses = []
         self.reduced_masses = []
         self.atomic_symbols = []
@@ -150,27 +151,31 @@ class MoleculeData:
             )
 
         atoms = (molecule_data[1], molecule_data[3])
-        mnumbers = (int(molecule_data[0]), int(molecule_data[2]))
+        mass_numbers = (int(molecule_data[0]), int(molecule_data[2]))
 
         def_db = 'Atomic_Weights_and_Isotopic_' + \
             'Compositions_for_All_Elements_NIST.ascii'
         database = database or def_db
 
         with open(database, 'r') as dbs:
-            atom_masses = dbs.read()
+            atomic_masses = dbs.read()
 
-        atom_mass1 = self.match_atomic_mass(atom_masses, atoms[0], mnumbers[0])
-        atom_mass2 = self.match_atomic_mass(atom_masses, atoms[1], mnumbers[1])
+        atom_mass1 = self.match_atomic_mass(
+            atomic_masses, atoms[0], mass_numbers[0]
+        )
+        atom_mass2 = self.match_atomic_mass(
+            atomic_masses, atoms[1], mass_numbers[1]
+        )
 
         rmass = atom_mass1 * atom_mass2 / (atom_mass1 + atom_mass2)
 
-        self.atom_masses.append((atom_mass1, atom_mass2))
+        self.atomic_masses.append((atom_mass1, atom_mass2))
         self.atomic_symbols.append((atoms[0], atoms[1]))
-        self.atomic_mass_nums.append((mnumbers[0], mnumbers[1]))
+        self.atomic_mass_nums.append((mass_numbers[0], mass_numbers[1]))
 
         return rmass
 
-    def match_atomic_mass(self, atom_masses, symbol, mnumber):
+    def match_atomic_mass(self, atomic_masses, symbol, mnumber):
 
         pattern = re.compile(
             fr'Atomic\s+Symbol\s+=\s+{symbol}[\r\n]'
@@ -178,14 +183,17 @@ class MoleculeData:
             fr'[\r\n]Relative\s+Atomic\s+Mass\s+=\s+\d+\.\d+'
         )
 
-        atom_data = re.findall(pattern, atom_masses)
+        atom_data = re.findall(pattern, atomic_masses)
 
         if len(atom_data) != 1:
             raise SystemExit('Error: Incorrect matching or nothing found.')
 
         return float(atom_data[0].split('\n')[-1].split('=')[-1].strip())
 
-    def get_exp_data(self, exp_file, channels, markers=None, average=False):
+    # def get_exp_data(self):
+    #     pass
+
+    def set_exp_data(self, exp_file, markers=None, average=False):
 
         self.exp_file = exp_file
         try:
@@ -193,68 +201,63 @@ class MoleculeData:
                 return self._read_experimental_data(exp_file, average)
             else:
                 return self._read_exp_data_with_markers(
-                    exp_file, channels, markers, average
+                    exp_file, markers, average
                 )
         except Exception as e:
             raise SystemExit(e)
 
-    def _read_exp_data_with_markers(self, exp_file, channels,
-                                    markers, average):
+    def _read_exp_data_with_markers(self, exp_file, markers, average):
 
         ndata = np.genfromtxt(
             exp_file, max_rows=1, comments='#'
         )
 
-        exp_data = np.genfromtxt(
+        self.exp_data = np.genfromtxt(
             exp_file, skip_header=1, max_rows=int(ndata), comments='#'
         )
 
         # filter by marker
         marker_mask = np.in1d(
-            exp_data[:, 6], np.fromiter(markers, dtype=np.int64)
+            self.exp_data[:, 6], np.fromiter(markers, dtype=np.int64)
         )
-        exp_data = exp_data[marker_mask]
+        self.exp_data = self.exp_data[marker_mask]
 
         # filter by parity
         if len(self.pars) == 1:
             parity_mask = np.in1d(
-                exp_data[:, 4], np.fromiter(self.pars, dtype=np.int64)
+                self.exp_data[:, 4], np.fromiter(self.pars, dtype=np.int64)
             )
-            exp_data = exp_data[parity_mask]
+            self.exp_data = self.exp_data[parity_mask]
 
         # filter by J
         rot_mask = np.in1d(
-            exp_data[:, 2], np.fromiter(self.jqnumbers, dtype=np.float64)
+            self.exp_data[:, 2], np.fromiter(self.jqnumbers, dtype=np.float64)
         )
-        exp_data = exp_data[rot_mask]
+        self.exp_data = self.exp_data[rot_mask]
 
         # filter by state
-        state_numbers = np.arange(1, len(channels)+1, dtype=np.int64)
-        state_mask = np.in1d(
-            exp_data[:, -1], np.fromiter(state_numbers, dtype=np.float64)
-        )
-        exp_data = exp_data[state_mask]
+        # state_numbers = np.arange(1, len(channels)+1, dtype=np.int64)
+        # state_mask = np.in1d(
+        #     exp_data[:, -1], np.fromiter(state_numbers, dtype=np.float64)
+        # )
+        # exp_data = exp_data[state_mask]
 
-        exp_data[:, 0] = np.arange(1.0, exp_data.shape[0]+1)
+        self.exp_data[:, 0] = np.arange(1.0, self.exp_data.shape[0]+1)
 
         if average:
-            self._average_experimental_data(exp_data, exp_file)
-
-        return exp_data
+            self._average_experimental_data(self.exp_data, exp_file)
 
     def _read_experimental_data(self, exp_file, average):
 
         with open(exp_file, 'r') as expf:
             expf.readline()
 
-        exp_data = np.genfromtxt(exp_file, skip_header=1)
+        self.exp_data = np.genfromtxt(exp_file, skip_header=1)
 
         if average:
-            self._average_experimental_data(exp_data, exp_file)
+            self._average_experimental_data(self.exp_data, exp_file)
 
-        return exp_data
-
-    def _average_experimental_data(self, exp_data, exp_file):
+    def _average_experimental_data(self, exp_file):
 
         # TODO: will not work when markers are not provided
         # TODO: to account for different isotopes
@@ -262,24 +265,24 @@ class MoleculeData:
 
         # sort experimental data by v then by J
         # then by parity and then by state
-        exp_data = exp_data[np.lexsort((
-            exp_data[:, -1], exp_data[:, 4],
-            exp_data[:, 2], exp_data[:, 1]
+        self.exp_data = self.exp_data[np.lexsort((
+            self.exp_data[:, -1], self.exp_data[:, 4],
+            self.exp_data[:, 2], self.exp_data[:, 1]
         ))]
 
-        exp_extract = exp_data[:, [1, 2, 4, -1]]
+        exp_extract = self.exp_data[:, [1, 2, 4, -1]]
         unique_data, inds, counts = np.unique(
             exp_extract, axis=0, return_index=True, return_counts=True
         )
 
-        avg_data = exp_data[inds]
+        avg_data = self.exp_data[inds]
 
         # create a generator yielding the average values
-        # rep_gen = (exp_data[~np.any(exp_extract-row, axis=1)] \
+        # rep_gen = (self.exp_data[~np.any(exp_extract-row, axis=1)] \
         #   for row in unique_data[counts>1])
 
         for row in (unique_data[counts > 1]):
-            item = exp_data[~np.any(exp_extract-row, axis=1)]
+            item = self.exp_data[~np.any(exp_extract-row, axis=1)]
 
             avg_item = np.concatenate((
                     item[0, [0, 1, 2]],
@@ -301,13 +304,13 @@ class MoleculeData:
 
         avg_data[:, 0] = np.arange(1.0, avg_data.shape[0]+1)
 
-        self._save_averaged_experimental_data(exp_data, exp_file, avg_data)
+        self._save_averaged_experimental_data(exp_file, avg_data)
 
-    def _save_averaged_experimental_data(self, exp_data, exp_file, avg_data):
+    def _save_averaged_experimental_data(self, exp_file, avg_data):
 
         header = str(avg_data.shape[0]) + '\n' + '# markers: ' + \
             np.array2string(
-                np.unique(exp_data[:, 6]),
+                np.unique(self.exp_data[:, 6]),
                 formatter={'float_kind': lambda x: "%d" % x}
             )[1:-1]
 
@@ -465,7 +468,8 @@ class Channel:
 
         U[0] = float(morse_data[mapp[0]][0]) / Const.hartree
         U[1] = float(morse_data[mapp[1]][0]) / Const.hartree
-        U[2] = float(morse_data[mapp[2]][0])
+        U[2] = float(morse_data[mapp[2]][0]) * Const.bohr
+        print(U[2])
         U[3] = float(morse_data[mapp[3]][0]) / Const.bohr
 
         if def_fixed:
@@ -536,8 +540,8 @@ class Channel:
             tuple of numpy arrays: the parameter values and free/fixed values
 
         Remarks:
-            1. The coefficients B, C, D should be defined form the first up
-            to the highest reqired one. The ignored ones should be set to zero.
+            1. The coefficients B, C, D are defined from the first up to the
+            highest reqired one. The ignored coefficients must be set to zero.
             2. The number of C and D coefficients should be the same
             3. The beta coefficients have dimentions 1/distance
         """
