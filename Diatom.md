@@ -19,10 +19,9 @@
   - [SVD Fit](#svd-fit)
   - [Minuit Fit](#minuit-fit)
   - [Levenberg-Marquard Fit](#levenberg-marquard-fit)
-- [Computing the Transition Frequencies](#computing-the-transition-frequencies)
-  - [States represented by potentials](#states-represented-by-potentials)
+- [Computing the Transition Frequencies and Intensities](#computing-the-transition-frequencies-and-intensities)
+  - [States represented by channels](#states-represented-by-channels)
   - [States represented by term values](#states-represented-by-term-values)
-- [Computing the Transition Intensities](#computing-the-transition-intensities)
   - [Line strength](#line-strength)
     - [Honl-London Factors](#honl-london-factors)
     - [Frank-Condon Factors](#frank-condon-factors)
@@ -116,7 +115,7 @@ The total Hamiltonian of a diatomic molecule in the rotating molecule-fixed coor
 
 where <img src="/tex/88eff123eb81302eced70d075cfd831d.svg?invert_in_darkmode&sanitize=true" align=middle width=49.06969154999999pt height=24.65753399999998pt/> and <img src="/tex/1565b8417026bdbae4f63e0a7df02e21.svg?invert_in_darkmode&sanitize=true" align=middle width=90.41667525pt height=24.65753399999998pt/> are the vibrational and rotational part of the total nuclear kinetic energy operator in spherical polar coordinates, <img src="/tex/c3a1d7f8e57bd6a18adbaa8585b1b61b.svg?invert_in_darkmode&sanitize=true" align=middle width=40.47569294999999pt height=24.65753399999998pt/> is the kinetic energy of the electrons, 
 
-<p align="center"><img src="/tex/33361e7842bc9784188a404d33d61dfb.svg?invert_in_darkmode&sanitize=true" align=middle width=107.76820724999999pt height=16.438356pt/></p>
+<!-- <p align="center"><img src="/tex/33361e7842bc9784188a404d33d61dfb.svg?invert_in_darkmode&sanitize=true" align=middle width=107.76820724999999pt height=16.438356pt/></p> -->
 
 ## The Scrodinger equation for a single state and coupled system of states
 
@@ -179,7 +178,7 @@ The second derivative of the wavefunction with respect to the internuclear dista
 
 The kinetic energy matrix elements are then computed:
 
-<p align="center"><img src="/tex/61aed5171cdfab840798493b73480e95.svg?invert_in_darkmode&sanitize=true" align=middle width=368.15905499999997pt height=38.973783749999996pt/></p>
+<p align="center"><img src="/tex/f27a85c449f4aa2a88eca7afdbe3d420.svg?invert_in_darkmode&sanitize=true" align=middle width=368.15905499999997pt height=38.973783749999996pt/></p>
 
 This is a banded symmetric matrix. The potential energy matrix is diagonal:
 
@@ -193,6 +192,8 @@ FGH is a type of a collocation (or pseudospectral) method since the solution is 
 
 <!-- omit in toc -->
 #### Sinc basis
+
+In sinc basis the kinetic energy matrix elemenst are computed as:
 
 <!-- omit in toc -->
 #### Fourier basis
@@ -1118,15 +1119,14 @@ The output looks like:
 We can use the program to further analyize and plot the experimental and computed data.
 
 ```python
+import numpy as np
+import matplotlib.pyplot as plt
+
 # this function returns the experimental data as numpy array
 exp_data = mdata.get_exp_data()
 
 # then write some code to plot them as function of J
 
-import numpy as np
-import matplotlib.pyplot as plt
-
-exp_data = mdata.get_exp_data()
 fdata = exp_data[exp_data[:, 4] == 0]
 edata = exp_data[exp_data[:, 4] == 1]
 
@@ -1135,7 +1135,7 @@ _, ax = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(11, 5))
 
 ax[0].plot(fdata[:, 2], fdata[:, 3], 'bo', fillstyle='none')
 ax[0].set_xlabel('J')
-ax.set_ylabel(r'Energy (cm$^{-3}$)')
+ax.set_ylabel(r'Energy (cm<img src="/tex/db982724014b78c648c5d008c86b3d09.svg?invert_in_darkmode&sanitize=true" align=middle width=16.82656799999999pt height=26.76175259999998pt/>)')
 
 ax[1].plot(edata[:, 2], edata[:, 3], 'ro', fillstyle='none')
 ax[1].set_xlabel('J')
@@ -1154,7 +1154,7 @@ for v in vs:
         ax1.plot(f[:, 2], f[:, 3], color='green', marker='X', fillstyle='none', markersize=6, linewidth=0.2)
 
 ax1.set_xlabel('J')
-ax1.set_ylabel(r'Energy (cm$^{-3}$)')
+ax1.set_ylabel(r'Energy (cm<img src="/tex/db982724014b78c648c5d008c86b3d09.svg?invert_in_darkmode&sanitize=true" align=middle width=16.82656799999999pt height=26.76175259999998pt/>)')
 plt.show()
 ```
 
@@ -1171,24 +1171,25 @@ where the computed energies are functions of the parameters that we would like t
 
 <p align="center"><img src="/tex/3d56e9c278a94b22d5667eb320678c6a.svg?invert_in_darkmode&sanitize=true" align=middle width=328.22589855pt height=47.2889208pt/></p>
 
-where we have approximated the dependance <img src="/tex/4ca1aee6e8270689594bcea797736c2f.svg?invert_in_darkmode&sanitize=true" align=middle width=53.89543995pt height=27.91243950000002pt/> by the first two terms in its Taylor expansion around <img src="/tex/14fc0e68e921111d80f847f49f14fa1b.svg?invert_in_darkmode&sanitize=true" align=middle width=26.803695599999987pt height=29.190975000000005pt/>. This is a linear system of n equations with m unknowns (usually n > m) in the form <img src="/tex/5e1e7c803719b446197e2edde2f0815c.svg?invert_in_darkmode&sanitize=true" align=middle width=52.89932669999998pt height=31.141535699999984pt/> where the unknown vector x is the vector with the corrections <img src="/tex/3919bbc84b8079e27194efe99a1f6a80.svg?invert_in_darkmode&sanitize=true" align=middle width=23.09366069999999pt height=22.465723500000017pt/>, the right-hand side vector b is <img src="/tex/f2e84668ab502e9be17614dcee78f4aa.svg?invert_in_darkmode&sanitize=true" align=middle width=124.01297039999999pt height=29.190975000000005pt/>, and the coefficient matrix A is formed by the first derivatives of the energies with respect to the parameters. The overall goal of the fit could be summirzied as:
+where we have approximated the dependance <img src="/tex/4ca1aee6e8270689594bcea797736c2f.svg?invert_in_darkmode&sanitize=true" align=middle width=53.89543995pt height=27.91243950000002pt/> by the first two terms in its Taylor expansion around <img src="/tex/14fc0e68e921111d80f847f49f14fa1b.svg?invert_in_darkmode&sanitize=true" align=middle width=26.803695599999987pt height=29.190975000000005pt/>. This is a linear system of n equations with m unknowns (usually n > m) in the form <img src="/tex/5e1e7c803719b446197e2edde2f0815c.svg?invert_in_darkmode&sanitize=true" align=middle width=52.89932669999998pt height=31.141535699999984pt/> where the unknown vector x is the vector with the corrections <img src="/tex/3919bbc84b8079e27194efe99a1f6a80.svg?invert_in_darkmode&sanitize=true" align=middle width=23.09366069999999pt height=22.465723500000017pt/>, the right-hand side vector b is <img src="/tex/f2e84668ab502e9be17614dcee78f4aa.svg?invert_in_darkmode&sanitize=true" align=middle width=124.01297039999999pt height=29.190975000000005pt/>, and the coefficient matrix A is formed by the first derivatives of the energies with respect to the parameters. 
+<!-- The overall goal of the fit could be summirzied as:
 
-<p align="center"><img src="/tex/c57fae4c7444bddea5a45372a6b5fb2b.svg?invert_in_darkmode&sanitize=true" align=middle width=164.16738195pt height=32.990165999999995pt/></p>
+<p align="center"><img src="/tex/c57fae4c7444bddea5a45372a6b5fb2b.svg?invert_in_darkmode&sanitize=true" align=middle width=164.16738195pt height=32.990165999999995pt/></p> -->
 
 As a first step we need to initialize the **```Fitting```** object for example like
 ```python
 fit = diatom.Fitting(mlevels, progress=False)
 ```
 
-The first parameter is the created **```MoleculeLevels```** object and the second parameter **```progress```** is optional and tells whether a more detailed output to be printed after the end of _every_ iteration. The default is **```False```** which means that a detailed output will be printed only after the _final_ iteration.
+The first parameter is the created **```MoleculeLevels```** object and the second parameter **```progress```** is optional and specifies whether to print some detailed output after the end of _every_ iteration. The default is **```False```** which means that a detailed output will only be printed after the end of the _last_ iteration.
 
 ## SVD Fit
 
 In general it is not recommended to solve the above linear system by the method of the normal equations (that uses the matrix inverse) since the matrix A is singular mainly because of the following problem. Sometimes there exist two or more linear combinations of functions with the fitted parameters that can be added to the model functions without changing the <img src="/tex/a67d576e7d59b991dd010277c7351ae0.svg?invert_in_darkmode&sanitize=true" align=middle width=16.837900199999993pt height=26.76175259999998pt/> value. This is an indication of a linear dependance between the model functions (the data matrix will be singular) and also means that there exist two or more sets of parameters that fit the data equally well. In this cases it is recommended to use the Singular Value Decomposition (SVD). In SVD the matrix <img src="/tex/53d147e7f3fe6e47ee05b88b166bd3f6.svg?invert_in_darkmode&sanitize=true" align=middle width=12.32879834999999pt height=22.465723500000017pt/> (n x m) is represented as a product of three matrices <img src="/tex/348ca4b32b3c0af83c00431b016dfad9.svg?invert_in_darkmode&sanitize=true" align=middle width=78.404007pt height=27.91243950000002pt/>, two unitary (or orthogonal in the real case) matrices U (n x n) and V (m x m) and one diagonal matrix <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> (n x m). This is known as full SVD. When <img src="/tex/180688a8c2192e65c9812628d22d321f.svg?invert_in_darkmode&sanitize=true" align=middle width=46.21760714999999pt height=20.908638300000003pt/> (more data than parameters), <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> will have at most m nonzero rows and more compact representation is possible: <img src="/tex/3652fbbfd63546aca5a4a0537748d81f.svg?invert_in_darkmode&sanitize=true" align=middle width=78.40398554999999pt height=31.141535699999984pt/> where <img src="/tex/c827023fcc3b2c873aae402363f41328.svg?invert_in_darkmode&sanitize=true" align=middle width=13.01596064999999pt height=31.141535699999984pt/> is (n x m) submatrix of U and <img src="/tex/d4261132636819ae7c6f4039dafc4016.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=31.141535699999984pt/> is the (m x m) submatrix of <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/>. This is known as "economy" SVD. The U and V matrices are called right and left singular vectors and the diagonal elments of <img src="/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> are called singular values. It is important that the singular values are hierarchically aranged from the largest to the smallest i.e. <img src="/tex/73f03081ed485c91b9becde40212c0a5.svg?invert_in_darkmode&sanitize=true" align=middle width=139.52397194999998pt height=20.908638300000003pt/>...
 
-The singular values are different from zero when the model functions are linearly independant.
+<!-- The singular values are different from zero when the model functions are linearly independant.
 
-SVD is very special matrix factorization because it can be applied to _any_ matrix, it is unique and guaranteed to exist.
+SVD is very special matrix factorization because it can be applied to _any_ matrix, it is unique and guaranteed to exist. -->
 
 The **```run_svd```** method has only default parameters:
 
@@ -1235,13 +1236,49 @@ fit.run_minuit(niter=5, step_size=1.0e-3, uncert=True)
 
 Not yet implemented
 
-# Computing the Transition Frequencies
+# Computing the Transition Frequencies and Intensities
 
-## States represented by potentials
+The transition frequencies between the rovibrational levels of two electronic states can be computed in two cases:
+1. both states are represented by channels (as **```Channel```** objects) i.e. by potential curves 
+2. both states are represented by their term values.
+
+In either case we need first to define an object of type **```Spectrum```**:
+
+```python
+spec = diatom.Spectrum()
+```
+
+## States represented by channels
+
+In this case we should call the method **```calculate_frequencies_by_states```** which has two required and many optional parameters.
+
+```python
+spec.calculate_frequencies_by_states(uch=1, lch=2)
+```
+
+- **```uch```** - the number of the channel corresponding to the upper electronic state
+- **```lch```** - the number of the channel corresponding to the lower electronic state
+
+All optional parameters are listed in the section below.
 
 ## States represented by term values
 
-# Computing the Transition Intensities
+In this case we should call the method **```calculate_frequencies_by_term_values```** which has two required and many optional parameters.
+
+```python
+spec.calculate_frequencies_by_term_values(uch=1, lch=2)
+```
+
+- **```uterms```** - the name of the file containing the term values for the upper electronic state
+- **```lterms```** - the name of the file containing the term values for the lower electronic state
+
+-----
+
+<!-- omit in toc -->
+### Optional parameters
+
+Both methods **```calculate_frequencies_by_states```**  and **```calculate_frequencies_by_term_values```** have the same set of optional parameters which are:
+
 
 ## Line strength
 
