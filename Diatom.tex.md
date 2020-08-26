@@ -19,10 +19,9 @@
   - [SVD Fit](#svd-fit)
   - [Minuit Fit](#minuit-fit)
   - [Levenberg-Marquard Fit](#levenberg-marquard-fit)
-- [Computing the Transition Frequencies](#computing-the-transition-frequencies)
-  - [States represented by potentials](#states-represented-by-potentials)
+- [Computing the Transition Frequencies and Intensities](#computing-the-transition-frequencies-and-intensities)
+  - [States represented by channels](#states-represented-by-channels)
   - [States represented by term values](#states-represented-by-term-values)
-- [Computing the Transition Intensities](#computing-the-transition-intensities)
   - [Line strength](#line-strength)
     - [Honl-London Factors](#honl-london-factors)
     - [Frank-Condon Factors](#frank-condon-factors)
@@ -118,9 +117,9 @@ $$
 
 where $\mathbf{T}_{\mathrm{N}}(R)$ and $\mathbf{H}_{\mathrm{rot}}(R, \theta, \phi)$ are the vibrational and rotational part of the total nuclear kinetic energy operator in spherical polar coordinates, $\mathbf{T}_{\mathrm{e}}(r)$ is the kinetic energy of the electrons, 
 
-$$
+<!-- $$
 \mathbf{H}_{\mathrm{rot}}(R, \theta, \phi) = 
-$$
+$$ -->
 
 ## The Scrodinger equation for a single state and coupled system of states
 
@@ -194,9 +193,9 @@ The kinetic energy matrix elements are then computed:
 $$
 T_{ij} = \frac{\hbar^2}{2\mu \Delta R^2} \times
 \begin{dcases}
-    \frac{5}{2}, & j = i\\
-    -\frac{4}{3}, &  j = i\pm 1\\
-    \frac{1}{12}, & j = i\pm 2
+\frac{5}{2}, & j = i\\
+-\frac{4}{3}, &  j = i\pm 1\\
+\frac{1}{12}, & j = i\pm 2
 \end{dcases}
 $$
 
@@ -214,6 +213,8 @@ FGH is a type of a collocation (or pseudospectral) method since the solution is 
 
 <!-- omit in toc -->
 #### Sinc basis
+
+In sinc basis the kinetic energy matrix elemenst are computed as:
 
 <!-- omit in toc -->
 #### Fourier basis
@@ -1149,15 +1150,14 @@ The output looks like:
 We can use the program to further analyize and plot the experimental and computed data.
 
 ```python
+import numpy as np
+import matplotlib.pyplot as plt
+
 # this function returns the experimental data as numpy array
 exp_data = mdata.get_exp_data()
 
 # then write some code to plot them as function of J
 
-import numpy as np
-import matplotlib.pyplot as plt
-
-exp_data = mdata.get_exp_data()
 fdata = exp_data[exp_data[:, 4] == 0]
 edata = exp_data[exp_data[:, 4] == 1]
 
@@ -1206,26 +1206,27 @@ $$
 E_{i}^{obs} - E_{i}^{cal}(\mathbf{x}^{(0)}) - \sum_{j=1}^{m} \frac{\partial{E_{i}^{cal}}}{\partial x_{j}} \bigg\rvert_{x_j=x_{j}^{(0)}} \Delta x_{j} = 0
 $$
 
-where we have approximated the dependance $E_{i}^{cal}(\mathbf{x})$ by the first two terms in its Taylor expansion around $\mathbf{x}^{(0)}$. This is a linear system of n equations with m unknowns (usually n > m) in the form $\hat{A}\mathbf{x} - \mathbf{b}$ where the unknown vector x is the vector with the corrections $\Delta x$, the right-hand side vector b is $E_{i}^{obs} - E_{i}^{cal}(\mathbf{x}^{(0)})$, and the coefficient matrix A is formed by the first derivatives of the energies with respect to the parameters. The overall goal of the fit could be summirzied as:
+where we have approximated the dependance $E_{i}^{cal}(\mathbf{x})$ by the first two terms in its Taylor expansion around $\mathbf{x}^{(0)}$. This is a linear system of n equations with m unknowns (usually n > m) in the form $\hat{A}\mathbf{x} - \mathbf{b}$ where the unknown vector x is the vector with the corrections $\Delta x$, the right-hand side vector b is $E_{i}^{obs} - E_{i}^{cal}(\mathbf{x}^{(0)})$, and the coefficient matrix A is formed by the first derivatives of the energies with respect to the parameters. 
+<!-- The overall goal of the fit could be summirzied as:
 
 $$
 \min_{\mathbf{x}}\;\chi^2 = \frac{1}{\sigma^2} | \hat{A}\mathbf{x} - \mathbf{b} |^2
-$$
+$$ -->
 
 As a first step we need to initialize the **```Fitting```** object for example like
 ```python
 fit = diatom.Fitting(mlevels, progress=False)
 ```
 
-The first parameter is the created **```MoleculeLevels```** object and the second parameter **```progress```** is optional and tells whether a more detailed output to be printed after the end of _every_ iteration. The default is **```False```** which means that a detailed output will be printed only after the _final_ iteration.
+The first parameter is the created **```MoleculeLevels```** object and the second parameter **```progress```** is optional and specifies whether to print some detailed output after the end of _every_ iteration. The default is **```False```** which means that a detailed output will only be printed after the end of the _last_ iteration.
 
 ## SVD Fit
 
 In general it is not recommended to solve the above linear system by the method of the normal equations (that uses the matrix inverse) since the matrix A is singular mainly because of the following problem. Sometimes there exist two or more linear combinations of functions with the fitted parameters that can be added to the model functions without changing the $\chi^2$ value. This is an indication of a linear dependance between the model functions (the data matrix will be singular) and also means that there exist two or more sets of parameters that fit the data equally well. In this cases it is recommended to use the Singular Value Decomposition (SVD). In SVD the matrix $A$ (n x m) is represented as a product of three matrices $A = U\Sigma V^{\dagger}$, two unitary (or orthogonal in the real case) matrices U (n x n) and V (m x m) and one diagonal matrix $\Sigma$ (n x m). This is known as full SVD. When $n \ge m$ (more data than parameters), $\Sigma$ will have at most m nonzero rows and more compact representation is possible: $A = \hat{U}\hat{\Sigma}V^{\dagger}$ where $\hat{U}$ is (n x m) submatrix of U and $\hat{\Sigma}$ is the (m x m) submatrix of $\Sigma$. This is known as "economy" SVD. The U and V matrices are called right and left singular vectors and the diagonal elments of $\Sigma$ are called singular values. It is important that the singular values are hierarchically aranged from the largest to the smallest i.e. $\sigma_{1} \ge \sigma_2 \ge \dots \ge \sigma_{m}$...
 
-The singular values are different from zero when the model functions are linearly independant.
+<!-- The singular values are different from zero when the model functions are linearly independant.
 
-SVD is very special matrix factorization because it can be applied to _any_ matrix, it is unique and guaranteed to exist.
+SVD is very special matrix factorization because it can be applied to _any_ matrix, it is unique and guaranteed to exist. -->
 
 The **```run_svd```** method has only default parameters:
 
@@ -1276,13 +1277,49 @@ fit.run_minuit(niter=5, step_size=1.0e-3, uncert=True)
 
 Not yet implemented
 
-# Computing the Transition Frequencies
+# Computing the Transition Frequencies and Intensities
 
-## States represented by potentials
+The transition frequencies between the rovibrational levels of two electronic states can be computed in two cases:
+1. both states are represented by channels (as **```Channel```** objects) i.e. by potential curves 
+2. both states are represented by their term values.
+
+In either case we need first to define an object of type **```Spectrum```**:
+
+```python
+spec = diatom.Spectrum()
+```
+
+## States represented by channels
+
+In this case we should call the method **```calculate_frequencies_by_states```** which has two required and many optional parameters.
+
+```python
+spec.calculate_frequencies_by_states(uch=1, lch=2)
+```
+
+- **```uch```** - the number of the channel corresponding to the upper electronic state
+- **```lch```** - the number of the channel corresponding to the lower electronic state
+
+All optional parameters are listed in the section below.
 
 ## States represented by term values
 
-# Computing the Transition Intensities
+In this case we should call the method **```calculate_frequencies_by_term_values```** which has two required and many optional parameters.
+
+```python
+spec.calculate_frequencies_by_term_values(uch=1, lch=2)
+```
+
+- **```uterms```** - the name of the file containing the term values for the upper electronic state
+- **```lterms```** - the name of the file containing the term values for the lower electronic state
+
+-----
+
+<!-- omit in toc -->
+### Optional parameters
+
+Both methods **```calculate_frequencies_by_states```**  and **```calculate_frequencies_by_term_values```** have the same set of optional parameters which are:
+
 
 ## Line strength
 
