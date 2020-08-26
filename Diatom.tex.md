@@ -190,15 +190,14 @@ $$
 
 The kinetic energy matrix elements are then computed:
 
-<img src="https://render.githubusercontent.com/render/math?math=
+$$
 T_{ij} = \frac{\hbar^2}{2\mu \Delta R^2} \times
 \begin{dcases}
 \frac{5}{2}, & j = i\\
 -\frac{4}{3}, &  j = i\pm 1\\
 \frac{1}{12}, & j = i\pm 2
 \end{dcases}
-
-<!-- $$ -->
+$$
 
 This is a banded symmetric matrix. The potential energy matrix is diagonal:
 
