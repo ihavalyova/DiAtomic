@@ -7,67 +7,67 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="90.776566mm"
-   height="32.560116mm"
-   viewBox="0 0 90.776574 32.560115"
-   version="1.1"
-   id="svg8"
-   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
-   sodipodi:docname="logo1.svg"
-   inkscape:export-filename="/home/ilvie/Desktop/logo2.png"
+   inkscape:export-ydpi="107.60466"
    inkscape:export-xdpi="107.60466"
-   inkscape:export-ydpi="107.60466">
+   inkscape:export-filename="/home/ilvie/Desktop/logo2.png"
+   sodipodi:docname="logo1.svg"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   id="svg8"
+   version="1.1"
+   viewBox="0 0 108.77658 34.560119"
+   height="34.56012mm"
+   width="108.77657mm">
   <defs
      id="defs2">
     <rect
-       id="rect924"
-       height="32.407536"
-       width="19.037317"
+       x="-47.310234"
        y="43.127029"
-       x="-47.310234" />
+       width="19.037317"
+       height="32.407536"
+       id="rect924" />
     <rect
-       x="18.363663"
-       y="73.519119"
-       width="107.75927"
+       id="rect835"
        height="32.707184"
-       id="rect835" />
+       width="107.75927"
+       y="73.519119"
+       x="18.363663" />
     <filter
-       inkscape:collect="always"
-       style="color-interpolation-filters:sRGB"
-       id="filter852"
-       x="-7.1348751e-07"
-       width="1.0000014"
+       height="1.0000075"
        y="-3.7721554e-06"
-       height="1.0000075">
+       width="1.0000014"
+       x="-7.1348751e-07"
+       id="filter852"
+       style="color-interpolation-filters:sRGB"
+       inkscape:collect="always">
       <feGaussianBlur
-         inkscape:collect="always"
+         id="feGaussianBlur854"
          stdDeviation="1.8736679e-05"
-         id="feGaussianBlur854" />
+         inkscape:collect="always" />
     </filter>
   </defs>
   <sodipodi:namedview
-     fit-margin-bottom="6"
-     fit-margin-right="6.5"
-     fit-margin-left="8"
-     fit-margin-top="8"
-     id="base"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0.0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="1.2218217"
-     inkscape:cx="181.15185"
-     inkscape:cy="60.454489"
-     inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
-     inkscape:document-rotation="0"
-     showgrid="false"
-     inkscape:window-width="1592"
-     inkscape:window-height="832"
-     inkscape:window-x="0"
+     inkscape:window-maximized="1"
      inkscape:window-y="0"
-     inkscape:window-maximized="1" />
+     inkscape:window-x="0"
+     inkscape:window-height="832"
+     inkscape:window-width="1592"
+     showgrid="false"
+     inkscape:document-rotation="0"
+     inkscape:current-layer="layer1"
+     inkscape:document-units="mm"
+     inkscape:cy="65.088232"
+     inkscape:cx="182.57155"
+     inkscape:zoom="1.2218217"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     borderopacity="1.0"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     id="base"
+     fit-margin-top="8"
+     fit-margin-left="8"
+     fit-margin-right="6.5"
+     fit-margin-bottom="6" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -81,79 +81,30 @@
     </rdf:RDF>
   </metadata>
   <g
-     transform="translate(96.090253,-7.3829638)"
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
+     style="display:inline"
      id="layer1"
-     style="display:inline">
+     inkscape:groupmode="layer"
+     inkscape:label="Layer 1"
+     transform="translate(96.090253,-7.3829638)">
     <text
-       xml:space="preserve"
-       id="text833"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:22.5778px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect835);fill:#000000;fill-opacity:1;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;filter:url(#filter852);"
-       inkscape:export-xdpi="96"
+       transform="translate(-107.21548,-62.402794)"
        inkscape:export-ydpi="96"
-       transform="translate(-107.21548,-62.402794)"><tspan
+       inkscape:export-xdpi="96"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:22.5778px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect835);fill:#000000;fill-opacity:1;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;filter:url(#filter852);"
+       id="text833"
+       xml:space="preserve"><tspan
          x="18.363281"
          y="96.074878"><tspan
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:25.4px;font-family:Eczar;-inkscape-font-specification:'Eczar, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.661458px;fill:#481d6c;fill-opacity:1">D</tspan><tspan
-           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:25.4px;font-family:'Cormorant Upright';-inkscape-font-specification:'Cormorant Upright, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.661458px;fill:#481d6c;fill-opacity:1">i</tspan><tspan
+           style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:25.4px;font-family:'Cormorant Upright';-inkscape-font-specification:'Cormorant Upright, Semi-Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.661458px;fill:#481d6c;fill-opacity:1">i</tspan><tspan
            style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.5778px;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.661458px;fill:#481d6c;fill-opacity:1">A</tspan><tspan
            dx="0.13228816"
-           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.5778px;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.529167px;fill:#481d6c;fill-opacity:1">tom</tspan></tspan></text>
+           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.5778px;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.529167px;fill:#481d6c;fill-opacity:1">tom</tspan><tspan
+           style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:22.5778px;font-family:'Cormorant Upright';-inkscape-font-specification:'Cormorant Upright, Semi-Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">i</tspan><tspan
+           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:22.5778px;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.529167px;fill:#481d6c;fill-opacity:1">c</tspan></tspan></text>
     <text
-       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect924);fill:#000000;fill-opacity:1;stroke:none;"
+       xml:space="preserve"
        id="text922"
-       xml:space="preserve" />
-    <ellipse
-       style="opacity:1;fill:none;fill-opacity:1;stroke:#bdbdbd;stroke-width:0.213147;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.9;paint-order:stroke fill markers"
-       id="path866"
-       cx="-68.530594"
-       cy="19.562222"
-       rx="3.8829033"
-       ry="3.4422653" />
-    <ellipse
-       ry="0.40429583"
-       rx="0.39043838"
-       cy="22.86771"
-       cx="-67.43808"
-       id="path864-2"
-       style="display:inline;fill:#333333;fill-opacity:1;stroke:#ffffff;stroke-width:0.917408;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers" />
-    <ellipse
-       style="display:inline;fill:#333333;fill-opacity:1;stroke:#ffffff;stroke-width:0.917409;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-       id="path864-2-6"
-       cx="-72.166397"
-       cy="18.539564"
-       rx="0.39043814"
-       ry="0.40429574" />
-    <ellipse
-       style="display:inline;fill:#333333;fill-opacity:1;stroke:#ffffff;stroke-width:0.917409;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-       id="path864-2-9"
-       cx="-69.29657"
-       cy="16.245964"
-       rx="0.39043814"
-       ry="0.40429574" />
-    <ellipse
-       inkscape:transform-center-y="0.15848489"
-       inkscape:transform-center-x="-0.20319902"
-       style="display:inline;fill:#333333;fill-opacity:1;stroke:#ffffff;stroke-width:0.917409;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-       id="path864-2-8"
-       cx="-65.534904"
-       cy="17.300592"
-       rx="0.39043814"
-       ry="0.40429574" />
-    <ellipse
-       style="display:inline;fill:#333333;fill-opacity:1;stroke:#ffffff;stroke-width:0.917409;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-       id="path864-2-7"
-       cx="-64.680962"
-       cy="20.727417"
-       rx="0.39043814"
-       ry="0.40429574" />
-    <ellipse
-       style="display:inline;fill:#333333;fill-opacity:1;stroke:#ffffff;stroke-width:0.917409;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-       id="path864-2-2"
-       cx="-71.256157"
-       cy="21.938921"
-       rx="0.39043814"
-       ry="0.40429574" />
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect924);fill:#000000;fill-opacity:1;stroke:none;" />
   </g>
 </svg>
