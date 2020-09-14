@@ -1,17 +1,30 @@
-![](./logo1.svg)
+![](./doc/logo1.svg)
 
-<!-- **Diatom** (**Diatom**-ic) is a Python package implementing useful routines for various computations of Diatomic Molecules using OOP (Object-Oriented Programming) style. 
+DiAtomic is an open-source library written in Python with useful routines for performing various computations of diatomic molecules.
 
 -------
 
-The main features and functionalities of **Diatom** include:
+Its main functionality includes:
 
-- energy eigenvalues computation of a single and noninteracting molecular state
+- energy eigenvalues computation for single noninteracting electronic state
+and for a system of arbitrary number of states coupled by large number of possible interactions
 
-- energy eigenvalues computation of system of arbitrary number of interacting states coupled by an arbitrary number of possible interactions
-   
-- Transition frequencies and intensity calculations 
+- calculations of transition frequencies and intensities
 
-- Diatomic Spectra simulations
+- fitting of the computed energy levels to the experimental data
 
-- *convinient, intuitive and very easy to use* -->
+**Documentation**:
+
+**Examples as IPython notebook:** 
+
+**To install**:
+
+Call Python pip from the command line:
+
+```
+pip install diatomic
+```
+
+**Cite as:**
+
+I. Havalyova and A. Pashov: A software package for calculating energy levels and spectra of diatomic molecules (2020) DOI: 10.5281/zenodo.4028548
