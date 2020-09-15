@@ -1,6 +1,6 @@
 
-- [**DiAtom** module: what is it used for?](#diatom-module-what-is-it-used-for)
-- [**DiAtom**  module: how to install and setup?](#diatom-module-how-to-install-and-setup)
+- [**DiAtomic** module: what is it used for?](#diatomic-module-what-is-it-used-for)
+- [**DiAtomic**  module: how to install and setup?](#diatomic-module-how-to-install-and-setup)
 - [Diatomic molecule: basic theoretical concepts](#diatomic-molecule-basic-theoretical-concepts)
   - [The total Hamiltonian and basis functions](#the-total-hamiltonian-and-basis-functions)
   - [The Scrodinger equation for a single state and coupled system of states](#the-scrodinger-equation-for-a-single-state-and-coupled-system-of-states)
@@ -28,16 +28,16 @@
 - [Plotting](#plotting)
 
 
-# **DiAtom** module: what is it used for?
-The Python package **```DiAtom```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
+# **DiAtomic** module: what is it used for?
+The Python package **```DiAtomic```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
 The current functionality covered by the program includes:
 * ..
 * ..
 
-Just as an example of what you can do with **```DiAtom```** module, if you have a set of potentials for a couple of molecular electronic states represented by points (abinitio, RKR and etc.) and want to see how they look you can do something like:
+Just as an example of what you can do with **```DiAtomic```** module, if you have a set of potentials for a couple of molecular electronic states represented by points (abinitio, RKR and etc.) and want to see how they look you can do something like:
 <!-- 
 ```python
-p = diatom.Plotting()
+p = Plotting()
 p.plot_potentials_points(['p1.pot', 'p2.pot', 'p3.pot', 'p4.pot'], show=True, ipoints=50, ylim=(1e3, 1e5))
 ```
 or even simpler:
@@ -46,43 +46,42 @@ or even simpler:
 ```python
 import glob
 
-p = diatom.Plotting()
-p.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=120, xlim=(2.5, 16), ylim=(9e3, 2.5e4))
+Plotting.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=120, xlim=(2.5, 16), ylim=(9e3, 2.5e4))
 ```
 assuming your potential files are in the current directory.
 
 
 ![KCs_potentials](./plotting/kcs_potential_points.svg)
 
-# **DiAtom**  module: how to install and setup?
+# **DiAtomic**  module: how to install and setup?
 
-**```DiAtom```**  module can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
+**```DiAtomic```**  module can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
 
 ```console
-pip install diatom
+pip install diatomic
 ```
 
 and from Jupyter or IPython execute
 
 ````python
-In [1]: ! pip install diatom
+In [1]: ! pip install diatomic
 ````
 To quickly check whether the installation has been successful type
 
 ```console
 python
->>> import diatom
->>> diatom
+>>> import diatomic
+>>> diatomic
 ```
 
 and the path to the \_\_init\_\_.py file in the install location should be outputed.
 
-After installing create a new python file for example called main.py and import the diatom module
+After installing create a new python file for example called main.py and import the diatomic module
 
 ```python
 #!/usr/bin/env python
 
-from diatom import *
+from diatomic import *
 ```
 To execute the file from the Linux command line write
 ```console
@@ -102,7 +101,7 @@ to make the file executable and run it. To execute the file from the interactive
 In [1]: run main.py
 ```
 
-The **```DiAtom```** module is extensivly tested on Linux platform but works under Windows and MacOS as well.
+The **```DiAtomic```** module is extensivly tested on Linux platform but works under Windows and MacOS as well.
 
 # Diatomic molecule: basic theoretical concepts
 
@@ -384,7 +383,8 @@ mdata.referenceJ = 2.5
 ```python
 mdata.referenceE = 1000.
 ```
-None of them is mandatory. **```referenceJ```** has higher proprity if both are specified simultaneously.
+None of them is mandatory. **
+```referenceJ```** has higher proprity if both are specified simultaneously.
 
 <!-- omit in toc -->
 ### Experimental Data
@@ -707,7 +707,7 @@ When two or more interacting states coupled by the same or different interaction
 This is what frequently happens in the case of states coupled by the $L_+$ operator. Here is an example for the interaction ${^2\Pi}$ ~ $^2\Delta$ in the lowest doublet states of NiH molecule:
 
 ```python
-cp2 = diatom.Coupling(
+cp2 = Coupling(
     interact=((2,4), (3,5), (3,4)),
     coupling=('LJ', 'LJ', 'SL'),
     model='pointwise',
@@ -851,7 +851,7 @@ It is done with only a few lines of code.
 ```python
 #!/usr/bin/env python
 
-from diatom import *
+from diatomic import *
 
 mdata = MoleculeData()
 mdata.molecule = ['1H1H']
@@ -899,7 +899,7 @@ The first few lines of this file look like
 Then we can plot the potential:
 
 ```python
-plot = diatom.Plotting()
+plot = diatomic.Plotting()
 plot.plot_potentials_on_grid(mlevels, show=True, fformat='svg')
 ```
 
@@ -1119,7 +1119,7 @@ plt.show()
 
 # Fitting of the Calculated Energy Levels
 
-The **```DiAtom```** module has several implemented procedures for weighted least-squares fitting of the calculated to the experimental energy levels. In all cases what we want to minimize is the difference between the experimental (observed) energies and the calculated ones. Therefore we define the $\chi^2$ function as:
+The **```DiAtomic```** module has several implemented procedures for weighted least-squares fitting of the calculated to the experimental energy levels. In all cases what we want to minimize is the difference between the experimental (observed) energies and the calculated ones. Therefore we define the $\chi^2$ function as:
 
 $$
 \chi^2 = \sum_{i=1}^{n} \left[ \frac{E_{i}^{obs} - E_{i}^{cal}(\mathbf{x})}{\sigma_i} \right]^2
@@ -1140,7 +1140,7 @@ $$ -->
 
 As a first step we need to initialize the **```Fitting```** object for example like
 ```python
-fit = diatom.Fitting(mlevels, progress=False)
+fit = Fitting(mlevels, progress=False)
 ```
 
 The first parameter is the created **```MoleculeLevels```** object and the second parameter **```progress```** is optional and specifies whether to print some detailed output after the end of _every_ iteration. The default is **```False```** which means that a detailed output will only be printed after the end of the _last_ iteration.
@@ -1184,7 +1184,7 @@ To find the least-squares solution **```run_svd```** calls <a href="https://docs
 
 ## Minuit Fit
 
-**```DiAtom```** provides an option to call the Minuit library in C++ via the Python frontend **```iminuit```**. It works with the Minuit Migrad subroutine for local function minimization. In addition to that it is able to estimate the uncertainty in the fitted parameters by computing the covariance and correlation matrices using two different algorithms and procedures called Hesse and Minos.
+**```DiAtomic```** provides an option to call the Minuit library in C++ via the Python frontend **```iminuit```**. It works with the Minuit Migrad subroutine for local function minimization. In addition to that it is able to estimate the uncertainty in the fitted parameters by computing the covariance and correlation matrices using two different algorithms and procedures called Hesse and Minos.
 
 To run the Minuit Fit we should call the method **```run_minuit```** through the created **```Fitting```** object. This method has only optional parameters:
 
@@ -1211,7 +1211,7 @@ The transition frequencies between the rovibrational levels of two electronic st
 In either case we need first to define an object of type **```Spectrum```**:
 
 ```python
-spec = diatom.Spectrum()
+spec = Spectrum()
 ```
 
 ## States represented by channels

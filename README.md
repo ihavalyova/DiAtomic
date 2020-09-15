@@ -7,7 +7,7 @@ DiAtomic is an open-source library written in Python with useful routines for pe
 Its main functionality includes:
 
 - energy eigenvalues computation for single noninteracting electronic state
-and for a system of arbitrary number of states coupled by large number of possible interactions
+and for a system of arbitrary number of coupled states
 
 - calculations of transition frequencies and intensities
 
@@ -17,9 +17,7 @@ and for a system of arbitrary number of states coupled by large number of possib
 
 **Examples as IPython notebook:** 
 
-**To install**:
-
-Call Python pip from the command line:
+**To install**: call Python pip from the command line:
 
 ```
 pip install diatomic
