@@ -1,4 +1,5 @@
-![](./doc/logo1.svg)
+![](./doc/logo.png)
+
 
 DiAtomic is an open-source library written in Python with useful routines for performing various computations of diatomic molecules.
 
