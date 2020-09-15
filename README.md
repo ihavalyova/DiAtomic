@@ -2,6 +2,9 @@
 
 ---
 
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/ihavalyova/DiAtomic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/ihavalyova/DiAtomic/alerts/)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/ihavalyova/DiAtomic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/ihavalyova/DiAtomic/context:python)
+
 DiAtomic is an open-source library written in Python with useful routines for performing various computations of diatomic molecules.
 
 Its main functionality includes:
@@ -15,9 +18,7 @@ and for a system of arbitrary number of coupled states
 
 **To install**: call Python pip from the command line:
 
-```
-pip install diatomic
-```
+```pip install diatomic```
 
 **Documentation**: <a href="https://github.com/ihavalyova/DiAtomic/blob/master/doc/Diatomic.md" target="_blank">An expanded version</a>
 
