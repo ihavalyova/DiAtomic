@@ -28,4 +28,4 @@ and for a system of arbitrary number of coupled states
 
 **Cite as:**
 
-I. Havalyova and A. Pashov: A software package for calculating energy levels and spectra of diatomic molecules (2020) https://doi.org/10.5281/zenodo.4028548
+I. Havalyova and A. Pashov: Аn open-source library for calculating energy levels and spectra of diatomic molecules (2020) https://doi.org/10.5281/zenodo.4028548
