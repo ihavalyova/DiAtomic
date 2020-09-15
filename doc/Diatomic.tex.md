@@ -109,11 +109,15 @@ The **```DiAtomic```** module is extensivly tested on Linux platform but works u
 
 The total Hamiltonian of a diatomic molecule in the rotating molecule-fixed coordinate system with origin at the center of mass of the molecule can be written as a sum of several terms:
 
-<p align="center"><img src="/doc/tex/0befcf4d6f64295f51648ed6605604bf.svg?invert_in_darkmode&sanitize=true" align=middle width=381.66411525pt height=16.438356pt/></p>
+$$
+\mathbf{H} = \mathbf{T}_{\mathrm{N}}(R) + \mathbf{H}_{\mathrm{rot}}(R, \theta, \phi) + \mathbf{T}_{\mathrm{e}}(r) + \mathbf{V}(R, r) + \mathbf{H}_{\mathrm{rel}}
+$$
 
-where <img src="/doc/tex/88eff123eb81302eced70d075cfd831d.svg?invert_in_darkmode&sanitize=true" align=middle width=49.06969154999999pt height=24.65753399999998pt/> and <img src="/doc/tex/1565b8417026bdbae4f63e0a7df02e21.svg?invert_in_darkmode&sanitize=true" align=middle width=90.41667525pt height=24.65753399999998pt/> are the vibrational and rotational part of the total nuclear kinetic energy operator in spherical polar coordinates, <img src="/doc/tex/c3a1d7f8e57bd6a18adbaa8585b1b61b.svg?invert_in_darkmode&sanitize=true" align=middle width=40.47569294999999pt height=24.65753399999998pt/> is the kinetic energy of the electrons, 
+where $\mathbf{T}_{\mathrm{N}}(R)$ and $\mathbf{H}_{\mathrm{rot}}(R, \theta, \phi)$ are the vibrational and rotational part of the total nuclear kinetic energy operator in spherical polar coordinates, $\mathbf{T}_{\mathrm{e}}(r)$ is the kinetic energy of the electrons, 
 
-<!-- <p align="center"><img src="/doc/tex/33361e7842bc9784188a404d33d61dfb.svg?invert_in_darkmode&sanitize=true" align=middle width=107.76820724999999pt height=16.438356pt/></p> -->
+<!-- $$
+\mathbf{H}_{\mathrm{rot}}(R, \theta, \phi) = 
+$$ -->
 
 ## The Scrodinger equation for a single state and coupled system of states
 
@@ -122,9 +126,11 @@ where <img src="/doc/tex/88eff123eb81302eced70d075cfd831d.svg?invert_in_darkmode
 
 The energy eigenvalues of single isolated state of a diatomic molecule can be obtained by solving the radial Schrodinger equation
 
-<p align="center"><img src="/doc/tex/04ec33ae2ec81c77f6d478424e026fe4.svg?invert_in_darkmode&sanitize=true" align=middle width=428.47916925pt height=40.11819404999999pt/></p>
+$$
+\left( \frac{-\hbar^{2}}{2\mu} \frac{d^{2}}{dR^{2}} + U(R) + \frac{\hbar^{2}}{2\mu R^{2}}J(J+1) \right) \phi_{vJ}(R) = E_{vJ} \phi_{vJ}(R)
+$$
 
-with internuclear distance labeled with <img src="/doc/tex/1e438235ef9ec72fc51ac5025516017c.svg?invert_in_darkmode&sanitize=true" align=middle width=12.60847334999999pt height=22.465723500000017pt/>, the sum of the second and the third term <img src="/doc/tex/f11fee23e73e65ca5d56841195727865.svg?invert_in_darkmode&sanitize=true" align=middle width=196.35702239999998pt height=26.76175259999998pt/> from the left hand side is called effective potential energy curve, the reduced mass is <img src="/doc/tex/9c774da583d642ab71cf6fc72e1cb939.svg?invert_in_darkmode&sanitize=true" align=middle width=166.2062853pt height=24.65753399999998pt/> where <img src="/doc/tex/6f549764f2f97bec950c14de5352994a.svg?invert_in_darkmode&sanitize=true" align=middle width=22.500061649999992pt height=22.465723500000017pt/> and <img src="/doc/tex/dced8cd0d35e2af2d3499c10d7ee6289.svg?invert_in_darkmode&sanitize=true" align=middle width=22.500061649999992pt height=22.465723500000017pt/> are the masses of the two atoms, J is the rotational quantum number; <img src="/doc/tex/311f29e88a451816c3e621e910343bf4.svg?invert_in_darkmode&sanitize=true" align=middle width=27.481438049999987pt height=22.465723500000017pt/> are the energy eigenvalues of the rovibrational levels and <img src="/doc/tex/6130302efada133fa7ea1cd1ccb12a8f.svg?invert_in_darkmode&sanitize=true" align=middle width=25.14126119999999pt height=22.831056599999986pt/> are their corresponding eigenfunctions.
+with internuclear distance labeled with $R$, the sum of the second and the third term $U(R) + ({\hbar^2}/{2\mu R^2})J(J+1)$ from the left hand side is called effective potential energy curve, the reduced mass is $\mu = M_{1} M_{2} /(M_{1} + M_{2})$ where $M_1$ and $M_2$ are the masses of the two atoms, J is the rotational quantum number; $E_{vJ}$ are the energy eigenvalues of the rovibrational levels and $\phi_{vJ}$ are their corresponding eigenfunctions.
 
 <!-- omit in toc -->
 ### The coupled channels problem
@@ -145,7 +151,7 @@ The most important operators and their matrix elements are:
 
 - Spin-Spin
 
-- <img src="/doc/tex/b23332f99af850a48831f80dbf681ed6.svg?invert_in_darkmode&sanitize=true" align=middle width=11.41554479999999pt height=22.465723500000017pt/> and <img src="/doc/tex/9432d83304c1eb0dcb05f092d30a767f.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> Doubling
+- $\Lambda$ and $\Omega$ Doubling
 
 ## Methods for solution of the Schrodinger equation
 
@@ -154,13 +160,17 @@ Finite-Difference and Fourier Grid Hamiltonain (DVR type method) are the most fr
 <!-- omit in toc -->
 #### Uniform grid
 
-In this case the grid points <img src="/doc/tex/6660896e4379722ff79bba94961b201c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.132374049999992pt height=22.465723500000017pt/> in the interval from <img src="/doc/tex/3076bed5ea0f6f7be4dcc194b5375a3b.svg?invert_in_darkmode&sanitize=true" align=middle width=36.92324789999999pt height=22.465723500000017pt/> to <img src="/doc/tex/ea449f9e9a48e2959872aac8fa65e1ca.svg?invert_in_darkmode&sanitize=true" align=middle width=38.73108029999999pt height=22.465723500000017pt/> are determined by:
+In this case the grid points $R_i$ in the interval from $R_{min}$ to $R_{max}$ are determined by:
 
-<p align="center"><img src="/doc/tex/6f277b0df057cb1fe10512647772c30a.svg?invert_in_darkmode&sanitize=true" align=middle width=292.75927724999997pt height=16.438356pt/></p>
+$$
+R_i = R_{min} + (i-1)\Delta_{R}, \qquad i = 1\dots N_{R}
+$$
 
-where <img src="/doc/tex/83b80e12323c9ced450508d7bd3822a5.svg?invert_in_darkmode&sanitize=true" align=middle width=23.169583799999987pt height=22.465723500000017pt/> is the number of grid points and <img src="/doc/tex/5385180385f31e03adfa5256148b06bb.svg?invert_in_darkmode&sanitize=true" align=middle width=23.66048849999999pt height=22.465723500000017pt/> is the grid step
+where $N_{R}$ is the number of grid points and $\Delta_{R}$ is the grid step
 
-<p align="center"><img src="/doc/tex/f17deb669038ee0be520dfb23a4a35c0.svg?invert_in_darkmode&sanitize=true" align=middle width=145.76189265pt height=36.09514755pt/></p>
+$$
+\Delta_{R} = \frac{R_{max} - R_{min}}{N_{R} - 1}
+$$
 
 <!-- omit in toc -->
 #### Nonuniform grid
@@ -172,15 +182,26 @@ where <img src="/doc/tex/83b80e12323c9ced450508d7bd3822a5.svg?invert_in_darkmode
 
 The second derivative of the wavefunction with respect to the internuclear distance is approximated by five-point central difference schema:
 
-<p align="center"><img src="/doc/tex/ad06c975f5915bd636d67109e3ca03c9.svg?invert_in_darkmode&sanitize=true" align=middle width=465.42534059999997pt height=39.452455349999994pt/></p>
+$$
+\psi''(R_{i}) \approx -\frac{1}{\Delta R^2}\left[ \frac{1}{12} \left( 30\psi_i - 16(\psi_{i+1} +\psi_{i-1}) + (\psi_{i+2} + \psi_{i-2}) \right) \right]
+$$
 
 The kinetic energy matrix elements are then computed:
 
-<p align="center"><img src="/doc/tex/f27a85c449f4aa2a88eca7afdbe3d420.svg?invert_in_darkmode&sanitize=true" align=middle width=368.15905499999997pt height=38.973783749999996pt/></p>
+$$
+T_{ij} = \frac{\hbar^2}{2\mu \Delta R^2} \times
+\begin{dcases}
+\frac{5}{2}, & j = i\\
+-\frac{4}{3}, &  j = i\pm 1\\
+\frac{1}{12}, & j = i\pm 2
+\end{dcases}
+$$
 
 This is a banded symmetric matrix. The potential energy matrix is diagonal:
 
-<p align="center"><img src="/doc/tex/8f9f8303492ff77504d46be1964f9256.svg?invert_in_darkmode&sanitize=true" align=middle width=105.12704895pt height=17.031940199999998pt/></p>
+$$
+V_{ij} = V(R_i) \delta_{ij}
+$$
 
 
 <!-- omit in toc -->
@@ -204,29 +225,39 @@ In sinc basis the kinetic energy matrix elements are computed as:
 
   The Morse potential function is defined as:
 
-  <p align="center"><img src="/doc/tex/32aad865ba81d6b7c52a0cb268f1a101.svg?invert_in_darkmode&sanitize=true" align=middle width=217.99017239999998pt height=19.526994300000002pt/></p>
-  where <img src="/doc/tex/d374a50b5b4324e84b1ade9e26ae25e3.svg?invert_in_darkmode&sanitize=true" align=middle width=15.84310529999999pt height=22.465723500000017pt/> is the term value, <img src="/doc/tex/1876b29402de38408e13f33010df5c24.svg?invert_in_darkmode&sanitize=true" align=middle width=19.84651514999999pt height=22.465723500000017pt/> measures the energy from the bottom of the potential to the dissociation limit (it is not the dissociation energy)
-  <img src="/doc/tex/8217ed3c32a785f0b5aad4055f432ad8.svg?invert_in_darkmode&sanitize=true" align=middle width=10.16555099999999pt height=22.831056599999986pt/> is a constant and <img src="/doc/tex/7b6a7362f072c7598f6fdb54363c97e8.svg?invert_in_darkmode&sanitize=true" align=middle width=13.65323849999999pt height=14.15524440000002pt/> is the equilibrium internuclear distance.
+  $$
+  V(R) = T_{e} +D_{e}[1 - e^{\beta(r-r_{e})}]^2
+  $$
+  where $T_e$ is the term value, $D_{e}$ measures the energy from the bottom of the potential to the dissociation limit (it is not the dissociation energy)
+  $\beta$ is a constant and $r_{e}$ is the equilibrium internuclear distance.
 
    - EMO (Expanded Morse Oscillator) potential
 
   It is defined as
 
-  <p align="center"><img src="/doc/tex/e88b8315d59ce4cb6c5fa4897772e628.svg?invert_in_darkmode&sanitize=true" align=middle width=383.9485419pt height=18.312383099999998pt/></p>
+  $$ 
+  V_{EMO}(R) = T_{e} + D_{e}[1 - exp(-\beta_{EMO}(R).(R-R_{e}))]^{2} 
+  $$
 
   which is a Morse potential function with a radial dependence of the exponential coefficient
 
-  <p align="center"><img src="/doc/tex/f1e0f767c174f6661b8264ae68817fec.svg?invert_in_darkmode&sanitize=true" align=middle width=176.35144889999998pt height=47.806078649999996pt/></p>
+  $$
+  \beta_{EMO}(R) = \sum_{i=0}^{N} \beta_{i} . y(R)^{i}
+  $$
 
   represented as a polynomial expansion in the powers of the dimensionless function
 
-  <p align="center"><img src="/doc/tex/ba1da685931183a2ce899c4a8fbe37c3.svg?invert_in_darkmode&sanitize=true" align=middle width=118.4382078pt height=35.551675499999995pt/></p>
+  $$
+  y(R) = \frac{R^{p} - R_{e}^{p}}{R^{p} + R_{e}^{p}}
+  $$
 
   with p being a positive integer number.
 
    - MLR (Morse/Long-Range) potential
 
-<p align="center"><img src="/doc/tex/826ef0830ed7bf386d12de409f2bb662.svg?invert_in_darkmode&sanitize=true" align=middle width=106.3151496pt height=16.438356pt/></p>
+$$
+V_{MLR}(R) = T_{e}
+$$
 
 # Computing Energy Eigenvalues
 
@@ -252,7 +283,7 @@ There are two ways for specifing the reduced mass.
   - this property does not determine which and how many isotopes will be included in the calculations (refer to the property **```nisotopes```** below) but only defines the isotopes by the symbols.
   - it should be an iterable of type list or tuple of strings and is not mandatory
 
-In the following example the symbols for three of the isotopes of NiH molecule - <img src="/doc/tex/a01778636bb5ed1e24e91614821128df.svg?invert_in_darkmode&sanitize=true" align=middle width=43.15082309999999pt height=26.76175259999998pt/>, <img src="/doc/tex/f04c8e60a7fed2786b83de051f533185.svg?invert_in_darkmode&sanitize=true" align=middle width=43.15082309999999pt height=26.76175259999998pt/> and <img src="/doc/tex/bfb4aef268944889b9a31b9123d21404.svg?invert_in_darkmode&sanitize=true" align=middle width=43.15082309999999pt height=26.76175259999998pt/> are defined as: 
+In the following example the symbols for three of the isotopes of NiH molecule - $^{58}\textrm{NiH}$, $^{60}\textrm{NiH}$ and $^{62}\textrm{NiH}$ are defined as: 
 
 ```python
 # define the symbols for three isotopes
@@ -262,7 +293,7 @@ mdata.molecule = ['58Ni1H', '60Ni1H', '62Ni1H']
 mdata.molecule = ['58 Ni 1 H', '60Ni 1H', '62 Ni 1H']
 ```
 
-- **```masses```** - defines one or more isotopic forms of the same molecule by specifing the values of their reduced masses i.e. each defined item represents the reduced mass for each isotope computed by <img src="/doc/tex/a5f91a48b545c00d9b57f59247ed65e8.svg?invert_in_darkmode&sanitize=true" align=middle width=190.2203985pt height=24.65753399999998pt/> in amu units.
+- **```masses```** - defines one or more isotopic forms of the same molecule by specifing the values of their reduced masses i.e. each defined item represents the reduced mass for each isotope computed by $\mu = m_{A}*m_{B} / (m_{A} + m_{B})$ in amu units.
   - this property does not determine which and how many isotopes will be included in the calculations (refer to the property **```nisotopes```** below) but only defines their masses.
   - it should be an iterable of type list or tuple of float numbers and is not mandatory
 
@@ -462,7 +493,7 @@ np.savetxt('grid_points.dat', grid.rgrid)
 
 ## Channel Object Definition
 
-A channel is defined as an electronic state with definite values of <img src="/doc/tex/b23332f99af850a48831f80dbf681ed6.svg?invert_in_darkmode&sanitize=true" align=middle width=11.41554479999999pt height=22.465723500000017pt/>, <img src="/doc/tex/e257acd1ccbe7fcb654708f1a866bfe9.svg?invert_in_darkmode&sanitize=true" align=middle width=11.027402099999989pt height=22.465723500000017pt/>, <img src="/doc/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> and <img src="/doc/tex/9432d83304c1eb0dcb05f092d30a767f.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> quantum numbers. Each channel has to be defined as an object of type **```Channel```** and the parameters that are needed to instatniate objects of this type are:
+A channel is defined as an electronic state with definite values of $\Lambda$, $S$, $\Sigma$ and $\Omega$ quantum numbers. Each channel has to be defined as an object of type **```Channel```** and the parameters that are needed to instatniate objects of this type are:
 
 - **```filep```** - the name of the file containing the parameters for the potential
   - It is a string parameter referring to an existing file or file path
@@ -474,11 +505,11 @@ A channel is defined as an electronic state with definite values of <img src="/d
   - **```'EMO'```** : EMO (Expanded Morse Oscilator) potential
   - **```'MLR'```** : MLR (Morse/Long-Range) potential
   - **```'custom'```** : custom analytical potential
-- **```nlambda```** - the quantum number <img src="/doc/tex/b23332f99af850a48831f80dbf681ed6.svg?invert_in_darkmode&sanitize=true" align=middle width=11.41554479999999pt height=22.465723500000017pt/> of the state
+- **```nlambda```** - the quantum number $\Lambda$ of the state
   - positive integer number
-- **```sigma```** - the quantum number <img src="/doc/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> of the state
+- **```sigma```** - the quantum number $\Sigma$ of the state
   - integer or float number
-- **```multiplicity```** - the multiplicity defined as <img src="/doc/tex/eb1977c2439009c2f58e150e1d2769c0.svg?invert_in_darkmode&sanitize=true" align=middle width=47.556992999999984pt height=22.465723500000017pt/> for the state
+- **```multiplicity```** - the multiplicity defined as $2S+1$ for the state
   - positive integer or float number
 - **```rot_correction```** - correction to the diagonal rotational Hamiltonian
   - optional parameter of type integer or float
@@ -617,9 +648,9 @@ The interactions between the channels are represented as objects of type **```Co
   - **```SL```** : Spin-electronic interaction
   - **```spin-rot```** : Spin-Rotation interaction
   - **```spin-spin```** : Spin-Spin interaction
-  - **```LambdaDe```** : second-order <img src="/doc/tex/9432d83304c1eb0dcb05f092d30a767f.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> or <img src="/doc/tex/b23332f99af850a48831f80dbf681ed6.svg?invert_in_darkmode&sanitize=true" align=middle width=11.41554479999999pt height=22.465723500000017pt/> doubling effect on e-parity levels
-  - **```LambdaDf```** : second-order <img src="/doc/tex/9432d83304c1eb0dcb05f092d30a767f.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> or <img src="/doc/tex/b23332f99af850a48831f80dbf681ed6.svg?invert_in_darkmode&sanitize=true" align=middle width=11.41554479999999pt height=22.465723500000017pt/> doubling effect on f-parity levels
-  - **```LambdaD```** : second-order <img src="/doc/tex/9432d83304c1eb0dcb05f092d30a767f.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> or <img src="/doc/tex/b23332f99af850a48831f80dbf681ed6.svg?invert_in_darkmode&sanitize=true" align=middle width=11.41554479999999pt height=22.465723500000017pt/> doubling effect on both e- and f-parity levels
+  - **```LambdaDe```** : second-order $\Omega$ or $\Lambda$ doubling effect on e-parity levels
+  - **```LambdaDf```** : second-order $\Omega$ or $\Lambda$ doubling effect on f-parity levels
+  - **```LambdaD```** : second-order $\Omega$ or $\Lambda$ doubling effect on both e- and f-parity levels
 
 - **```model```** - the model of the coupling function wtih  possible values:
     - **```pointwise```**
@@ -673,7 +704,7 @@ cp2:
 #### Shared parameters
 
 When two or more interacting states coupled by the same or different interactions share the same set of parameters a more complicated construction of the **```Coupling```** object is possible.
-This is what frequently happens in the case of states coupled by the <img src="/doc/tex/f7f72bf6b74988049786767c04a6bdf3.svg?invert_in_darkmode&sanitize=true" align=middle width=21.278616149999987pt height=22.465723500000017pt/> operator. Here is an example for the interaction <img src="/doc/tex/95986b9d0125352e11ec2ed1ae280905.svg?invert_in_darkmode&sanitize=true" align=middle width=19.70325884999999pt height=26.76175259999998pt/> ~ <img src="/doc/tex/b6ccdd799b87869964f3c3d42b645c41.svg?invert_in_darkmode&sanitize=true" align=middle width=21.07313174999999pt height=26.76175259999998pt/> in the lowest doublet states of NiH molecule:
+This is what frequently happens in the case of states coupled by the $L_+$ operator. Here is an example for the interaction ${^2\Pi}$ ~ $^2\Delta$ in the lowest doublet states of NiH molecule:
 
 ```python
 cp2 = Coupling(
@@ -685,7 +716,7 @@ cp2 = Coupling(
 )
 ```
 
-If we have defined the channels 2, 3, 4 and 5 as <img src="/doc/tex/431d13954ddb470c575ad747add2579f.svg?invert_in_darkmode&sanitize=true" align=middle width=39.54354689999999pt height=26.76175259999998pt/>, <img src="/doc/tex/9fa68b1d66e128b534bfe07e9855f1bf.svg?invert_in_darkmode&sanitize=true" align=middle width=39.54354689999999pt height=26.76175259999998pt/>, <img src="/doc/tex/f3523a0e299ea9fcab02794a2368f2ca.svg?invert_in_darkmode&sanitize=true" align=middle width=40.913419799999986pt height=26.76175259999998pt/> and <img src="/doc/tex/b54d59552cddec58d4e0da7405bb2952.svg?invert_in_darkmode&sanitize=true" align=middle width=40.913419799999986pt height=26.76175259999998pt/> then the pairs (2,4), (3,5) and (3,4) are connected by the same <img src="/doc/tex/f7f72bf6b74988049786767c04a6bdf3.svg?invert_in_darkmode&sanitize=true" align=middle width=21.278616149999987pt height=22.465723500000017pt/> operator in two different rotational interactions. Defined in this way they will use the same set of parameters - those labeled by 'cp2'. This type of definition is ....... 
+If we have defined the channels 2, 3, 4 and 5 as ${^2\Pi_{1/2}}$, $^2\Pi_{3/2}$, $^2\Delta_{3/2}$ and $^2\Delta_{5/2}$ then the pairs (2,4), (3,5) and (3,4) are connected by the same $L_+$ operator in two different rotational interactions. Defined in this way they will use the same set of parameters - those labeled by 'cp2'. This type of definition is ....... 
 <!-- We could define each of these pairs of interacting states as separate **```Coupling```** objects each having labels and the results will be the same. But then the fit will treat them ..... -->
 
 ## Molecule Levels Computation
@@ -811,9 +842,9 @@ The file looks like:
 ## Examples
 
 <!-- omit in toc -->
-### The minimal working example: Morse potential for <img src="/doc/tex/67ee5b6741d3b4139212bbf0588a9e3f.svg?invert_in_darkmode&sanitize=true" align=middle width=18.881345999999994pt height=22.465723500000017pt/>
+### The minimal working example: Morse potential for $\mathrm{H}_2$
 
-This is an example with the minimal set of nessecary parameters for running a single channel computations with the Morse potential for <img src="/doc/tex/67ee5b6741d3b4139212bbf0588a9e3f.svg?invert_in_darkmode&sanitize=true" align=middle width=18.881345999999994pt height=22.465723500000017pt/> molecule.
+This is an example with the minimal set of nessecary parameters for running a single channel computations with the Morse potential for $\mathrm{H}_2$ molecule.
 
 It is done with only a few lines of code.
 
@@ -880,9 +911,9 @@ plot.plot_potentials_on_grid(mlevels, show=True, fformat='svg')
 
 
 <!-- omit in toc -->
-### A more complex example: pointwise potentials for <img src="/doc/tex/8207f29c059ad1741b922ed20deb57b7.svg?invert_in_darkmode&sanitize=true" align=middle width=29.338013099999987pt height=26.76175259999998pt/>, <img src="/doc/tex/8cbc30f07cc338dcb4d7b09bb011e028.svg?invert_in_darkmode&sanitize=true" align=middle width=19.70325884999999pt height=26.76175259999998pt/> and <img src="/doc/tex/b6ccdd799b87869964f3c3d42b645c41.svg?invert_in_darkmode&sanitize=true" align=middle width=21.07313174999999pt height=26.76175259999998pt/> states of NiH
+### A more complex example: pointwise potentials for $^2\Sigma^+$, $^2\Pi$ and $^2\Delta$ states of NiH
 
-The complex of the three doublet electronic states <img src="/doc/tex/8207f29c059ad1741b922ed20deb57b7.svg?invert_in_darkmode&sanitize=true" align=middle width=29.338013099999987pt height=26.76175259999998pt/>, <img src="/doc/tex/8cbc30f07cc338dcb4d7b09bb011e028.svg?invert_in_darkmode&sanitize=true" align=middle width=19.70325884999999pt height=26.76175259999998pt/> and <img src="/doc/tex/b6ccdd799b87869964f3c3d42b645c41.svg?invert_in_darkmode&sanitize=true" align=middle width=21.07313174999999pt height=26.76175259999998pt/> for NiH molecule is an example of strongly perturbed and coupled states by various interactions. The three electronic states are described by five channels and in this example only five of all interactions are accounted for.
+The complex of the three doublet electronic states $^2\Sigma^+$, $^2\Pi$ and $^2\Delta$ for NiH molecule is an example of strongly perturbed and coupled states by various interactions. The three electronic states are described by five channels and in this example only five of all interactions are accounted for.
 
 ```python
 #!/usr/bin/env python
@@ -1060,7 +1091,7 @@ _, ax = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(11, 5))
 
 ax[0].plot(fdata[:, 2], fdata[:, 3], 'bo', fillstyle='none')
 ax[0].set_xlabel('J')
-ax.set_ylabel(r'Energy (cm<img src="/doc/tex/db982724014b78c648c5d008c86b3d09.svg?invert_in_darkmode&sanitize=true" align=middle width=16.82656799999999pt height=26.76175259999998pt/>)')
+ax.set_ylabel(r'Energy (cm$^{-3}$)')
 
 ax[1].plot(edata[:, 2], edata[:, 3], 'ro', fillstyle='none')
 ax[1].set_xlabel('J')
@@ -1079,7 +1110,7 @@ for v in vs:
         ax1.plot(f[:, 2], f[:, 3], color='green', marker='X', fillstyle='none', markersize=6, linewidth=0.2)
 
 ax1.set_xlabel('J')
-ax1.set_ylabel(r'Energy (cm<img src="/doc/tex/db982724014b78c648c5d008c86b3d09.svg?invert_in_darkmode&sanitize=true" align=middle width=16.82656799999999pt height=26.76175259999998pt/>)')
+ax1.set_ylabel(r'Energy (cm$^{-3}$)')
 plt.show()
 ```
 
@@ -1088,18 +1119,24 @@ plt.show()
 
 # Fitting of the Calculated Energy Levels
 
-The **```DiAtomic```** module has several implemented procedures for weighted least-squares fitting of the calculated to the experimental energy levels. In all cases what we want to minimize is the difference between the experimental (observed) energies and the calculated ones. Therefore we define the <img src="/doc/tex/a67d576e7d59b991dd010277c7351ae0.svg?invert_in_darkmode&sanitize=true" align=middle width=16.837900199999993pt height=26.76175259999998pt/> function as:
+The **```DiAtomic```** module has several implemented procedures for weighted least-squares fitting of the calculated to the experimental energy levels. In all cases what we want to minimize is the difference between the experimental (observed) energies and the calculated ones. Therefore we define the $\chi^2$ function as:
 
-<p align="center"><img src="/doc/tex/8ec442e942723e367a844cc07ec2a05b.svg?invert_in_darkmode&sanitize=true" align=middle width=200.27529884999998pt height=47.8235406pt/></p>
+$$
+\chi^2 = \sum_{i=1}^{n} \left[ \frac{E_{i}^{obs} - E_{i}^{cal}(\mathbf{x})}{\sigma_i} \right]^2
+$$
 
-where the computed energies are functions of the parameters that we would like to determine by minimizing the <img src="/doc/tex/a67d576e7d59b991dd010277c7351ae0.svg?invert_in_darkmode&sanitize=true" align=middle width=16.837900199999993pt height=26.76175259999998pt/> value. The dependance <img src="/doc/tex/4ca1aee6e8270689594bcea797736c2f.svg?invert_in_darkmode&sanitize=true" align=middle width=53.89543995pt height=27.91243950000002pt/> is in general nonlinear therefore an iterative procedure will be applied - starting from some trial values of the parameters a corrections will be generated and added to the current values on each iteration whcih will improve the <img src="/doc/tex/a67d576e7d59b991dd010277c7351ae0.svg?invert_in_darkmode&sanitize=true" align=middle width=16.837900199999993pt height=26.76175259999998pt/> value. The corrections will be found by solving the system:
+where the computed energies are functions of the parameters that we would like to determine by minimizing the $\chi^2$ value. The dependance $E_{i}^{cal}(\mathbf{x})$ is in general nonlinear therefore an iterative procedure will be applied - starting from some trial values of the parameters a corrections will be generated and added to the current values on each iteration whcih will improve the $\chi^2$ value. The corrections will be found by solving the system:
 
-<p align="center"><img src="/doc/tex/3d56e9c278a94b22d5667eb320678c6a.svg?invert_in_darkmode&sanitize=true" align=middle width=328.22589855pt height=47.2889208pt/></p>
+$$
+E_{i}^{obs} - E_{i}^{cal}(\mathbf{x}^{(0)}) - \sum_{j=1}^{m} \frac{\partial{E_{i}^{cal}}}{\partial x_{j}} \bigg\rvert_{x_j=x_{j}^{(0)}} \Delta x_{j} = 0
+$$
 
-where we have approximated the dependance <img src="/doc/tex/4ca1aee6e8270689594bcea797736c2f.svg?invert_in_darkmode&sanitize=true" align=middle width=53.89543995pt height=27.91243950000002pt/> by the first two terms in its Taylor expansion around <img src="/doc/tex/14fc0e68e921111d80f847f49f14fa1b.svg?invert_in_darkmode&sanitize=true" align=middle width=26.803695599999987pt height=29.190975000000005pt/>. This is a linear system of n equations with m unknowns (usually n > m) in the form <img src="/doc/tex/5e1e7c803719b446197e2edde2f0815c.svg?invert_in_darkmode&sanitize=true" align=middle width=52.89932669999998pt height=31.141535699999984pt/> where the unknown vector x is the vector with the corrections <img src="/doc/tex/3919bbc84b8079e27194efe99a1f6a80.svg?invert_in_darkmode&sanitize=true" align=middle width=23.09366069999999pt height=22.465723500000017pt/>, the right-hand side vector b is <img src="/doc/tex/f2e84668ab502e9be17614dcee78f4aa.svg?invert_in_darkmode&sanitize=true" align=middle width=124.01297039999999pt height=29.190975000000005pt/>, and the coefficient matrix A is formed by the first derivatives of the energies with respect to the parameters. 
+where we have approximated the dependance $E_{i}^{cal}(\mathbf{x})$ by the first two terms in its Taylor expansion around $\mathbf{x}^{(0)}$. This is a linear system of n equations with m unknowns (usually n > m) in the form $\hat{A}\mathbf{x} - \mathbf{b}$ where the unknown vector x is the vector with the corrections $\Delta x$, the right-hand side vector b is $E_{i}^{obs} - E_{i}^{cal}(\mathbf{x}^{(0)})$, and the coefficient matrix A is formed by the first derivatives of the energies with respect to the parameters. 
 <!-- The overall goal of the fit could be summirzied as:
 
-<p align="center"><img src="/doc/tex/c57fae4c7444bddea5a45372a6b5fb2b.svg?invert_in_darkmode&sanitize=true" align=middle width=164.16738195pt height=32.990165999999995pt/></p> -->
+$$
+\min_{\mathbf{x}}\;\chi^2 = \frac{1}{\sigma^2} | \hat{A}\mathbf{x} - \mathbf{b} |^2
+$$ -->
 
 As a first step we need to initialize the **```Fitting```** object for example like
 ```python
@@ -1110,7 +1147,7 @@ The first parameter is the created **```MoleculeLevels```** object and the secon
 
 ## SVD Fit
 
-In general it is not recommended to solve the above linear system by the method of the normal equations (that uses the matrix inverse) since the matrix A is singular mainly because of the following problem. Sometimes there exist two or more linear combinations of functions with the fitted parameters that can be added to the model functions without changing the <img src="/doc/tex/a67d576e7d59b991dd010277c7351ae0.svg?invert_in_darkmode&sanitize=true" align=middle width=16.837900199999993pt height=26.76175259999998pt/> value. This is an indication of a linear dependance between the model functions (the data matrix will be singular) and also means that there exist two or more sets of parameters that fit the data equally well. In this cases it is recommended to use the Singular Value Decomposition (SVD). In SVD the matrix <img src="/doc/tex/53d147e7f3fe6e47ee05b88b166bd3f6.svg?invert_in_darkmode&sanitize=true" align=middle width=12.32879834999999pt height=22.465723500000017pt/> (n x m) is represented as a product of three matrices <img src="/doc/tex/348ca4b32b3c0af83c00431b016dfad9.svg?invert_in_darkmode&sanitize=true" align=middle width=78.404007pt height=27.91243950000002pt/>, two unitary (or orthogonal in the real case) matrices U (n x n) and V (m x m) and one diagonal matrix <img src="/doc/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> (n x m). This is known as full SVD. When <img src="/doc/tex/180688a8c2192e65c9812628d22d321f.svg?invert_in_darkmode&sanitize=true" align=middle width=46.21760714999999pt height=20.908638300000003pt/> (more data than parameters), <img src="/doc/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> will have at most m nonzero rows and more compact representation is possible: <img src="/doc/tex/3652fbbfd63546aca5a4a0537748d81f.svg?invert_in_darkmode&sanitize=true" align=middle width=78.40398554999999pt height=31.141535699999984pt/> where <img src="/doc/tex/c827023fcc3b2c873aae402363f41328.svg?invert_in_darkmode&sanitize=true" align=middle width=13.01596064999999pt height=31.141535699999984pt/> is (n x m) submatrix of U and <img src="/doc/tex/d4261132636819ae7c6f4039dafc4016.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=31.141535699999984pt/> is the (m x m) submatrix of <img src="/doc/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/>. This is known as "economy" SVD. The U and V matrices are called right and left singular vectors and the diagonal elments of <img src="/doc/tex/813cd865c037c89fcdc609b25c465a05.svg?invert_in_darkmode&sanitize=true" align=middle width=11.87217899999999pt height=22.465723500000017pt/> are called singular values. It is important that the singular values are hierarchically aranged from the largest to the smallest i.e. <img src="/doc/tex/73f03081ed485c91b9becde40212c0a5.svg?invert_in_darkmode&sanitize=true" align=middle width=139.52397194999998pt height=20.908638300000003pt/>...
+In general it is not recommended to solve the above linear system by the method of the normal equations (that uses the matrix inverse) since the matrix A is singular mainly because of the following problem. Sometimes there exist two or more linear combinations of functions with the fitted parameters that can be added to the model functions without changing the $\chi^2$ value. This is an indication of a linear dependance between the model functions (the data matrix will be singular) and also means that there exist two or more sets of parameters that fit the data equally well. In this cases it is recommended to use the Singular Value Decomposition (SVD). In SVD the matrix $A$ (n x m) is represented as a product of three matrices $A = U\Sigma V^{\dagger}$, two unitary (or orthogonal in the real case) matrices U (n x n) and V (m x m) and one diagonal matrix $\Sigma$ (n x m). This is known as full SVD. When $n \ge m$ (more data than parameters), $\Sigma$ will have at most m nonzero rows and more compact representation is possible: $A = \hat{U}\hat{\Sigma}V^{\dagger}$ where $\hat{U}$ is (n x m) submatrix of U and $\hat{\Sigma}$ is the (m x m) submatrix of $\Sigma$. This is known as "economy" SVD. The U and V matrices are called right and left singular vectors and the diagonal elments of $\Sigma$ are called singular values. It is important that the singular values are hierarchically aranged from the largest to the smallest i.e. $\sigma_{1} \ge \sigma_2 \ge \dots \ge \sigma_{m}$...
 
 <!-- The singular values are different from zero when the model functions are linearly independant.
 
@@ -1122,7 +1159,9 @@ The **```run_svd```** method has only default parameters:
 
 - **```deriv```** - the method used for computation of derivatives. Default is **```deriv='n'```**. When **```deriv='n'```** the derivatives will be computed numerically with the finite diffrence method. Another possibility is **```deriv='a'```** in which case the derivatives of the energies with respect to the parameters will be computed analitically with the Hellman-Feynman theorem:
 
-<p align="center"><img src="/doc/tex/c3694908f44be879f0a2f10bc915062f.svg?invert_in_darkmode&sanitize=true" align=middle width=122.68708484999998pt height=33.81208709999999pt/></p>
+$$
+\frac{\partial E}{\partial a} = \langle \Psi \vert \frac{\partial H}{\partial a}\vert \Psi \rangle
+$$
 
 - **```tol```** - the tolerance value. It determines which and how many linear combinations of the fitted parameters will be discarded because the matrix is singular. The singular values which are less than **```tol```** times the largest singular value are treated as zero. The rank of the matrix is determined by the number of the nonzero singular values and **```tol```** governs the effective rank of the matrix that is the number of singular values smaller than some specific value. Default is **```tol=0.1```**
 
@@ -1130,9 +1169,11 @@ The **```run_svd```** method has only default parameters:
 
 - **```step_size```** - used to determine the change in the parameters during the computation of derivatives. Default is **```step_size=1.0e-4```**.
 
-- **```is_weighted```** - whether to apply a weighted least-squares fitting with the method proposed by J. Watson (default is **```False```**) in which case the weights <img src="/doc/tex/c5e40d7bbcc7d29edc388de6341b5f66.svg?invert_in_darkmode&sanitize=true" align=middle width=26.80945079999999pt height=28.894955100000008pt/> given by the experimental uncerteinty will be replaced by the expression:
+- **```is_weighted```** - whether to apply a weighted least-squares fitting with the method proposed by J. Watson (default is **```False```**) in which case the weights $\sigma_{k}^{-2}$ given by the experimental uncerteinty will be replaced by the expression:
 
-<p align="center"><img src="/doc/tex/fecf078bd951ed0d732f61d5030effdc.svg?invert_in_darkmode&sanitize=true" align=middle width=170.20721849999998pt height=38.51761815pt/></p>
+$$
+\frac{1}{\sigma_{k}^{2} + 0.3(E_{k}^{exp} - E_{k}^{calc})^{2}}
+$$
 
 - **```restart```** - not yet implemented
 - **```limit```** - not yet implemented
