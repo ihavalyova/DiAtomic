@@ -9,7 +9,7 @@ Its main functionality includes:
 - energy eigenvalues computation for single noninteracting electronic state
 and for a system of arbitrary number of coupled states
 
-- calculations of transition frequencies and intensities
+- computing the transition frequencies and line intensities
 
 - fitting of the computed energy levels to the experimental data
 
