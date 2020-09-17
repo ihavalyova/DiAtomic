@@ -1,0 +1,6 @@
+scipy>=0.18.1
+numpy>=1.16.0
+matplotlib>=1.5.3
+ruamel.yaml
+py3nj
+iminuit
