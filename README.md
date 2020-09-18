@@ -4,10 +4,9 @@
 
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/ihavalyova/DiAtomic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/ihavalyova/DiAtomic/alerts/)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/ihavalyova/DiAtomic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/ihavalyova/DiAtomic/context:python)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ihavalyova/DiAtomic/master)
 
 <!-- https://mybinder.org/v2/gh/ihavalyova/DiAtomic/master -->
-
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ihavalyova/DiAtomic/master)
 
 DiAtomic is an open-source library written in Python with useful routines for performing various computations of diatomic molecules.
 
