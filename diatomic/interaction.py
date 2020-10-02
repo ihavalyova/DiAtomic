@@ -92,6 +92,7 @@ class Interaction:
     def fill_pert_matrix(self, Gy2, **kwargs):
 
         ctype = kwargs['ctype'].lower()
+
         m = kwargs['m']
         cp = kwargs['cp']
         cb = kwargs['cb']
@@ -102,24 +103,23 @@ class Interaction:
 
         interaction_keys = self.define_interaction_keys()
 
-        cplfunc = np.zeros(self.ngrid)
+        cfunc = np.zeros(self.ngrid)
 
         jjrot = self.jrot*(self.jrot + 1.0)
-        ch1, ch2 = cb
 
         i1 = cp*self.ngrid
         i2 = (cp+1)*self.ngrid
-
         ycs = self.fgrid[i1:i2]
 
-        cplfunc = interaction_keys[ctype](jjrot, mass, m, par, ycs, args) * Gy2
+        cfunc = interaction_keys[ctype](jjrot, mass, m, par, ycs, args)  # *Gy2
 
+        ch1, ch2 = cb
         row1 = (ch1-1)*self.ngrid
         row2 = ch1*self.ngrid
         col1 = (ch2-1)*self.ngrid
         col2 = ch2*self.ngrid
 
-        self.pert_matrix[row1:row2, col1:col2][dd] += cplfunc
+        self.pert_matrix[row1:row2, col1:col2][dd] += cfunc
 
     def spin_orbit_interaction(self, jjrot, mass, m, par, ycs, args):
 
@@ -354,12 +354,16 @@ class Interaction:
     def lambda_doubling_e_parity(self, jjrot, mass, m, par, ycs, args):
 
         if par == 1:
-            self.lambda_doubling(jjrot, mass, m, par, ycs, args)
+            return self.lambda_doubling(jjrot, mass, m, par, ycs, args)
+        else:
+            return np.zeros(ycs.shape[0])
 
     def lambda_doubling_f_parity(self, jjrot, mass, m, par, ycs, args):
 
         if par == 0:
-            self.lambda_doubling(jjrot, mass, m, par, ycs, args)
+            return self.lambda_doubling(jjrot, mass, m, par, ycs, args)
+        else:
+            return np.zeros(ycs.shape[0])
 
     def BOBC(self, jjrot, mass, m, par, ycs, args):
 

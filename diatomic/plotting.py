@@ -7,6 +7,7 @@ from scipy.interpolate import CubicSpline
 # from collections import defaultdict
 from utils import Utils
 from constants import Const
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter)
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -15,21 +16,10 @@ matplotlib.use('TkAgg')
 class Plotting:
 
     def __init__(self):
-        self.plot_dir = 'plotting'
-        self.func_dir = 'interactions'
-        self.resid_dir = 'full_residuals'
-        self.wavefunc_dir = 'wavefunctions'
-        self.res_dir = 'residuals'
+        pass
 
-        self.plot_path = os.path.join(Utils.get_current_dir(), self.plot_dir)
-        self.func_path = os.path.join(self.plot_path, self.func_dir)
-        self.resid_path = os.path.join(self.plot_path, self.resid_dir)
-        self.wavefunc_path = os.path.join(self.plot_path, self.wavefunc_dir)
-        self.res_path = os.path.join(self.plot_path, self.res_dir)
-
-        os.makedirs(self.plot_path, exist_ok=True)
-
-    def _define_main_keywords(self):
+    @classmethod
+    def _define_main_keywords(cls):
 
         return {
             0: 'what',
@@ -40,19 +30,21 @@ class Plotting:
             5: 'props',
         }
 
-    def _define_what_keywords(self):
+    @classmethod
+    def _define_what_keywords(cls):
 
         return {
-            'residuals_level': self.plot_residuals_level,
-            'residuals': self.full_residuals_plot,
-            'potentials_on_grid': self.plot_potentials_on_grid,
-            'couplings_on_grid': self.plot_couplings_on_grid,
+            'residuals_level': cls.plot_residuals_level,
+            'residuals': cls.full_residuals_plot,
+            'potentials_on_grid': cls.plot_potentials_on_grid,
+            'couplings_on_grid': cls.plot_couplings_on_grid,
         }
 
-    def plot(self, **kwargs):
+    @staticmethod
+    def plot(cls, **kwargs):
 
-        keys = self._define_main_keywords()
-        what_keys = self._define_what_keywords()
+        keys = cls._define_main_keywords()
+        what_keys = cls._define_what_keywords()
 
         what = kwargs[keys[0]].lower()
         mlevels = kwargs.get(keys[1])
@@ -68,14 +60,16 @@ class Plotting:
             mlevels=mlevels, path=path, fformat=frm, show=show, props=props
         )
 
-    def full_residuals_plot(self, mlevels, path=None, fformat='png',
+    @classmethod
+    def full_residuals_plot(cls, mlevels, path=None, fformat='png',
                             show=False, props=None):
 
-        path = path or self.resid_path
+        path = path or Utils.get_plot_dir('resid_path')
+
         data = mlevels.out_data
 
-        gen_color = self._get_color()
-        gen_marker = self._get_marker()
+        gen_color = cls._get_color()
+        gen_marker = cls._get_marker(limit=True)
 
         fillstyle = ['none', 'none', 'full', 'full']
         random.shuffle(fillstyle)
@@ -87,7 +81,7 @@ class Plotting:
         }
 
         # will change props values
-        props = self._combine_props(props, props_def)
+        props = cls._combine_props(props, props_def)
 
         nisotopes = len(mlevels.masses)
 
@@ -109,13 +103,13 @@ class Plotting:
             line_styles = {
                 'color': (next(gen_color), next(gen_color)),
                 'marker': (next(gen_marker), next(gen_marker)),
-                'markersize': (6, 6),
-                'markeredgewidth': (0.4, 0.4),
+                'markersize': (6.5, 6.5),
+                'markeredgewidth': (0.8, 0.8),
                 'linewidth': (0.0, 0.0),
-                'fillstyle': (fillstyle[0], fillstyle[1])
+                'fillstyle': ('none', 'none')
             }
 
-            _, ax = plt.subplots()
+            fig, ax = plt.subplots()
 
             ax.plot(
                 edata[:, 9],
@@ -157,64 +151,156 @@ class Plotting:
             ax.legend(['e-parity levels', 'f-parity levels'], loc=0)
             # fig.tight_layout()
 
+            fig.set_size_inches(13, 7)
             fig_path = os.path.join(path, 'residuals' + f'.{fformat}')
-            plt.savefig(fig_path, format=fformat, dpi=250)  # transparent=True
+            fig.savefig(fig_path, format=fformat, dpi=100)  # transparent=True
             print(f'Created figure: {fig_path}', sep='')
             if show:
                 plt.show()
 
-    def plot_couplings_on_grid(self, mlevels, path=None, fformat='png',
+    @classmethod
+    def plot_couplings_on_grid(cls, mlevels, path=None, fformat='png',
                                show=False, props=None):
 
-        path = path or self.func_path
-        print(mlevels.fgrid)
+        path = path or Utils.get_plot_dir('func_path')
 
         props_def = {
             'xlabel': 'Internuclear Distance',
             'ylabel': 'Interaction',
             'title': 'Couplings',
         }
+
         # will change props values
-        props = self._combine_props(props, props_def)
+        props = cls._combine_props(props, props_def)
 
-        _, ax = plt.subplots()
+        fig1, ax1 = plt.subplots()
+        fig2, ax2 = plt.subplots()
+        fig3, ax3 = plt.subplots()
+        fig4, ax4 = plt.subplots()
 
-        gen_color = self._get_color()
+        gen_color = cls._get_color()
+        gen_marker = cls._get_marker()
 
-        for i, cpl in enumerate(mlevels.couplings):
-            gridr = mlevels.rgrid * Const.bohr
+        fgrid_cols = np.hstack((
+            mlevels.rgrid[:, np.newaxis],
+            mlevels.fgrid.reshape(mlevels.ncp, mlevels.ngrid).T
+        ))
+        rgrid_col = fgrid_cols[:, 0] * Const.bohr
+        n = rgrid_col.shape[0]
 
-            # will not work
-            gridf_range = mlevels.fgrid[i*mlevels.ngrid:(i+1)*mlevels.ngrid]
-            gridf = gridf_range * Const.hartree
+        leg1, leg2, leg3, leg4 = [], [], [], []
 
-            ax.plot(
-                gridr,
-                gridf,
-                color=next(gen_color),
-                markersize=0,
-                linewidth=1.5,
-            )
+        for col in range(1, fgrid_cols.shape[1]):
+            markers_on = [0, int(n/4), int(n/2), int(n/1.6), int(n/1.2), -1]
 
-        ax.set_title(props['title'])
-        ax.set_xlabel(props['xlabel'])
-        ax.set_ylabel(props['ylabel'])
-        ax.legend(mlevels.couplings, loc=0)
+            if 'spin-orbit' in mlevels.couplings[col-1].coupling:
+                ax1.plot(
+                    rgrid_col,
+                    fgrid_cols[:, col],
+                    color=next(gen_color),
+                    marker=next(gen_marker),
+                    markersize=6.5,
+                    markeredgewidth=0.7,
+                    fillstyle='none',
+                    linewidth=1.5,
+                    markevery=markers_on
+                )
+                ax1.set_title('Spin-Orbit interactions')
+                ax1.set_xlabel(props['xlabel'])
+                ax1.set_ylabel(props['ylabel'])
+                ax1.set_ylim(-800, -200)  # only for nih - to remove
+                leg1.append(mlevels.couplings[col-1].interact)
 
-        plt.savefig(os.path.join(path, f'couplings.{fformat}'), format=fformat)
+            if 'LJ' in mlevels.couplings[col-1].coupling:
+                ax2.plot(
+                    rgrid_col,
+                    fgrid_cols[:, col],
+                    color=next(gen_color),
+                    marker=next(gen_marker),
+                    markersize=6.5,
+                    markeredgewidth=0.7,
+                    fillstyle='none',
+                    linewidth=1.5,
+                    markevery=markers_on
+                )
+
+                ax2.set_title('LJ interactions')
+                ax2.set_xlabel(props['xlabel'])
+                ax2.set_ylabel(props['ylabel'])
+                ax2.set_ylim(0, 2)
+                leg2.append(mlevels.couplings[col-1].interact)
+
+            if 'SJ' in mlevels.couplings[col-1].coupling:
+                ax3.plot(
+                    rgrid_col,
+                    fgrid_cols[:, col],
+                    color=next(gen_color),
+                    marker=next(gen_marker),
+                    markersize=6.5,
+                    markeredgewidth=0.7,
+                    fillstyle='none',
+                    linewidth=1.5,
+                    markevery=markers_on
+                )
+
+                ax3.set_title('SJ interactions')
+                ax3.set_xlabel(props['xlabel'])
+                ax3.set_ylabel(props['ylabel'])
+                ax3.set_ylim(0, 3.5)
+                leg3.append(mlevels.couplings[col-1].interact)
+
+            if 'LambdaD' in mlevels.couplings[col-1].coupling:
+                ax4.plot(
+                    rgrid_col,
+                    fgrid_cols[:, col],
+                    color=next(gen_color),
+                    marker=next(gen_marker),
+                    markersize=6.5,
+                    markeredgewidth=0.7,
+                    fillstyle='none',
+                    linewidth=1.5,
+                    markevery=markers_on
+                )
+
+                ax4.set_title('Lambda doubling interactions')
+                ax4.set_xlabel(props['xlabel'])
+                ax4.set_ylabel(props['ylabel'])
+                ax4.set_ylim(-0.1, 0.1)
+                leg4.append(mlevels.couplings[col-1].interact)
+
+        ax1.legend(leg1, loc=0)
+        ax2.legend(leg2, loc=0)
+        ax3.legend(leg3, loc=0)
+        ax4.legend(leg4, loc=0)
+
+        os.makedirs(path, exist_ok=True)
+
+        fig1_path = os.path.join(path, f'SO.{fformat}')
+        fig2_path = os.path.join(path, f'LJ.{fformat}')
+        fig3_path = os.path.join(path, f'SJ.{fformat}')
+        fig4_path = os.path.join(path, f'LD.{fformat}')
+
+        cls.save_figure(fig1, fig1_path, fformat, "tight")
+        cls.save_figure(fig2, fig2_path, fformat, "tight")
+        cls.save_figure(fig3, fig3_path, fformat, "tight")
+        cls.save_figure(fig4, fig4_path, fformat, "tight")
 
         if show:
             plt.show()
 
-        # coupling_names = coupling_names or [ '' for _ in cols ]
-        # for col, name in zip(cols, coupling_names):
-        #     plt.plot(x, data[:,col])
+    @classmethod
+    def save_figure(self, fig, path, fformat, bbox):
 
-    def plot_residuals_level(self, mlevels, path=None, fformat='png',
+        fig.savefig(path, format=fformat, bbox_inches=bbox)
+
+    @classmethod
+    def plot_residuals_level(cls, mlevels, path=None, fformat='png',
                              show=False, props=None):
 
-        os.makedirs(self.res_path, exist_ok=True)
-        path = path or self.res_path
+        plt.rcParams.update({'font.size': 8})
+        res_path = Utils.get_plot_dir('res_path')
+        os.makedirs(res_path, exist_ok=True)
+        path = path or res_path
 
         props_def = {
             'xlabel': 'J',
@@ -223,74 +309,97 @@ class Plotting:
         }
 
         # will change props values
-        props = self._combine_props(props, props_def)
-
-        # if mlevels is not None:
+        props = cls._combine_props(props, props_def)
         data = mlevels.out_data
-        # else:
-        #     data = np.loadtxt(evalues_file)
 
         # split data by v, then split by state, then extract
         # marker ranges and get the data for each isotope
         vsplit = np.split(data, np.where(np.diff(data[:, 1]))[0]+1)
 
-        for v in range(0, len(vsplit)):
+        # TODO: find more clever way
+        plt.rcParams.update({'figure.max_open_warning': 0})
+
+        for v, _ in enumerate(vsplit):
+
+            vn = int(vsplit[v][:, 1][0])
+
+            vsplit[v] = vsplit[v][vsplit[v][:, -1].argsort()]
+
             ssplit = np.split(
                 vsplit[v], np.where(np.diff(vsplit[v][:, -1]))[0]+1
             )
 
-            for st in range(0, len(ssplit)):
-                mrange = self._map_marker(ssplit[st][:, 7])
+            for sti, _ in enumerate(ssplit):
+
+                stn = int(ssplit[sti][:, -1][0])
+
+                mrange = cls._map_marker(ssplit[sti][:, 7])
 
                 for i, m in enumerate(mrange):
-                    splitted_data = ssplit[st][m, :]
+                    splitted_data = ssplit[sti][m, :]
 
                     fdata = splitted_data[splitted_data[:, 6] == 0]
                     edata = splitted_data[splitted_data[:, 6] == 1]
 
-                    fig, ax = plt.subplots()
+                    fig, ax_data = plt.subplots()
 
-                    ax.plot(
+                    ax_data.plot(
                         edata[:, 2],
                         -edata[:, 10],
-                        color='blue',
+                        color='darkblue',
                         marker='o',
-                        markersize=10,
-                        markeredgewidth=0.9,
+                        markersize=6,
+                        markeredgewidth=0.7,
                         fillstyle='none',
                         linewidth=0,
                     )
 
-                    ax.plot(
+                    ax_data.plot(
                         fdata[:, 2],
                         -fdata[:, 10],
-                        color='red',
-                        marker='v',
-                        markersize=8,
+                        color='darkgreen',
+                        marker='X',
+                        markersize=6,
                         markeredgewidth=0.7,
-                        fillstyle='full',
+                        fillstyle='none',
                         linewidth=0,
                     )
 
-                    ax.set_xlabel(props['xlabel'])
-                    ax.set_ylabel(props['ylabel'])
-                    ax.legend(['e', 'f'], loc=0)
-                    ax.set_title(props['title'].format(v, st, i))
+                    ax_data.set_xlabel(props['xlabel'])
+                    ax_data.set_ylabel(props['ylabel'])
+                    ax_data.legend(['e', 'f'], loc=0, prop={'size': 6})
+                    ax_data.set_title(props['title'].format(vn, stn, i+1))
 
-                    figname = f'residual_{v}_{st}_{i}.{fformat}'
+                    ax_data.xaxis.set_major_locator(MultipleLocator(20))
+                    ax_data.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+                    ax_data.xaxis.set_minor_locator(MultipleLocator(5))
+                    ax_data.grid(which='both')
+                    ax_data.grid(which='major', alpha=0.5)
+                    ax_data.grid(which='minor', alpha=0.2)
+
+                    fig.set_size_inches(7, 5)
+
+                    figname = f'residual_{vn}_{stn}_{i}.{fformat}'
                     figpath = os.path.join(path, figname)
-                    plt.savefig(figpath, format=fformat, dpi=100)
+                    fig.savefig(
+                        figpath, format=fformat, dpi=100, transparent=False
+                    )
                     fig.tight_layout()
-                    # plt.gcf().clear()
 
                     print(f'Created figure: {figpath}', sep='')
+
                     if show:
                         plt.show()
 
-    def plot_potentials_on_grid(self, mlevels, path=None, fformat='png',
+                    # plt.cla()
+                    # plt.gcf().clear()
+        # plt.close(fig)
+
+    @classmethod
+    def plot_potentials_on_grid(cls, mlevels, path=None, fformat='png',
                                 show=False, props=None):
 
-        path = path or self.plot_path
+        path = path or Utils.get_plot_dir('plot_path')
 
         # to add x lim and y lim
         props_def = {
@@ -300,7 +409,7 @@ class Plotting:
         }
 
         # will change props values
-        props = self._combine_props(props, props_def)
+        props = cls._combine_props(props, props_def)
 
         _, ax = plt.subplots()
 
@@ -311,7 +420,7 @@ class Plotting:
         # need to keep the unique file names in ordered data structue
         unique_pfiles = list(unique_pfiles)
 
-        gen_color = self._get_color()
+        gen_color = cls._get_color()
 
         for i, _ in enumerate(unique_pfiles):
             gridr = mlevels.rgrid * Const.bohr
@@ -340,17 +449,18 @@ class Plotting:
         if show:
             plt.show()
 
-    def plot_potentials_points(self, files, path=None, fformat='png',
+    @classmethod
+    def plot_potentials_points(cls, files, path=None, fformat='png',
                                show=False, ipoints=None, xlim=None, ylim=None):
         # cannot not be called as option from plot()
         # only for plotting pointwise potentials
 
         _, ax = plt.subplots()
 
-        path = path or self.plot_path
+        path = path or Utils.get_plot_dir('plot_path')
 
-        gen_color = self._get_color()
-        gen_marker = self._get_marker()
+        gen_color = cls._get_color()
+        gen_marker = cls._get_marker()
         xlim = xlim or (None, None)
         ylim = ylim or (None, None)
 
@@ -402,7 +512,8 @@ class Plotting:
             if show:
                 plt.show()
 
-    def hcolormesh(self, mlevels, rows=None, cols=None, path=None,
+    @staticmethod
+    def hcolormesh(mlevels, rows=None, cols=None, path=None,
                    fformat='png', show=False):
 
         """create a colormesh of the Hamiltonian matrix
@@ -453,7 +564,7 @@ class Plotting:
         )
 
         # fig.tight_layout()
-        path = path or self.plot_path
+        path = path or Utils.get_plot_dir('plot_path')
 
         figpath = os.path.join(path, f'hcolormesh.{fformat}')
         plt.savefig(figpath, format=fformat)
@@ -463,7 +574,8 @@ class Plotting:
         if show:
             plt.show()
 
-    def plot_wavefunctions(self, wffile, props=None, path=None,
+    @staticmethod
+    def plot_wavefunctions(wffile, props=None, path=None,
                            subplots=True, fformat='png', title='',
                            xlabel='R', ylabel='wavefunction', leg=''):
         """
@@ -483,7 +595,7 @@ class Plotting:
         igrid = wfdata[:, 0]
         wavefunc = wfdata[:, 0:]
 
-        path = path or self.wavefunc_path
+        path = path or Utils.get_plot_dir('wavefunc_path')
 
         os.makedirs(path, exist_ok=True)
 
@@ -516,7 +628,8 @@ class Plotting:
 
             plt.show()
 
-    def _combine_props(self, props, props_def):
+    @classmethod
+    def _combine_props(cls, props, props_def):
 
         if props is None:
             return props_def
@@ -528,7 +641,8 @@ class Plotting:
                     props[key] = value
             return props
 
-    def _map_marker(self, markers):
+    @classmethod
+    def _map_marker(cls, markers):
 
         ranges = []
         for i in range(0, 60, 10):  # up to 6 isotopes
@@ -538,39 +652,32 @@ class Plotting:
 
         return ranges
 
-    def _get_color(self):
+    @classmethod
+    def _get_color(cls):
 
         bcolors = [
             '#1C03FF', '#4132C7', '#130B5B', '#10286B',
             '#355098', '#380AA2', '#3061B5', '#1C8FC9',
-            '#00ABFF', '#10C7EC', '#10ECEC', '#BA5FFF'
+            '#00ABFF', '#10C7EC', '#10ECEC', '#BA5FFF',
+            '#800080', '#1E90FF', '#4682B4', '#4B0082',
         ]
         random.shuffle(bcolors)
 
         rcolors = [
             '#FA0A0A', '#D44141', '#B53232', '#EF262D',
             '#D50D50', '#FC697C', '#FC69E3', '#A11589',
-            '#A8639C', '#DF211A', '#F3592A', '#FF8F44'
+            '#A8639C', '#DF211A', '#F3592A', '#FF8F44',
+            '#C71585', '#D2691E', '#DC143C', '#800000'
         ]
         random.shuffle(rcolors)
 
         gcolors = [
             '#00FF2B', '#3AA44C', '#165F22', '#54FC70',
             '#3EE22C', '#15730B', '#4EA644', '#65EE16',
-            '#12DB7D', '#EAF215', '#DFF64D', '#F9F924'
+            '#13987D', '#32B30B', '#77D11D', '#D1BE15',
+            '#556B2F', '#2E8B57', '#008B8B', '#2E8B57'
         ]
         random.shuffle(gcolors)
-
-        # colors = [
-        #     '#e50000', '#9a0200', '#fe420f', '#f9bc08', '#9cbb04',
-        #     '#419c03', '#69d84f', '#089404', '#06470c', '#01386a',
-        #     '#448ee4', '#0d758f', '#1d5dec', '#0203e2', '#2000b1',
-        #     '#380282', '#9a0eea', '#7e1e9c', '#4e0550', '#c20078',
-        #     '#23c48b', '#fe86a4', '#ff474c', '#ffdf22', '#00122e'
-        # ]
-        # random.shuffle(colors)
-        # for color in colors:
-        #     yield color
 
         colors = []
         for color in zip(gcolors, bcolors, rcolors):
@@ -582,12 +689,22 @@ class Plotting:
         for color in colors:
             yield color
 
-    def _get_marker(self):
+    @classmethod
+    def _get_marker(cls, limit=False):
 
         markers = [
             'o', 'v', '<', '>', 's', 'p', '*',
-            '+', 'x', 'D', 'd', 'X', '^'
+            '+', 'x', 'D', 'd', 'X', '^', 'h',
+            '1', '2', '3', '4', 'o', 'v', 'X',
+            'x', 's', '<', '>', 'D', 'd', '*',
+            'o', 'v', 'X', 'x'
         ]
+
+        if limit:
+            markers = [
+                'o', 'v', '<', '>', 's',
+                '*', 'x', 'D', 'd', 'X'
+            ]
 
         random.shuffle(markers)
 

@@ -1,23 +1,19 @@
 import os
 import math
-import py3nj
 import numpy as np
-# from scipy.interpolate import CubicSpline
+
+try:
+    import py3nj
+except ModuleNotFoundError:
+    print("'py3nj' module is not installed!\n")
 
 
 class Spectrum:
-    def __init__(self, dmf, spec_type='absorption', wavefunc1=None):
-
-        self.spec_type = spec_type
+    def __init__(self):
 
         self.calc_freq_file = 'calculated_frequencies.dat'
         self.comp_freq_file = 'compared_frequencies.dat'
         self.evals_file = 'eigenvalues_all.dat'
-
-        if self.spec_type not in ('absorption', 'emission', 'a', 'e'):
-            raise SystemExit(
-                f'"{spec_type}" is not a valid spectrum type'
-            )
 
     def calculate_frequencies(self, **kwargs):
 
@@ -33,42 +29,16 @@ class Spectrum:
 
         Remarks:
             0. by channels and by terms are two separate options and cannot
-               be used simultaneously
+            be used simultaneously
             1. uch/lch should be integer numbers
             2. uterms/lterms are names of an existing files in specific format
             3. if channels and terms files are specified simultaneously,
-               the default channel option will be used
+            the default channel option will be used
             4. if uch is specified lch should also be specified;
-               the same applies for lterms and uterms
+            the same applies for lterms and uterms
         """
 
-        uch = kwargs.get('uch')
-        lch = kwargs.get('lch')
-        uterms = kwargs.get('uterms')
-        lterms = kwargs.get('lterms')
-
-        if uch is not None and lch is not None:
-            try:
-                self.check_channels_type(uch)
-                self.check_channels_type(lch)
-            except TypeError as te:
-                raise SystemExit(te)
-
-            self.calculate_frequencies_by_channels(uch, lch, kwargs)
-        elif uterms is not None and lterms is not None:
-            try:
-                self.check_terms_file_type(uterms)
-                self.check_terms_file_type(lterms)
-            except FileNotFoundError as fe:
-                raise SystemExit(fe)
-
-            self.calculate_frequencies_by_term_values(uterms, lterms, kwargs)
-        else:
-            raise SystemExit(
-                f'Invalid input in Spectrum object: '
-                f'lch={lch}, uch={uch} and uterms={uterms}, lterms={lterms} '
-                f'should be specified in pairs but not simultaneously.'
-            )
+        pass
 
     def check_channels_type(self, ch):
 
@@ -106,7 +76,8 @@ class Spectrum:
             16: 'bands',
         }
 
-    def calculate_frequencies_by_channels(self, uch, lch, kwargs):
+    def calculate_frequencies_by_states(self, upper=None, lower=None,
+                                        mlevels=None, kwargs={}):
 
         """ will compute all allowed transitions between two channels
         for which the eigenvalues and eigenvectors have been calculated
@@ -130,27 +101,37 @@ class Spectrum:
 
         keys = self.define_keywords()
 
-        evalues_file = kwargs.get(keys[0]) or self.evals_file
-        evalues = np.loadtxt(evalues_file)
+        # evalues_file = kwargs.get(keys[0]) or self.evals_file
+        # evalues = np.loadtxt(evalues_file)
 
-        uterms = evalues[evalues[:, -3] == uch]
-        uterms = uterms[:, [0, 1, 2, 3, 4, -3, -2, -1]]
-        lterms = evalues[evalues[:, -3] == lch]
-        lterms = lterms[:, [0, 1, 2, 3, 4, -3, -2, -1]]
+        evalues = mlevels.get_predicted_eigenvalues()
+        evalues = np.c_[np.arange(1.0, evalues.shape[0]+1), evalues]
+
+        uterms = evalues[evalues[:, -4] == upper]
+        # uterms = uterms[:, [0, 1, 2, 3, 4, -3, -2, -1]]
+        uterms = uterms[:, [0, -3, 1, 2, 3, -4, -2, -1]]
+        lterms = evalues[evalues[:, -4] == lower]
+        # lterms = lterms[:, [0, 1, 2, 3, 4, -3, -2, -1]]
+        lterms = lterms[:, [0, -3, 1, 2, 3, -4, -2, -1]]
 
         predicted_freq_file = kwargs.get(keys[1]) or self.calc_freq_file
         obs_freq_file = kwargs.get(keys[2])
         compared_freq_file = kwargs.get(keys[3]) or self.comp_freq_file
 
-        jrange = kwargs.get(keys[4])
-        vrange = kwargs.get(keys[5])
+        vns = np.unique(uterms[:, 1])
+        vrange_def = min(vns), max(vns)
+        jns = np.unique(uterms[:, 3])
+        jrange_def = min(jns), max(jns)
+
+        jrange = kwargs.get(keys[4]) or jrange_def
+        vrange = kwargs.get(keys[5]) or vrange_def
         upar = kwargs.get(keys[6]) or (0, 1)
         lpar = kwargs.get(keys[7]) or (0, 1)
         frange = kwargs.get(keys[10]) or (-np.inf, np.inf)
         compute_hlf = kwargs.get(keys[11]) or False
         extract = kwargs.get(keys[12]) or False
 
-        # TODO: check id grid is provided when computing FCF
+        # TODO: check if grid is provided when computing FCF
         grid = kwargs.get(keys[13])
 
         isotopes = kwargs.get(keys[14]) or [1]
@@ -275,7 +256,7 @@ class Spectrum:
 
         if compute_fcf:
             fcfs = self.compute_Frank_Condon_factors(
-                uch, lch, grid, (js, je), isotopes, bands
+                upper, lower, grid, (js, je), isotopes, bands
             )
 
             fcf_file = 'FCF_' + predicted_freq_file
@@ -330,6 +311,10 @@ class Spectrum:
             return vs, ve
 
         return vrange[0], vrange[1]
+
+    def get_frange_values(self, frange):
+        # TODO: rewrite this
+        return 0, 1
 
     # TODO: change the indices in this function since the
     # format of eigenvalues_all.dat file was changed
@@ -639,7 +624,7 @@ class Spectrum:
         two_m2 = np.int64(2*(ulambda-llambda))
         two_m3 = np.int64(2*lomega)
 
-        # allow for ambiguous sign in the 3j symbol when one of the Lambda
+        # allows for the ambiguous sign in the 3j symbol when one of the Lambda
         # quantum numbers is zero (Ref: J.K.G. Watson, JMS 252 (2008))
 
         if (ulambda.any() == 0 and llambda.any() != 0) or \

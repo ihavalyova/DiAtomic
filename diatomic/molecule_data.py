@@ -5,17 +5,16 @@ import logging
 import numpy as np
 from more_itertools import unique_everseen
 from collections import OrderedDict
+
+from atomic_database import AtomicDatabase
 from constants import Const
 
 # to check if C loader is present on current machine
-# /path/to/python -c "import ruamel.yaml; print(ruamel.yaml.__with_libyaml__)"
+# /path/to/python -c "import ruamel.yaml;
+# print(ruamel.yaml.__with_libyaml__)"
 
-# import ruamel.yaml
 from ruamel.yaml import YAML
 yaml = YAML(typ='rt', pure=False)
-
-# if ruamel.yaml.__with_libyaml__:
-#    yaml = YAML(typ='rt', pure=False)
 
 
 class MoleculeData:
@@ -32,7 +31,7 @@ class MoleculeData:
         self.refE = None
         self.exp_file = None
         self.exp_data = None
-        self.atomic_masses = []
+        self.atomic_db = []
         self.reduced_masses = []
         self.atomic_symbols = []
         self.atomic_mass_nums = []
@@ -112,11 +111,7 @@ class MoleculeData:
     def referencej(self, refj):
 
         self.refj = refj
-
-        self.jqnumbers = np.delete(
-            self.jqnumbers, np.argwhere(self.jqnumbers == self.refj)
-        )
-        self.jqnumbers = np.insert(self.jqnumbers, 0, self.refj)
+        self._arange_jqnumbers()
 
     @property
     def parities(self):
@@ -141,6 +136,14 @@ class MoleculeData:
 
         self.refE = refE / Const.hartree
 
+    def _arange_jqnumbers(self):
+
+        self.jqnumbers = np.delete(
+            self.jqnumbers, np.argwhere(self.jqnumbers == self.refj)
+        )
+
+        self.jqnumbers = np.insert(self.jqnumbers, 0, self.refj)
+
     def _calculate_molecule_reduced_mass(self, molecule, database=None):
 
         molecule_data = re.search(r'(\d+)(\D+)(\d+)(\D+)', molecule).groups()
@@ -153,29 +156,25 @@ class MoleculeData:
         atoms = (molecule_data[1], molecule_data[3])
         mass_numbers = (int(molecule_data[0]), int(molecule_data[2]))
 
-        def_db = 'Atomic_Weights_and_Isotopic_' + \
-            'Compositions_for_All_Elements_NIST.ascii'
-        database = database or def_db
+        db_name = AtomicDatabase.database
+        atomic_db = database or db_name
 
-        with open(database, 'r') as dbs:
-            atomic_masses = dbs.read()
-
-        atom_mass1 = self.match_atomic_mass(
-            atomic_masses, atoms[0], mass_numbers[0]
+        atom_mass1 = self._match_atomic_mass(
+            atomic_db, atoms[0], mass_numbers[0]
         )
-        atom_mass2 = self.match_atomic_mass(
-            atomic_masses, atoms[1], mass_numbers[1]
+        atom_mass2 = self._match_atomic_mass(
+            atomic_db, atoms[1], mass_numbers[1]
         )
 
         rmass = atom_mass1 * atom_mass2 / (atom_mass1 + atom_mass2)
 
-        self.atomic_masses.append((atom_mass1, atom_mass2))
+        self.atomic_db.append((atom_mass1, atom_mass2))
         self.atomic_symbols.append((atoms[0], atoms[1]))
         self.atomic_mass_nums.append((mass_numbers[0], mass_numbers[1]))
 
         return rmass
 
-    def match_atomic_mass(self, atomic_masses, symbol, mnumber):
+    def _match_atomic_mass(self, atomic_db, symbol, mnumber):
 
         pattern = re.compile(
             fr'Atomic\s+Symbol\s+=\s+{symbol}[\r\n]'
@@ -183,15 +182,16 @@ class MoleculeData:
             fr'[\r\n]Relative\s+Atomic\s+Mass\s+=\s+\d+\.\d+'
         )
 
-        atom_data = re.findall(pattern, atomic_masses)
+        atom_data = re.findall(pattern, atomic_db)
 
         if len(atom_data) != 1:
             raise SystemExit('Error: Incorrect matching or nothing found.')
 
         return float(atom_data[0].split('\n')[-1].split('=')[-1].strip())
 
-    # def get_exp_data(self):
-    #     pass
+    def get_exp_data(self):
+
+        return self.exp_data
 
     def set_exp_data(self, exp_file, markers=None, average=False):
 
@@ -229,23 +229,24 @@ class MoleculeData:
             )
             self.exp_data = self.exp_data[parity_mask]
 
+        self.jqnumbers = np.intersect1d(
+            self.jqnumbers, np.unique(self.exp_data[:, 2])
+        )
+
+        if self.refj is not None:
+            self._arange_jqnumbers()
+
+        # TODO: change parity above in the same way as j
+
         # filter by J
         rot_mask = np.in1d(
             self.exp_data[:, 2], np.fromiter(self.jqnumbers, dtype=np.float64)
         )
         self.exp_data = self.exp_data[rot_mask]
-
-        # filter by state
-        # state_numbers = np.arange(1, len(channels)+1, dtype=np.int64)
-        # state_mask = np.in1d(
-        #     exp_data[:, -1], np.fromiter(state_numbers, dtype=np.float64)
-        # )
-        # exp_data = exp_data[state_mask]
-
         self.exp_data[:, 0] = np.arange(1.0, self.exp_data.shape[0]+1)
 
         if average:
-            self._average_experimental_data(self.exp_data, exp_file)
+            self._average_experimental_data(exp_file)
 
     def _read_experimental_data(self, exp_file, average):
 
@@ -255,16 +256,15 @@ class MoleculeData:
         self.exp_data = np.genfromtxt(exp_file, skip_header=1)
 
         if average:
-            self._average_experimental_data(self.exp_data, exp_file)
+            self._average_experimental_data(exp_file)
 
     def _average_experimental_data(self, exp_file):
 
         # TODO: will not work when markers are not provided
         # TODO: to account for different isotopes
-        # TODO: weighted average of the exp uncer.
+        # TODO: add weighted average of the exp uncer.
 
-        # sort experimental data by v then by J
-        # then by parity and then by state
+        # sort experimental data by v, J, parity and state
         self.exp_data = self.exp_data[np.lexsort((
             self.exp_data[:, -1], self.exp_data[:, 4],
             self.exp_data[:, 2], self.exp_data[:, 1]
@@ -373,9 +373,9 @@ class Channel:
         return pars, fixed
 
     @classmethod
-    def set_channel_parameters(cls, channels):
+    def _get_channel_models(cls):
 
-        cls.models = {
+        return {
             1: 'pointwise',
             2: 'cspline',
             3: 'morse',
@@ -384,6 +384,11 @@ class Channel:
             6: 'custom',
             7: 'cpe'
         }
+
+    @classmethod
+    def set_channel_parameters(cls, channels):
+
+        cls.models = cls._get_channel_models()
 
         for channel in channels:
 
@@ -469,7 +474,6 @@ class Channel:
         U[0] = float(morse_data[mapp[0]][0]) / Const.hartree
         U[1] = float(morse_data[mapp[1]][0]) / Const.hartree
         U[2] = float(morse_data[mapp[2]][0]) * Const.bohr
-        print(U[2])
         U[3] = float(morse_data[mapp[3]][0]) / Const.bohr
 
         if def_fixed:
@@ -530,8 +534,7 @@ class Channel:
 
     @classmethod
     def _get_mlr_data(cls, filep):
-
-        """Get parameters for Morse/Long-Range function
+        """Get parameters for Morse/Long-Range function.
 
         Args:
             filep (string): the name of the potential file
@@ -545,7 +548,6 @@ class Channel:
             2. The number of C and D coefficients should be the same
             3. The beta coefficients have dimentions 1/distance
         """
-
         # TODO: to ignore comments and empty lines
 
         with open(filep) as fps:
@@ -632,8 +634,7 @@ class Channel:
 
     @classmethod
     def _get_custom_pot_data(cls, filep):
-
-        """Get parameters for a custom potential function
+        """Get parameters for a custom potential function.
 
         Args:
             filep (string): The name of the potential file
@@ -653,7 +654,6 @@ class Channel:
             6. The order in which the parameters are defined does not matter-
             they will be ordered by the number after the keyword 'param'!
         """
-
         # TODO: ignore comments and empty lines
 
         with open(filep, 'r') as fps:
@@ -761,17 +761,20 @@ class Coupling:
         self.custom_function = kwargs.get('custom_function')
 
     @classmethod
-    def set_coupling_parameters(cls, cpl_file, couplings):
+    def _get_coupling_models(cls):
 
-        cls.models = {
+        return {
             1: 'pointwise',
             2: 'cspline',
             3: 'constant',
             4: 'custom',
         }
 
-        cls.cpl_file = cpl_file
+    @classmethod
+    def set_coupling_parameters(cls, cpl_file, couplings):
 
+        cls.models = cls._get_coupling_models()
+        cls.cpl_file = cpl_file
         coupling_data = cls._get_couplings_data()
 
         # convert integer keys to string
@@ -783,34 +786,45 @@ class Coupling:
                 list(map(str.split, coupling_data[coupling.label]))
             )
 
-            if coupling.model == 'pointwise' or coupling.model == 'cspline':
-
+            if coupling.model == cls.models[1] or \
+               coupling.model == cls.models[2]:
                 coupling.xc = np.fromiter(
                     map(float, params[:, 0]), dtype=np.float64
                 ) / Const.bohr
-
                 coupling.yc = np.fromiter(
                     map(float, params[:, 1]), dtype=np.float64
                 )
+                if params.shape[1] >= 3:
+                    coupling.fixedp = np.fromiter(
+                        map(int, params[:, 2]), dtype=np.int64
+                    )
+                if params.shape[1] >= 4:
+                    coupling.regularp = np.fromiter(
+                        map(float, params[:, 3]), dtype=np.float64
+                    )
+                    coupling.lambdai = np.fromiter(
+                        map(float, params[:, 4]), dtype=np.float64
+                    )
 
-                coupling.fixedp = np.fromiter(
-                    map(int, params[:, 2]), dtype=np.int64
-                )
-
-            elif coupling.model == 'constant' or coupling.model == 'custom':
+            if coupling.model == cls.models[3] or \
+               coupling.model == cls.models[4]:
 
                 coupling.yc = np.fromiter(
                     map(float, params[:, 0]), dtype=np.float64
                 )
-
-                coupling.fixedp = np.fromiter(
-                    map(int, params[:, 1]), dtype=np.int64
-                )
+                if params.shape[1] >= 2:
+                    coupling.fixedp = np.fromiter(
+                        map(int, params[:, 1]), dtype=np.int64
+                    )
+                if params.shape[1] >= 3:
+                    coupling.regularp = np.fromiter(
+                        map(float, params[:, 2]), dtype=np.float64
+                    )
+                    coupling.lambdai = np.fromiter(
+                        map(float, params[:, 3]), dtype=np.float64
+                    )
 
                 coupling.cfunc = coupling.custom_function
-
-            else:
-                raise SystemExit(f'Invalid coupling model {coupling.model}')
 
             coupling.npnts = params.shape[0]
 
@@ -831,32 +845,46 @@ class Coupling:
 
         coupling_params = np.array([], dtype=np.float64)
         coupling_fixed = np.array([], dtype=np.int64)
+        coupling_regular = np.array([], dtype=np.float64)
+        coupling_lambda = np.array([], dtype=np.float64)
 
         coupling_data = cls._get_couplings_data()
 
         # convert integer keys to string
         coupling_data = {str(k): v for k, v in coupling_data.items()}
 
-        for cp in couplings:
-
+        for coupling in couplings:
             params = np.array(
-                list(map(str.split, coupling_data[cp.label]))
+                list(map(str.split, coupling_data[coupling.label]))
             )
 
-            if params.shape[1] == 3:
+            if coupling.model == cls.models[1] or \
+               coupling.model == cls.models[2]:
                 coupling_params = np.append(
                     coupling_params,
                     np.fromiter(
                         map(float, params[:, 1]), dtype=np.float64
                     )
                 )
-
                 coupling_fixed = np.append(
                     coupling_fixed,
                     np.fromiter(
                         map(int, params[:, 2]), dtype=np.int64
                     )
                 )
+                if params.shape[1] >= 3:
+                    coupling_regular = np.append(
+                        coupling_regular,
+                        np.fromiter(
+                            map(float, params[:, 3]), dtype=np.float64
+                        )
+                    )
+                    coupling_lambda = np.append(
+                        coupling_lambda,
+                        np.fromiter(
+                            map(float, params[:, 4]), dtype=np.float64
+                        )
+                    )
             else:
                 coupling_params = np.append(
                     coupling_params,
@@ -864,18 +892,32 @@ class Coupling:
                         map(float, params[:, 0]), dtype=np.float64
                     )
                 )
-
                 coupling_fixed = np.append(
                     coupling_fixed,
                     np.fromiter(
                         map(int, params[:, 1]), dtype=np.int64
                     )
                 )
+                if params.shape[1] >= 2:
+                    coupling_regular = np.append(
+                        coupling_regular,
+                        np.fromiter(
+                            map(float, params[:, 2]), dtype=np.float64
+                        )
+                    )
+                    coupling_lambda = np.append(
+                        coupling_lambda,
+                        np.fromiter(
+                            map(float, params[:, 3]), dtype=np.float64
+                        )
+                    )
 
-        return coupling_params, coupling_fixed
+        return coupling_params, coupling_fixed, \
+            coupling_regular, coupling_lambda
 
     @classmethod
     def edit_coupling_parameters(cls, ypar, couplings):
+
         cpl_data = cls._get_couplings_data()
 
         # convert integer keys to string
@@ -883,30 +925,50 @@ class Coupling:
 
         cpar = Channel.tot_npts
 
-        for cp in couplings:
+        for coupling in couplings:
             new_item = []
 
-            if cp.model == cls.models[1] or cp.model == cls.models[2]:
+            if coupling.model == cls.models[1] or \
+               coupling.model == cls.models[2]:
 
-                for item in cpl_data[cp.label]:
+                for item in cpl_data[coupling.label]:
                     sitem = item.split()
 
-                    new_item.append(
-                        f'{float(sitem[0]):10.12f} {float(ypar[cpar]):24.14f} '
-                        f'{int(sitem[2]):7d}'.lstrip()
-                    )
+                    if len(sitem) >= 3:
+                        new_item.append(
+                            f'{float(sitem[0]):10.12f}'
+                            f'{float(ypar[cpar]):24.14f}'
+                            f'{int(sitem[2]):7d}'
+                            f'{float(sitem[3]):14.2e}'
+                            f'{float(sitem[4]):14.1e}'.lstrip()
+                        )
+                    else:
+                        new_item.append(
+                            f'{float(sitem[0]):10.12f}'
+                            f'{float(ypar[cpar]):24.14f}'
+                            f'{int(sitem[2]):7d}'
+                        )
+
                     cpar += 1
             else:
-                for item in cpl_data[cp.label]:
+                for item in cpl_data[coupling.label]:
                     sitem = item.split()
 
-                    new_item.append(
-                        f'{float(ypar[cpar]):18.12f} '
-                        f'{int(sitem[1]):3d}'.lstrip()
-                    )
+                    if len(sitem) >= 2:
+                        new_item.append(
+                            f'{float(ypar[cpar]):18.12f}'
+                            f'{int(sitem[1]):3d}'
+                            f'{float(sitem[2]):10.1}'.lstrip()
+                        )
+                    else:
+                        new_item.append(
+                            f'{float(ypar[cpar]):18.12f}'
+                            f'{int(sitem[1]):3d}'.lstrip()
+                        )
+
                     cpar += 1
 
-            cpl_data[cp.label] = new_item
+            cpl_data[coupling.label] = new_item
 
         with io.open(cls.cpl_file, 'w', encoding='utf8') as stream:
             yaml.dump(cpl_data, stream=stream)

@@ -43,18 +43,32 @@ class Utils:
 
         return os.getcwd()
 
-    # @classmethod
-    # def calculate_rms(cls, yobs, ycal):
-    #     s = np.sum(np.square(yobs-ycal)) / yobs.shape[0]
-    #     return math.sqrt(s)
-    # @classmethod
-    # def calculate_dimless_rms(cls, yobs, ycal, yunc, weighting):
-    #     diff_square = np.square(yobs - ycal)
-    #     if not weighting:
-    #         weights = 1.0 / np.square(yunc)
-    #     else:
-    #         weights = 1.0 / (np.square(yunc) + (diff_square / 3.0))
+    @classmethod
+    def get_plot_dir(cls, key):
 
-    #     s = np.sum(diff_square * weights) / yobs.shape[0]
+        plot_dir = 'plotting'
+        func_dir = 'interactions'
+        resid_dir = 'full_residuals'
+        wavefunc_dir = 'wavefunctions'
+        res_dir = 'residuals'
 
-    #     return math.sqrt(s)
+        cls.plot_path = os.path.join(cls.get_current_dir(), plot_dir)
+        os.makedirs(cls.plot_path, exist_ok=True)
+        cls.func_path = os.path.join(cls.plot_path, func_dir)
+        cls.resid_path = os.path.join(cls.plot_path, resid_dir)
+        cls.wavefunc_path = os.path.join(cls.plot_path, wavefunc_dir)
+        cls.res_path = os.path.join(cls.plot_path, res_dir)
+
+        paths = {
+            'plot_path': cls.plot_path,
+            'func_path': cls.func_path,
+            'resid_path': cls.resid_path,
+            'wavefunc_path': cls.wavefunc_path,
+            'res_path': cls.res_path
+        }
+
+        return paths[key]
+
+    @classmethod
+    def get_level_output_dir(cls, key):
+        pass
