@@ -155,7 +155,7 @@ The most important operators and their matrix elements are:
 
 - Spin-Spin
 
-- $\Lambda$ and $\Omega$ Doubling
+- Second-Order Corrections
 
 ## Methods for solution of the Schrodinger equation
 
