@@ -7,7 +7,7 @@
   - [The interaction terms and their matrix elements](#the-interaction-terms-and-their-matrix-elements)
   - [Methods for solution of the Schrodinger equation](#methods-for-solution-of-the-schrodinger-equation)
   - [Potential Energy function models (PECs models)](#potential-energy-function-models-pecs-models)
-- [Computing Energy Eigenvalues](#computing-energy-eigenvalues)
+- [Computing the Energy Eigenvalues](#computing-the-energy-eigenvalues)
   - [Molecule Data Object Definition](#molecule-data-object-definition)
   - [Grid Object Definition](#grid-object-definition)
   - [Channel Object Definition](#channel-object-definition)
@@ -29,12 +29,8 @@
 
 
 # **DiAtomic** module: what is it used for?
-The Python package **```DiAtomic```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
-The current functionality covered by the program includes:
-* ..
-* ..
-
-Just as an example of what you can do with **```DiAtomic```** module, if you have a set of potentials for a couple of molecular electronic states represented by points (abinitio, RKR and etc.) and want to see how they look you can do something like:
+The Python library **```DiAtomic```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
+It also provides some usefull plotting options, for example, if we have a set of files for electronic potentials represented by points (abinitio, RKR and etc.) and want to see how they look then:
 <!-- 
 ```python
 p = Plotting()
@@ -44,13 +40,11 @@ or even simpler:
 -->
 
 ```python
+from diatomic import *
 import glob
 
 Plotting.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=120, xlim=(2.5, 16), ylim=(9e3, 2.5e4))
 ```
-assuming your potential files are in the current directory.
-
-
 ![KCs_potentials](./plotting/kcs_potential_points.svg)
 
 # **DiAtomic**  module: how to install and setup?
@@ -61,20 +55,18 @@ assuming your potential files are in the current directory.
 pip install diatomic
 ```
 
-and from Jupyter or IPython execute
+and from ```Jupyter``` or ```IPython``` execute
 
 ````python
 In [1]: ! pip install diatomic
 ````
 To quickly check whether the installation has been successful type
-
 ```console
 python
 >>> import diatomic
 >>> diatomic
 ```
-
-and the path to the \_\_init\_\_.py file in the install location should be outputed.
+which should show the path to the ```__init__.py``` file in the install location.
 
 After installing create a new python file for example called main.py and import the diatomic module
 
@@ -95,13 +87,13 @@ chmod u+x main.py
 ./main.py
 ```
 
-to make the file executable and run it. To execute the file from the interactive shell of IPython (Interactive Python) type ipython then
+to make the file executable and then run it. To execute the file from the ```IPython``` (Interactive Python) shell enter
 
 ```python
 In [1]: run main.py
 ```
 
-The **```DiAtomic```** module is extensivly tested on Linux platform but works under Windows and MacOS as well.
+The **```DiAtomic```** module is tested on Linux platform but works under Windows and MacOS as well.
 
 # Diatomic molecule: basic theoretical concepts
 
@@ -113,27 +105,39 @@ $$
 \mathbf{H} = \mathbf{T}_{\mathrm{N}}(R) + \mathbf{H}_{\mathrm{rot}}(R, \theta, \phi) + \mathbf{T}_{\mathrm{e}}(r) + \mathbf{V}(R, r) + \mathbf{H}_{\mathrm{rel}}
 $$
 
-where $\mathbf{T}_{\mathrm{N}}(R)$ and $\mathbf{H}_{\mathrm{rot}}(R, \theta, \phi)$ are the vibrational and rotational part of the total nuclear kinetic energy operator in spherical polar coordinates, $\mathbf{T}_{\mathrm{e}}(r)$ is the kinetic energy of the electrons, 
+where $\mathbf{T}_{\mathrm{N}}(R)$ and $\mathbf{H}_{\mathrm{rot}}(R, \theta, \phi)$ are the vibrational and rotational part of the total nuclear kinetic energy operator in spherical polar coordinates, $\mathbf{T}_{\mathrm{e}}(r)$ is the kinetic energy of the electrons, $\mathbf{V}(R, r)$ is the operator for the total potential energy of the system and $\mathbf{H}_{\mathrm{rel}}$ is the relativistic Hamiltonian.
 
-<!-- $$
-\mathbf{H}_{\mathrm{rot}}(R, \theta, \phi) = 
-$$ -->
+Usually the most convinient set of basis functions for computing the matrix elements of the Hamiltonian are the Hund's case (a) basis functions represented as:
+
+$$
+\vert \Lambda \: S \: \Sigma \: J \: \Omega \: M; e/f \rangle =
+2^{-1/2} \left[ \vert \Lambda \: S \: \Sigma \: J \: \Omega \: M 
+\rangle \pm \vert -\Lambda \: S \: -\Sigma \: J \: -\Omega \: M \rangle  \right]
+$$
 
 ## The Scrodinger equation for a single state and coupled system of states
 
 <!-- omit in toc -->
 ### Single channel approximation for an isolated state
 
-The energy eigenvalues of single isolated state of a diatomic molecule can be obtained by solving the radial Schrodinger equation
+The rovibrational energies and wavefunctions of an isolated electronic state of a diatomic molecule can be obtained by solving the radial Schrodinger equation:
 
 $$
-\left( \frac{-\hbar^{2}}{2\mu} \frac{d^{2}}{dR^{2}} + U(R) + \frac{\hbar^{2}}{2\mu R^{2}}J(J+1) \right) \phi_{vJ}(R) = E_{vJ} \phi_{vJ}(R)
+\left[ \frac{-\hbar^{2}}{2\mu} \frac{d^{2}}{dR^{2}} + U(R) + \frac{\hbar^{2}}{2\mu R^{2}}(J(J+1) - \Omega^2) \right] \phi_{vJ}(R) = E_{vJ} \phi_{vJ}(R)
 $$
 
-with internuclear distance labeled with $R$, the sum of the second and the third term $U(R) + ({\hbar^2}/{2\mu R^2})J(J+1)$ from the left hand side is called effective potential energy curve, the reduced mass is $\mu = M_{1} M_{2} /(M_{1} + M_{2})$ where $M_1$ and $M_2$ are the masses of the two atoms, J is the rotational quantum number; $E_{vJ}$ are the energy eigenvalues of the rovibrational levels and $\phi_{vJ}$ are their corresponding eigenfunctions.
+where $R$, is the internuclear distance, $\mu = M_{1} M_{2} /(M_{1} + M_{2})$ is the reduced molecular mass with atomic masses $M_1$ and $M_2$, J is the rotational quantum number; $E_{vJ}$ are the energies of the rovibrational levels and $\phi_{vJ}$ are the corresponding eigenfunctions.
 
 <!-- omit in toc -->
 ### The coupled channels problem
+
+For a system of coupled electronic states a more general set of coupled equations is solved:
+
+$$
+\sum_{i=1}^{N} H_{ki}\phi_{i}(R) = E\phi_{k}(R)
+$$
+
+where $H_{ki}$ are the matrix elements of the total Hmiltonian between the Hund's case (a) basis functions
 
 ## The interaction terms and their matrix elements
 
@@ -155,7 +159,7 @@ The most important operators and their matrix elements are:
 
 ## Methods for solution of the Schrodinger equation
 
-Finite-Difference and Fourier Grid Hamiltonain (DVR type method) are the most frequently applied methods for numerical solution of the 1D Schordinger equation for single and coupled channels problems in molecular spectroscopy. In both methods the wavefunction is approximated over an equidistant or non-equidistant grid of points.
+Finite-Difference and Fourier Grid Hamiltonain (DVR type method) are the most frequently applied methods for numerical solution of the 1D Schordinger equation for single and coupled channels problems in molecular spectroscopy. In both methods the wavefunction can approximated over an uniform or non-uniform grid of points.
 
 <!-- omit in toc -->
 #### Uniform grid
@@ -163,10 +167,10 @@ Finite-Difference and Fourier Grid Hamiltonain (DVR type method) are the most fr
 In this case the grid points $R_i$ in the interval from $R_{min}$ to $R_{max}$ are determined by:
 
 $$
-R_i = R_{min} + (i-1)\Delta_{R}, \qquad i = 1\dots N_{R}
+R_i = R_{min} + (i-1)\Delta_{R},
 $$
 
-where $N_{R}$ is the number of grid points and $\Delta_{R}$ is the grid step
+for $i = 1 \dots N_{R}$, where $N_{R}$ is the number of grid points and $\Delta_{R}$ is the grid step
 
 $$
 \Delta_{R} = \frac{R_{max} - R_{min}}{N_{R} - 1}
@@ -207,7 +211,7 @@ $$
 <!-- omit in toc -->
   ### Fourier Grid Hamiltonian (FGH)
 
-FGH is a type of a collocation (pseudospectral) method for which the solution is approximated over a special grid points called collocation points.
+FGH is a type of a collocation (pseudospectral) method in which the solution is approximated over a special grid points called collocation points.
 
 <!-- omit in toc -->
 #### **Sinc basis**
@@ -255,11 +259,11 @@ In sinc basis the kinetic energy matrix elements are computed as:
 
    - MLR (Morse/Long-Range) potential
 
-$$
+<!-- $$
 V_{MLR}(R) = T_{e}
-$$
+$$ -->
 
-# Computing Energy Eigenvalues
+# Computing the Energy Eigenvalues
 
 ## Molecule Data Object Definition
 
@@ -279,7 +283,7 @@ There are two ways for specifing the reduced mass.
 
 - **```molecule```** - defines one or more isotopic forms of the same molecule by specifing their chemical symbols i.e. each defined item corresponds to a diffrent isotope of the same molecule.
   - the molecule symbols should be in the format: 'M1A1M2A2' where M1/M2 are the mass numbers and A1/A2 are the chemical symbols of the first/second atom (spaces are allowed).
-  - The reduced masses for each isotope will be computed automatically using an atomic database available from https://www.nist.gov/pml/atomic-weights-and-isotopic-compositions-relative-atomic-masses
+  - The reduced masses for each isotope will be computed automatically using the <a href="https://www.nist.gov/pml/atomic-weights-and-isotopic-compositions-relative-atomic-masses" target="_blank">NIST atomic database</a>
   - this property does not determine which and how many isotopes will be included in the calculations (refer to the property **```nisotopes```** below) but only defines the isotopes by the symbols.
   - it should be an iterable of type list or tuple of strings and is not mandatory
 
@@ -289,7 +293,7 @@ In the following example the symbols for three of the isotopes of NiH molecule -
 # define the symbols for three isotopes
 mdata.molecule = ['58Ni1H', '60Ni1H', '62Ni1H']
 
-# and this also works
+# it also works with spaces between the symbols
 mdata.molecule = ['58 Ni 1 H', '60Ni 1H', '62 Ni 1H']
 ```
 
