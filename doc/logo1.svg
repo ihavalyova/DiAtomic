@@ -7,54 +7,54 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   inkscape:export-ydpi="107.60466"
-   inkscape:export-xdpi="107.60466"
-   inkscape:export-filename="/home/ilvie/Desktop/logo2.png"
-   sodipodi:docname="logo1.svg"
-   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
-   id="svg8"
+   width="95.726952mm"
+   height="25.721649mm"
+   viewBox="0 0 95.726958 25.721649"
    version="1.1"
-   viewBox="0 0 101.77658 31.560119"
-   height="31.56012mm"
-   width="101.77657mm">
+   id="svg8"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   sodipodi:docname="logo1.svg"
+   inkscape:export-filename="/home/ilvie/code/depert/diatom/doc/logo.png"
+   inkscape:export-xdpi="107.60466"
+   inkscape:export-ydpi="107.60466">
   <defs
      id="defs2">
     <rect
-       x="-47.310234"
-       y="43.127029"
-       width="19.037317"
+       id="rect924"
        height="32.407536"
-       id="rect924" />
+       width="19.037317"
+       y="43.127029"
+       x="-47.310234" />
     <rect
-       id="rect835"
-       height="32.707184"
-       width="107.75927"
+       x="18.363663"
        y="73.519119"
-       x="18.363663" />
+       width="107.75927"
+       height="32.707184"
+       id="rect835" />
   </defs>
   <sodipodi:namedview
-     inkscape:window-maximized="1"
-     inkscape:window-y="0"
-     inkscape:window-x="0"
-     inkscape:window-height="832"
-     inkscape:window-width="1592"
-     showgrid="false"
-     inkscape:document-rotation="0"
-     inkscape:current-layer="layer1"
-     inkscape:document-units="mm"
-     inkscape:cy="83.974104"
-     inkscape:cx="168.47555"
-     inkscape:zoom="1.2218217"
-     inkscape:pageshadow="2"
-     inkscape:pageopacity="0.0"
-     borderopacity="1.0"
-     bordercolor="#666666"
-     pagecolor="#ffffff"
-     id="base"
-     fit-margin-top="8"
-     fit-margin-left="8"
+     fit-margin-bottom="6"
      fit-margin-right="6.5"
-     fit-margin-bottom="6" />
+     fit-margin-left="8"
+     fit-margin-top="8"
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.2218217"
+     inkscape:cx="166.93908"
+     inkscape:cy="72.144351"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     inkscape:document-rotation="0"
+     showgrid="false"
+     inkscape:window-width="1592"
+     inkscape:window-height="832"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -68,29 +68,29 @@
     </rdf:RDF>
   </metadata>
   <g
-     style="display:inline"
-     id="layer1"
-     inkscape:groupmode="layer"
+     transform="translate(95.817384,-8.0218801)"
      inkscape:label="Layer 1"
-     transform="translate(96.090253,-7.3829638)">
-    <text
-       transform="translate(-107.21548,-62.402794)"
-       inkscape:export-ydpi="96"
-       inkscape:export-xdpi="96"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:22.5778px;line-height:0;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect835);mix-blend-mode:exclusion;fill:#af1249;fill-opacity:0.943057;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;"
-       id="text833"
-       xml:space="preserve"><tspan
-         x="18.363281"
-         y="91.897966"><tspan
-           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:20.6963px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.687917px;opacity:0.999;fill:#951344;fill-opacity:0.861041">D</tspan><tspan
-           style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:20.6963px;line-height:1.25;font-family:'Cormorant Upright';-inkscape-font-specification:'Cormorant Upright, Semi-Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.687917px;fill:#951344;fill-opacity:0.861041">i</tspan><tspan
-           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:20.6963px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.687917px;opacity:0.999;fill:#951344;fill-opacity:0.861041">A</tspan><tspan
-           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:20.6963px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.687917px;fill:#951344;fill-opacity:0.861041">tom</tspan><tspan
-           style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:20.6963px;line-height:1.25;font-family:'Cormorant Upright';-inkscape-font-specification:'Cormorant Upright, Semi-Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.687917px;fill:#951344;fill-opacity:0.861041">i</tspan><tspan
-           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:20.6963px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.687917px;fill:#951344;fill-opacity:0.861041">c</tspan></tspan></text>
+     inkscape:groupmode="layer"
+     id="layer1"
+     style="display:inline">
     <text
        xml:space="preserve"
+       id="text833"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:22.5778px;line-height:0;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect835);mix-blend-mode:exclusion;fill:#aa2b4a;fill-opacity:1;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96"
+       transform="translate(-109.16665,-65.555491)"><tspan
+         x="18.363281"
+         y="91.897966"><tspan
+           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:20.6963px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.687917px;opacity:0.999;fill:#aa2b4a;fill-opacity:1">D</tspan><tspan
+           style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:20.6963px;line-height:1.25;font-family:'Cormorant Upright';-inkscape-font-specification:'Cormorant Upright, Semi-Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.687917px;fill:#aa2b4a;fill-opacity:1">i</tspan><tspan
+           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:20.6963px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.687917px;opacity:0.999;fill:#aa2b4a;fill-opacity:1">A</tspan><tspan
+           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:20.6963px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.687917px;fill:#aa2b4a;fill-opacity:1">tom</tspan><tspan
+           style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:20.6963px;line-height:1.25;font-family:'Cormorant Upright';-inkscape-font-specification:'Cormorant Upright, Semi-Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.687917px;fill:#aa2b4a;fill-opacity:1">i</tspan><tspan
+           style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:20.6963px;line-height:1.25;font-family:Alegreya;-inkscape-font-specification:'Alegreya, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0.687917px;fill:#aa2b4a;fill-opacity:1">c</tspan></tspan></text>
+    <text
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect924);fill:#000000;fill-opacity:1;stroke:none;"
        id="text922"
-       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect924);fill:#000000;fill-opacity:1;stroke:none;" />
+       xml:space="preserve" />
   </g>
 </svg>
