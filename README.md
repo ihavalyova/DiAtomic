@@ -21,7 +21,7 @@ and for a system of arbitrary number of coupled states
 
 ```pip install diatomic```
 
-**Documentation**: <a href="https://github.com/ihavalyova/DiAtomic/blob/master/doc/Diatomic.md" target="_blank">A detailed version</a>
+**Documentation**: <a href="https://github.com/ihavalyova/DiAtomic/blob/master/doc/Diatomic.md" target="_blank">Detailed version</a>
 
 **Examples:** <a href="https://github.com/ihavalyova/DiAtomic/blob/master/doc/" target="_blank">IPython notebooks</a>
 
