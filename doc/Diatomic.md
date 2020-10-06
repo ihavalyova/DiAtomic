@@ -101,17 +101,13 @@ The **```DiAtomic```** module is tested on Linux platform but works under Window
 
 The total Hamiltonian of a diatomic molecule in the rotating molecule-fixed coordinate system with origin at the center of mass of the molecule can be written as a sum of several terms:
 
-![](https://latex.codecogs.com/gif.latex?\begin{align*}&space;\mathbf{H}&space;=&space;\mathbf{T}_{\mathrm{N}}(R)&space;&plus;&space;\mathbf{H}_{\mathrm{rot}}(R,&space;\theta,&space;\phi)&space;&plus;&space;\mathbf{T}_{\mathrm{e}}(r)&space;&plus;&space;\mathbf{V}(R,&space;r)&space;&plus;&space;\mathbf{H}_{\mathrm{rel}}&space;\end{align*})
+![](https://latex.codecogs.com/svg.latex?\mathbf{H}&space;=&space;\mathbf{T}_{\mathrm{N}}(R)&space;&plus;&space;\mathbf{H}_{\mathrm{rot}}(R,&space;\theta,&space;\phi)&space;&plus;&space;\mathbf{T}_{\mathrm{e}}(r)&space;&plus;&space;\mathbf{V}(R,&space;r)&space;&plus;&space;\mathbf{H}_{\mathrm{rel}})
 
-where $\mathbf{T}_{\mathrm{N}}(R)$ and $\mathbf{H}_{\mathrm{rot}}(R, \theta, \phi)$ are the vibrational and rotational part of the total nuclear kinetic energy operator in spherical polar coordinates, $\mathbf{T}_{\mathrm{e}}(r)$ is the kinetic energy of the electrons, $\mathbf{V}(R, r)$ is the operator for the total potential energy of the system and $\mathbf{H}_{\mathrm{rel}}$ is the relativistic Hamiltonian.
+where ![](https://latex.codecogs.com/svg.latex?\inline&space;\mathbf{T}_{\mathrm{N}}(R)) and ![](https://latex.codecogs.com/svg.latex?\inline&space;\mathbf{H}_{\mathrm{rot}}(R,&space;\theta,&space;\phi)) are the vibrational and rotational part of the total nuclear kinetic energy operator in spherical polar coordinates, ![](https://latex.codecogs.com/svg.latex?\inline&space;\mathbf{T}_{\mathrm{e}}(r)) is the kinetic energy of the electrons, ![](https://latex.codecogs.com/svg.latex?\inline&space;\mathbf{V}(R,&space;r)) is the operator for the total potential energy of the system and ![](https://latex.codecogs.com/svg.latex?\inline&space;\mathbf{H}_{\mathrm{rel}}) is the relativistic Hamiltonian.
 
 Usually the most convinient set of basis functions for computing the matrix elements of the Hamiltonian are the Hund's case (a) basis functions represented as:
 
-$$
-\vert \Lambda \: S \: \Sigma \: J \: \Omega \: M; e/f \rangle =
-2^{-1/2} \left[ \vert \Lambda \: S \: \Sigma \: J \: \Omega \: M 
-\rangle \pm \vert -\Lambda \: S \: -\Sigma \: J \: -\Omega \: M \rangle  \right]
-$$
+![](https://latex.codecogs.com/svg.latex?\vert&space;\Lambda&space;\:&space;S&space;\:&space;\Sigma&space;\:&space;J&space;\:&space;\Omega&space;\:&space;M;&space;e/f&space;\rangle&space;=&space;2^{-1/2}&space;\left[&space;\vert&space;\Lambda&space;\:&space;S&space;\:&space;\Sigma&space;\:&space;J&space;\:&space;\Omega&space;\:&space;M&space;\rangle&space;\pm&space;\vert&space;-\Lambda&space;\:&space;S&space;\:&space;-\Sigma&space;\:&space;J&space;\:&space;-\Omega&space;\:&space;M&space;\rangle&space;\right])
 
 ## The Scrodinger equation for a single state and coupled system of states
 
@@ -120,22 +116,19 @@ $$
 
 The rovibrational energies and wavefunctions of an isolated electronic state of a diatomic molecule can be obtained by solving the radial Schrodinger equation:
 
-$$
-\left[ \frac{-\hbar^{2}}{2\mu} \frac{d^{2}}{dR^{2}} + U(R) + \frac{\hbar^{2}}{2\mu R^{2}}(J(J+1) - \Omega^2) \right] \phi_{vJ}(R) = E_{vJ} \phi_{vJ}(R)
-$$
+![](https://latex.codecogs.com/svg.latex?\left[&space;\frac{-\hbar^{2}}{2\mu}&space;\frac{d^{2}}{dR^{2}}&space;&plus;&space;U(R)&space;&plus;&space;\frac{\hbar^{2}}{2\mu&space;R^{2}}(J(J&plus;1)&space;-&space;\Omega^2)&space;\right]&space;\phi_{vJ}(R)&space;=&space;E_{vJ}&space;\phi_{vJ}(R))
 
-where $R$, is the internuclear distance, $\mu = M_{1} M_{2} /(M_{1} + M_{2})$ is the reduced molecular mass with atomic masses $M_1$ and $M_2$, $J$ is the rotational quantum number; $E_{vJ}$ are the energies of the rovibrational levels and $\phi_{vJ}$ are the corresponding eigenfunctions.
+where ![$R$](https://latex.codecogs.com/svg.latex?\inline&space;R), is the internuclear distance, ![](https://latex.codecogs.com/svg.latex?\inline&space;\mu&space;=&space;M_{1}&space;M_{2}&space;/(M_{1}&space;&plus;&space;M_{2})) is the reduced molecular mass with atomic masses ![](https://latex.codecogs.com/svg.latex?\inline&space;M_1) and ![](https://latex.codecogs.com/svg.latex?\inline&space;M_2), ![](https://latex.codecogs.com/svg.latex?\inline&space;J) is the rotational quantum number; ![](https://latex.codecogs.com/svg.latex?\inline&space;E_{vJ}) are the energies of the rovibrational levels and ![](https://latex.codecogs.com/svg.latex?\inline&space;\phi_{vJ}) are the corresponding eigenfunctions.
 
 <!-- omit in toc -->
 ### The coupled channels problem
 
 For a system of coupled electronic states a more general set of coupled equations is solved:
 
-$$
-\sum_{i=1}^{N} H_{ki}\phi_{i}(R) = E\phi_{k}(R)
-$$
+![](https://latex.codecogs.com/svg.latex?\sum_{i=1}^{N}&space;H_{ki}\phi_{i}(R)&space;=&space;E\phi_{k}(R))
 
-where $H_{ki}$ are the matrix elements of the total Hmiltonian between the Hund's case (a) basis functions
+
+where ![](https://latex.codecogs.com/svg.latex?\inline&space;H_{ki}) are the matrix elements of the total Hmiltonian between the Hund's case (a) basis functions
 
 ## The interaction terms and their matrix elements
 
@@ -162,21 +155,17 @@ Finite-Difference and Fourier Grid Hamiltonain (DVR type method) are the most fr
 <!-- omit in toc -->
 #### Uniform grid
 
-In this case the grid points $R_i$ in the interval from $R_{min}$ to $R_{max}$ are determined by:
+In this case the grid points ![](https://latex.codecogs.com/svg.latex?\inline&space;R_i) in the interval from ![](https://latex.codecogs.com/svg.latex?\inline&space;R_{min}) to ![](https://latex.codecogs.com/svg.latex?\inline&space;R_{max}) are determined by:
 
-$$
-R_i = R_{min} + (i-1)\Delta_{R},
-$$
+![](https://latex.codecogs.com/svg.latex?R_i&space;=&space;R_{min}&space;&plus;&space;(i-1)\Delta_{R},)
 
-for $i = 1 \dots N_{R}$, where $N_{R}$ is the number of grid points and $\Delta_{R}$ is the grid step
+for ![](https://latex.codecogs.com/svg.latex?\inline&space;i&space;=&space;1&space;\dots&space;N_{R}), where ![](https://latex.codecogs.com/svg.latex?\inline&space;N_{R}) is the number of grid points and ![](https://latex.codecogs.com/svg.latex?\inline&space;\Delta_{R}) is the grid step
 
-$$
-\Delta_{R} = \frac{R_{max} - R_{min}}{N_{R} - 1}
-$$
+![](https://latex.codecogs.com/svg.latex?\Delta_{R}&space;=&space;\frac{R_{max}&space;-&space;R_{min}}{N_{R}&space;-&space;1})
+
 
 <!-- omit in toc -->
 #### Nonuniform grid
-
 
 
 <!-- omit in toc -->
@@ -184,26 +173,15 @@ $$
 
 The second derivative of the wavefunction with respect to the internuclear distance is approximated by five-point central difference schema:
 
-$$
-\psi''(R_{i}) \approx -\frac{1}{\Delta R^2}\left[ \frac{1}{12} \left( 30\psi_i - 16(\psi_{i+1} +\psi_{i-1}) + (\psi_{i+2} + \psi_{i-2}) \right) \right]
-$$
+![](https://latex.codecogs.com/svg.latex?\psi''(R_{i})&space;\approx&space;-\frac{1}{\Delta&space;R^2}\left[&space;\frac{1}{12}&space;\left(&space;30\psi_i&space;-&space;16(\psi_{i&plus;1}&space;&plus;\psi_{i-1})&space;&plus;&space;(\psi_{i&plus;2}&space;&plus;&space;\psi_{i-2})&space;\right)&space;\right])
 
 The kinetic energy matrix elements are then computed:
 
-$$
-T_{ij} = \frac{\hbar^2}{2\mu \Delta R^2} \times
-\begin{dcases}
-\frac{5}{2}, & j = i\\
--\frac{4}{3}, &  j = i\pm 1\\
-\frac{1}{12}, & j = i\pm 2
-\end{dcases}
-$$
+<a href="https://www.codecogs.com/eqnedit.php?latex=T_{ij}&space;=&space;\frac{\hbar^2}{2\mu&space;\Delta&space;R^2}&space;\times&space;\begin{cases}&space;\frac{5}{2},&space;&&space;j&space;=&space;i\\&space;-\frac{4}{3},&space;&&space;j&space;=&space;i\pm&space;1\\&space;\frac{1}{12},&space;&&space;j&space;=&space;i\pm&space;2&space;\end{cases}" target="_blank"><img src="https://latex.codecogs.com/svg.latex?T_{ij}&space;=&space;\frac{\hbar^2}{2\mu&space;\Delta&space;R^2}&space;\times&space;\begin{cases}&space;\frac{5}{2},&space;&&space;j&space;=&space;i\\&space;-\frac{4}{3},&space;&&space;j&space;=&space;i\pm&space;1\\&space;\frac{1}{12},&space;&&space;j&space;=&space;i\pm&space;2&space;\end{cases}" title="T_{ij} = \frac{\hbar^2}{2\mu \Delta R^2} \times \begin{cases} \frac{5}{2}, & j = i\\ -\frac{4}{3}, & j = i\pm 1\\ \frac{1}{12}, & j = i\pm 2 \end{cases}" /></a>
 
 This is a banded symmetric matrix. The potential energy matrix is diagonal:
 
-$$
-V_{ij} = V(R_i) \delta_{ij}
-$$
+![](https://latex.codecogs.com/svg.latex?V_{ij}&space;=&space;V(R_i)&space;\delta_{ij})
 
 
 <!-- omit in toc -->
@@ -227,30 +205,23 @@ In sinc basis the kinetic energy matrix elements are computed as:
 
   The Morse potential function is defined as:
 
-  $$
-  V(R) = T_{e} +D_{e}[1 - e^{\beta(R-R_{e})}]^2
-  $$
-  where $T_e$ is the term value, $D_{e}$ measures the energy from the bottom of the potential to the dissociation limit, $\beta$ is a constant and $R_{e}$ is the equilibrium internuclear distance.
+  ![](https://latex.codecogs.com/svg.latex?V(R)&space;=&space;T_{e}&space;&plus;D_{e}[1&space;-&space;e^{\beta(R-R_{e})}]^2)
+
+  where ![](https://latex.codecogs.com/svg.latex?\inline&space;T_e) is the term value, ![](https://latex.codecogs.com/svg.latex?\inline&space;D_{e}) measures the energy from the bottom of the potential to the dissociation limit, ![](https://latex.codecogs.com/svg.latex?\inline&space;\beta) is a constant and ![](https://latex.codecogs.com/svg.latex?\inline&space;R_{e}) is the equilibrium internuclear distance.
 
    - EMO (Expanded Morse Oscillator) potential
 
   It is defined as
 
-  $$ 
-  V_{EMO}(R) = T_{e} + D_{e}[1 - exp(-\beta_{EMO}(R).(R-R_{e}))]^{2} 
-  $$
+  ![](https://latex.codecogs.com/svg.latex?V_{EMO}(R)&space;=&space;T_{e}&space;&plus;&space;D_{e}[1&space;-&space;exp(-\beta_{EMO}(R).(R-R_{e}))]^{2})
 
   which is a Morse potential function with a radial dependence of the exponential coefficient
 
-  $$
-  \beta_{EMO}(R) = \sum_{i=0}^{N} \beta_{i} . y(R)^{i}
-  $$
+  ![](https://latex.codecogs.com/svg.latex?\beta_{EMO}(R)&space;=&space;\sum_{i=0}^{N}&space;\beta_{i}&space;.&space;y(R)^{i})
 
   represented as a polynomial expansion in the powers of the dimensionless function
 
-  $$
-  y(R) = \frac{R^{p} - R_{e}^{p}}{R^{p} + R_{e}^{p}}
-  $$
+  ![](https://latex.codecogs.com/svg.latex?y(R)&space;=&space;\frac{R^{p}&space;-&space;R_{e}^{p}}{R^{p}&space;&plus;&space;R_{e}^{p}})
 
   with p being a positive integer number.
 
@@ -284,7 +255,7 @@ There are two ways for specifing the reduced mass.
   - this property does not determine which and how many isotopes will be included in the calculations (refer to the property **```nisotopes```** below) but only defines the isotopes by the symbols.
   - it should be an iterable of type list or tuple of strings and is not mandatory
 
-In the following example the symbols for three of the isotopes of NiH molecule - $^{58}\textrm{NiH}$, $^{60}\textrm{NiH}$ and $^{62}\textrm{NiH}$ are defined as: 
+In the following example the symbols for three of the isotopes of NiH molecule - ![](https://latex.codecogs.com/svg.latex?\inline&space;^{58}\textrm{NiH}), ![](https://latex.codecogs.com/svg.latex?\inline&space;^{60}\textrm{NiH}) and ![](https://latex.codecogs.com/svg.latex?\inline&space;^{62}\textrm{NiH}) are defined as: 
 
 ```python
 # define the symbols for three isotopes
@@ -294,7 +265,7 @@ mdata.molecule = ['58Ni1H', '60Ni1H', '62Ni1H']
 mdata.molecule = ['58 Ni 1 H', '60Ni 1H', '62 Ni 1H']
 ```
 
-- **```masses```** - defines one or more isotopic forms of the same molecule by specifing the values of their reduced masses i.e. each defined item represents the reduced mass for each isotope computed by $\mu = m_{A}*m_{B} / (m_{A} + m_{B})$ in amu units.
+- **```masses```** - defines one or more isotopic forms of the same molecule by specifing the values of their reduced masses i.e. each defined item represents the reduced mass for each isotope computed by ![](https://latex.codecogs.com/svg.latex?\inline&space;\mu&space;=&space;m_{A}*m_{B}&space;/&space;(m_{A}&space;&plus;&space;m_{B})) in amu units.
   - this property does not determine which and how many isotopes will be included in the calculations (refer to the property **```nisotopes```** below) but only defines their masses.
   - it should be an iterable of type list or tuple of float numbers and is not mandatory
 
@@ -494,7 +465,7 @@ np.savetxt('grid_points.dat', grid.rgrid)
 
 ## Channel Object Definition
 
-A channel is defined as an electronic state with definite values of $\Lambda$, $S$, $\Sigma$ and $\Omega$ quantum numbers. Each channel has to be defined as an object of type **```Channel```** and the parameters that are needed to instatniate objects of this type are:
+A channel is defined as an electronic state with definite values of ![](https://latex.codecogs.com/svg.latex?\inline&space;\Lambda), ![](https://latex.codecogs.com/svg.latex?\inline&space;S), ![](https://latex.codecogs.com/svg.latex?\inline&space;\Sigma) and ![](https://latex.codecogs.com/svg.latex?\inline&space;\Omega) quantum numbers. Each channel has to be defined as an object of type **```Channel```** and the parameters that are needed to instatniate objects of this type are:
 
 - **```filep```** - the name of the file containing the parameters for the potential
   - It is a string parameter referring to an existing file or file path
@@ -506,11 +477,11 @@ A channel is defined as an electronic state with definite values of $\Lambda$, $
   - **```'EMO'```** : EMO (Expanded Morse Oscilator) potential
   - **```'MLR'```** : MLR (Morse/Long-Range) potential
   - **```'custom'```** : custom analytical potential
-- **```nlambda```** - the quantum number $\Lambda$ of the state
+- **```nlambda```** - the quantum number ![](https://latex.codecogs.com/svg.latex?\inline&space;\Lambda) of the state
   - positive integer number
-- **```sigma```** - the quantum number $\Sigma$ of the state
+- **```sigma```** - the quantum number ![](https://latex.codecogs.com/svg.latex?\inline&space;\Sigma) of the state
   - integer or float number
-- **```multiplicity```** - the multiplicity defined as $2S+1$ for the state
+- **```multiplicity```** - the multiplicity defined as ![](https://latex.codecogs.com/svg.latex?\inline&space;2S&plus;1) for the state
   - positive integer or float number
 - **```rot_correction```** - correction to the diagonal rotational Hamiltonian
   - optional parameter of type integer or float
@@ -649,9 +620,9 @@ The interactions between the channels are represented as objects of type **```Co
   - **```SL```** : Spin-electronic interaction
   - **```spin-rot```** : Spin-Rotation interaction
   - **```spin-spin```** : Spin-Spin interaction
-  - **```LambdaDe```** : second-order $\Omega$ or $\Lambda$ doubling effect on e-parity levels
-  - **```LambdaDf```** : second-order $\Omega$ or $\Lambda$ doubling effect on f-parity levels
-  - **```LambdaD```** : second-order $\Omega$ or $\Lambda$ doubling effect on both e- and f-parity levels
+  - **```LambdaDe```** : second-order ![](https://latex.codecogs.com/svg.latex?\inline&space;\Omega) or ![](https://latex.codecogs.com/svg.latex?\inline&space;\Lambda) doubling effect on e-parity levels
+  - **```LambdaDf```** : second-order ![](https://latex.codecogs.com/svg.latex?\inline&space;\Omega)or ![](https://latex.codecogs.com/svg.latex?\inline&space;\Lambda) doubling effect on f-parity levels
+  - **```LambdaD```** : second-order ![](https://latex.codecogs.com/svg.latex?\inline&space;\Omega) or ![](https://latex.codecogs.com/svg.latex?\inline&space;\Lambda) doubling effect on both e- and f-parity levels
 
 - **```model```** - the model of the coupling function wtih  possible values:
     - **```pointwise```**
