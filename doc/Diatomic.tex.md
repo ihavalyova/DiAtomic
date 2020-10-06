@@ -100,10 +100,7 @@ The **```DiAtomic```** module is tested on Linux platform but works under Window
 ## The total Hamiltonian and basis functions
 
 The total Hamiltonian of a diatomic molecule in the rotating molecule-fixed coordinate system with origin at the center of mass of the molecule can be written as a sum of several terms:
-
-$$
-\mathbf{H} = \mathbf{T}_{\mathrm{N}}(R) + \mathbf{H}_{\mathrm{rot}}(R, \theta, \phi) + \mathbf{T}_{\mathrm{e}}(r) + \mathbf{V}(R, r) + \mathbf{H}_{\mathrm{rel}}
-$$
+![](https://latex.codecogs.com/svg.latex?\mathbf{H}&space;=&space;\mathbf{T}_{\mathrm{N}}(R)&space;&plus;&space;\mathbf{H}_{\mathrm{rot}}(R,&space;\theta,&space;\phi)&space;&plus;&space;\mathbf{T}_{\mathrm{e}}(r)&space;&plus;&space;\mathbf{V}(R,&space;r)&space;&plus;&space;\mathbf{H}_{\mathrm{rel}})
 
 where $\mathbf{T}_{\mathrm{N}}(R)$ and $\mathbf{H}_{\mathrm{rot}}(R, \theta, \phi)$ are the vibrational and rotational part of the total nuclear kinetic energy operator in spherical polar coordinates, $\mathbf{T}_{\mathrm{e}}(r)$ is the kinetic energy of the electrons, $\mathbf{V}(R, r)$ is the operator for the total potential energy of the system and $\mathbf{H}_{\mathrm{rel}}$ is the relativistic Hamiltonian.
 
