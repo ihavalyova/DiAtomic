@@ -126,7 +126,7 @@ $$
 \left[ \frac{-\hbar^{2}}{2\mu} \frac{d^{2}}{dR^{2}} + U(R) + \frac{\hbar^{2}}{2\mu R^{2}}(J(J+1) - \Omega^2) \right] \phi_{vJ}(R) = E_{vJ} \phi_{vJ}(R)
 $$
 
-where $R$, is the internuclear distance, $\mu = M_{1} M_{2} /(M_{1} + M_{2})$ is the reduced molecular mass with atomic masses $M_1$ and $M_2$, J is the rotational quantum number; $E_{vJ}$ are the energies of the rovibrational levels and $\phi_{vJ}$ are the corresponding eigenfunctions.
+where $R$, is the internuclear distance, $\mu = M_{1} M_{2} /(M_{1} + M_{2})$ is the reduced molecular mass with atomic masses $M_1$ and $M_2$, $J$ is the rotational quantum number; $E_{vJ}$ are the energies of the rovibrational levels and $\phi_{vJ}$ are the corresponding eigenfunctions.
 
 <!-- omit in toc -->
 ### The coupled channels problem
@@ -230,10 +230,9 @@ In sinc basis the kinetic energy matrix elements are computed as:
   The Morse potential function is defined as:
 
   $$
-  V(R) = T_{e} +D_{e}[1 - e^{\beta(r-r_{e})}]^2
+  V(R) = T_{e} +D_{e}[1 - e^{\beta(R-R_{e})}]^2
   $$
-  where $T_e$ is the term value, $D_{e}$ measures the energy from the bottom of the potential to the dissociation limit (it is not the dissociation energy)
-  $\beta$ is a constant and $r_{e}$ is the equilibrium internuclear distance.
+  where $T_e$ is the term value, $D_{e}$ measures the energy from the bottom of the potential to the dissociation limit, $\beta$ is a constant and $R_{e}$ is the equilibrium internuclear distance.
 
    - EMO (Expanded Morse Oscillator) potential
 
