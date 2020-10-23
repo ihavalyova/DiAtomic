@@ -30,22 +30,21 @@
 
 # **DiAtomic** module: what is it used for?
 The Python library **```DiAtomic```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
-It also provides some usefull plotting options, for example, if we have a set of files for electronic potentials represented by points (abinitio, RKR and etc.) and want to see how they look then:
-<!-- 
-```python
+<!-- It also provides some usefull plotting options, for example, if we have a set of files for electronic potentials represented by points (abinitio, RKR and etc.) and want to see how they look then:
+<!-- ```python
 p = Plotting()
 p.plot_potentials_points(['p1.pot', 'p2.pot', 'p3.pot', 'p4.pot'], show=True, ipoints=50, ylim=(1e3, 1e5))
 ```
 or even simpler:
 -->
 
-```python
+<!-- ```python
 from diatomic import *
 import glob
 
 Plotting.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=120, xlim=(2.5, 16), ylim=(9e3, 2.5e4))
 ```
-![KCs_potentials](./plotting/kcs_potential_points.svg)
+![KCs_potentials](./plotting/kcs_potential_points.svg) -->
 
 # **DiAtomic**  module: how to install and setup?
 
@@ -107,7 +106,7 @@ where ![](https://latex.codecogs.com/svg.latex?\inline&space;\mathbf{T}_{\mathrm
 
 Usually the most convinient set of basis functions for computing the matrix elements of the Hamiltonian are the Hund's case (a) basis functions represented as:
 
-![](https://latex.codecogs.com/svg.latex?\vert&space;\Lambda&space;\:&space;S&space;\:&space;\Sigma&space;\:&space;J&space;\:&space;\Omega&space;\:&space;M;&space;e/f&space;\rangle&space;=&space;2^{-1/2}&space;\left[&space;\vert&space;\Lambda&space;\:&space;S&space;\:&space;\Sigma&space;\:&space;J&space;\:&space;\Omega&space;\:&space;M&space;\rangle&space;\pm&space;\vert&space;-\Lambda&space;\:&space;S&space;\:&space;-\Sigma&space;\:&space;J&space;\:&space;-\Omega&space;\:&space;M&space;\rangle&space;\right])
+![](https://latex.codecogs.com/svg.latex?\vert&space;\Lambda&space;S&space;\Sigma&space;J&space;\Omega&space;M;&space;e/f&space;\rangle&space;=&space;2^{-1/2}&space;\left[&space;\vert&space;\Lambda&space;S&space;\Sigma&space;J&space;\Omega&space;M&space;\rangle&space;\pm&space;\vert&space;-\Lambda&space;S&space;-\Sigma&space;J&space;-\Omega&space;M&space;\rangle&space;\right])
 
 ## The Scrodinger equation for a single state and coupled system of states
 
@@ -609,7 +608,7 @@ Channel.set_channel_parameters(channels)
 
 The interactions between the channels are represented as objects of type **```Coupling```**. The parameters that we need to provide in order to initilize a **```Coupling```** object are:
 
-- **```interact```** - the channels connected by this interaction
+- **```interact```** - the channels which will be connected by this coupling object
   - should be of type tuple or tuple of tuples
   - the numbers should correspond to the indicies of the channels in the channel list
 
@@ -620,32 +619,56 @@ The interactions between the channels are represented as objects of type **```Co
   - **```SL```** : Spin-electronic interaction
   - **```spin-rot```** : Spin-Rotation interaction
   - **```spin-spin```** : Spin-Spin interaction
-  - **```LambdaDe```** : second-order ![](https://latex.codecogs.com/svg.latex?\inline&space;\Omega) or ![](https://latex.codecogs.com/svg.latex?\inline&space;\Lambda) doubling effect on e-parity levels
-  - **```LambdaDf```** : second-order ![](https://latex.codecogs.com/svg.latex?\inline&space;\Omega)or ![](https://latex.codecogs.com/svg.latex?\inline&space;\Lambda) doubling effect on f-parity levels
-  - **```LambdaD```** : second-order ![](https://latex.codecogs.com/svg.latex?\inline&space;\Omega) or ![](https://latex.codecogs.com/svg.latex?\inline&space;\Lambda) doubling effect on both e- and f-parity levels
+  - **```LambdaDe```** : second-order $\Omega$ or $\Lambda$ doubling effect on e-parity levels
+  - **```LambdaDf```** : second-order $\Omega$ or $\Lambda$ doubling effect on f-parity levels
+  - **```LambdaD```** : second-order $\Omega$ or $\Lambda$ doubling effect on both e- and f-parity levels
 
-- **```model```** - the model of the coupling function wtih  possible values:
+- **```model```** - the model used to represent the coupling function; the possible values are:
     - **```pointwise```**
     - **```cspline```**
     - **```custom```**
 
-- **```multiplier```** - integer or float number which will multiply the defined function
+- **```multiplier```** - integer or float number which will multiply the defined coupling function
   - if not provided the default value will be set to 1.0
 
-- **```label```** - a label used to connect a certain coupling object and the corresponding parameters in the coupling file. 
+- **```label```** - a label used to connect a certain coupling object and the corresponding parameters in the couplings file. 
   - should be of type string
 
-All parameters are mandatory except multiplier.
+In the following example the channels 1 and 2 (the indices of the channels in the channels list) are coupled by spin-orbit interaction and the coupling function is represented as a pointwise function. In the couplings file the group of parameters corresponding to this function are labeled by 'SO_WX':
 
 ```python
 cp1 = diatom.Coupling(
-    interact=(1,2),
+    interact=(1, 2),
     coupling='spin-orbit',
     model='pointwise',
     multiplier=1.0,
-    label='cp1'
+    label='SO_WX'
 )
 ```
+----
+
+<!-- omit in toc -->
+#### **Structure of the Couplings File**
+
+The file containing the coupling parameters has simple arrangement (using <a href="https://yaml.org/" target="_blank">YAML</a> syntax). For pointwise functions the file consists of three columns which have the same meaning like the columns in the potential file explained above.
+
+```yaml
+SO_WW:
+- 0.750000000000     -293.99399462737216      1
+- 1.200000000000     -290.42170562514940      1
+- 1.500000000000     -293.15717613189383      1
+- 2.000000000000     -305.89587377923857      1
+- 3.000000000000     -301.49757866107001      0
+SO_XX:
+- 0.750000000000     -593.76650250990258      1
+- 1.200000000000     -590.12555102463773      1
+- 1.500000000000     -599.74203565802293      1
+- 2.000000000000     -604.06421264445430      1
+- 3.000000000000     -603.00000000000000      0
+```
+
+Before decalring each group of parameters the label to the corresponding **```Coupling```** object needs to be specified.
+
 ----
 
 <!-- omit in toc -->
@@ -832,14 +855,7 @@ mdata.jrange = (0, 1)
 
 grid = Grid(npoints=170, rgrid=(0.3, 2.5))
 
-ch1 = Channel(
-    filep='morse_H2.pot',
-    model='morse',
-    nlambda=0,
-    sigma=0,
-    multiplicity=1,
-)
-
+ch1 = Channel(filep='morse_H2.pot', model='morse', nlambda=0, sigma=0, multiplicity=1)
 channels = [ch1]
 Channel.set_channel_parameters(channels)
 
@@ -877,6 +893,7 @@ plot.plot_potentials_on_grid(mlevels, show=True, fformat='svg')
 
 ![Morse potential H2](./plotting/potential_morse_H2.svg)
 
+
 <!-- omit in toc -->
 ### Another example: KCs ...
 
@@ -906,87 +923,53 @@ vpot = 'v_nih.pot'
 wpot = 'w_nih.pot'
 xpot = 'x_nih.pot'
 
-ch1 = Channel(
-    filep=vpot,
-    model='pointwise',
-    nlambda=0,
-    sigma=0.5,
-    multiplicity=2
-)
-
-ch2 = Channel(
-    filep=wpot,
-    model='pointwise',
-    nlambda=1,
-    sigma=-0.5,
-    multiplicity=2
-)
-
-ch3 = Channel(
-    filep=wpot,
-    model='pointwise',
-    nlambda=1,
-    sigma=0.5,
-    multiplicity=2
-)
-
-ch4 = Channel(
-    filep=xpot,
-    model='pointwise',
-    nlambda=2,
-    sigma=-0.5,
-    multiplicity=2
-)
-
-ch5 = Channel(
-    filep=xpot,
-    model='pointwise',
-    nlambda=2,
-    sigma=0.5,
-    multiplicity=2
-)
+ch1 = Channel(filep=vpot, model='pointwise', nlambda=0, sigma=0.5, multiplicity=2)
+ch2 = Channel(filep=wpot, model='pointwise', nlambda=1, sigma=-0.5, multiplicity=2)
+ch3 = Channel(filep=wpot, model='pointwise', nlambda=1, sigma=0.5, multiplicity=2)
+ch4 = Channel(filep=xpot, model='pointwise', nlambda=2, sigma=-0.5, multiplicity=2)
+ch5 = Channel(filep=xpot, model='pointwise', nlambda=2, sigma=0.5, multiplicity=2)
 
 channels = [ch1, ch2, ch3, ch4, ch5]
 Channel.set_channel_parameters(channels)
 
 cp1 = Coupling(
-    interact=((2, 2), (3, 3)),
-    coupling=('spin-orbit', 'spin-orbit'),
-    model='pointwise',
-    multiplier=(-1.0, 1.0),
-    label='SO_WW'
+  interact=((2, 2), (3, 3)), 
+  coupling=('spin-orbit', 'spin-orbit'), 
+  model='pointwise', 
+  multiplier=(-1.0, 1.0), 
+  label='SO_WW'
 )
 
 cp2 = Coupling(
-    interact=((4, 4), (5, 5)),
-    coupling=('spin-orbit', 'spin-orbit'),
-    model='pointwise',
-    multiplier=(-1.0, 1.0),
-    label='SO_XX'
+  interact=((4, 4), (5, 5)), 
+  coupling=('spin-orbit', 'spin-orbit'),
+  model='pointwise',
+  multiplier=(-1.0, 1.0), 
+  label='SO_XX'
 )
 
 cp3 = Coupling(
-    interact=(1, 2),
-    coupling='spin-orbit',
-    model='pointwise',
-    multiplier=1.0,
-    label='SO_VW'
+  interact=(1, 2),
+  coupling='spin-orbit',
+  model='pointwise',
+  multiplier=1.0,
+  label='SO_VW'
 )
 
 cp4 = Coupling(
-    interact=(3, 4),
-    coupling='spin-orbit',
-    model='pointwise',
-    multiplier=1.0,
-    label='SO_VX'
+  interact=(3, 4),
+  coupling='spin-orbit',
+  model='pointwise',
+  multiplier=1.0, 
+  label='SO_VX'
 )
 
 cp5 = Coupling(
-    interact=((2, 4), (3, 5), (3, 4)),
-    coupling=('LJ', 'LJ', 'SL'),
-    model='pointwise',
-    multiplier=(2.0, 2.0, 2.0),
-    label='LJ_WX'
+  interact=((2, 4), (3, 5), (3, 4)),
+  coupling=('LJ', 'LJ', 'SL'), 
+  model='pointwise',
+  multiplier=(2.0, 2.0, 2.0),
+  label='LJ_WX'
 )
 
 couplings = [cp1, cp2, cp3, cp4, cp5]
@@ -996,7 +979,7 @@ mlevels = MoleculeLevels(mdata, grid, channels, couplings=couplings)
 mlevels.calculate_levels(energy_subset_value=(0, 7000.), identify=0)
 ```
 
-The couplings file looks like this
+The file with coupling parameters looks like:
 ```yaml
 SO_WW:
 - 0.750000000000      -300.71901701285799       0
@@ -1032,7 +1015,7 @@ LJ_WX:
 - 5.000000000000         1.00000000000000       0
 ```
 
-The output looks like:
+The first few lines in the output file:
 
 ```python
 #    No       v       J   omega   sigma  lambda  parity  marker   Ecalc           Eexp          delta        unc       CC1      CC2      CC3      CC4      CC5      state
@@ -1046,7 +1029,7 @@ The output looks like:
 
 We can use the program to further analyize and plot the experimental and computed data.
 
-```python
+<!--python
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -1084,10 +1067,9 @@ for v in vs:
 ax1.set_xlabel('J')
 ax1.set_ylabel(r'Energy (cm$^{-3}$)')
 plt.show()
-```
 
 ![Experimental data plot](./plotting/exp_date_ef.svg)
-![Experimental data plot](./plotting/exp_date_ef_vs.svg)
+![Experimental data plot](./plotting/exp_date_ef_vs.svg) -->
 
 # Fitting of the Calculated Energy Levels
 
