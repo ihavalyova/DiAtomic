@@ -185,7 +185,10 @@ class MoleculeData:
         atom_data = re.findall(pattern, atomic_db)
 
         if len(atom_data) != 1:
-            raise SystemExit('Error: Incorrect matching or nothing found.')
+            raise SystemExit(
+                f'Error: Incorrect matching or nothing found in '
+                f'the atomic database for symbol {symbol}.'
+            )
 
         return float(atom_data[0].split('\n')[-1].split('=')[-1].strip())
 
