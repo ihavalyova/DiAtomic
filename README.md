@@ -23,7 +23,7 @@ and for a system of arbitrary number of coupled states
 
 **Documentation**: <a href="https://github.com/ihavalyova/DiAtomic/blob/master/doc/Diatomic.md" target="_blank">Detailed version</a>
 
-**Examples:** <a href="https://github.com/ihavalyova/DiAtomic/blob/master/doc/" target="_blank">IPython notebooks</a>
+**Examples:** <a href="https://github.com/ihavalyova/DiAtomic/blob/master/doc/" target="_blank">Jupyter notebooks</a>
 
 **Source:** <a href="https://github.com/ihavalyova/DiAtomic/tree/master/diatomic" target="_blank">Python source</a>
 
