@@ -11,6 +11,7 @@
 DiAtomic is an open-source library written in Python with useful routines for performing various computations of diatomic molecules. It can be employed to:
 
 - compute the energy eigenvalues by solving the Schrodinger equation for:
+
   (i) single non-interacting electronic state 
   (ii) system of arbitrary number of coupled states
 
