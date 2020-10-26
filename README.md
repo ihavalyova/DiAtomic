@@ -12,7 +12,8 @@ DiAtomic is an open-source library written in Python with useful routines for pe
 
 - compute the energy eigenvalues by solving the Schrodinger equation for:
 
-  (i) single non-interacting electronic state 
+  (i) single non-interacting electronic state
+  
   (ii) system of arbitrary number of coupled states
 
 - compute the transition frequencies and line intensities when PECs or term values are available
