@@ -1,8 +1,9 @@
 import os
 import io
+import math
 import numpy as np
 import scipy as sp
-
+from numba import njit, guvectorize, int64, float64
 from molecule_data import Channel
 from molecule_data import Coupling
 from constants import Const
@@ -54,7 +55,7 @@ class Fitting:
 
         return ypar, yfixed, yreg, ylam
 
-    def get_eigenvalues(self, ypar, is_weighted=False):
+    def _get_eigenvalues(self, ypar, is_weighted=False):
 
         self.ml.store_predicted = False
         self.ml.is_weighted = is_weighted
@@ -65,7 +66,7 @@ class Fitting:
 
         return self.ml.out_data, stats
 
-    def minuit_least_squares(self, ypar):
+    def _minuit_least_squares(self, ypar):
 
         """The procedure which Minuit calls on each iteration
 
@@ -79,7 +80,7 @@ class Fitting:
             1. Minuit requires this procedure to accept a single argument
         """
 
-        out_data, _ = self.get_eigenvalues(ypar)
+        out_data, _ = self._get_eigenvalues(ypar)
         ydel = out_data[:, 9] / Const.hartree
         yvar = out_data[:, 10] / Const.hartree
 
@@ -116,7 +117,7 @@ class Fitting:
         errors = np.abs(ypar) * step_size
 
         m = Minuit.from_array_func(
-            self.minuit_least_squares,
+            self._minuit_least_squares,
             ypar,
             errors,
             fix=1-yfixed,
@@ -192,8 +193,8 @@ class Fitting:
                 f'\nTOL{"":>23}= {tol:.1e}'
             )
 
-            # (1) get initially calculated energies on each new iteration
-            out_data, stats = self.get_eigenvalues(
+            # (1) get initially calculated energies on every new iteration
+            out_data, stats = self._get_eigenvalues(
                 ypar, is_weighted=is_weighted
             )
 
@@ -201,7 +202,7 @@ class Fitting:
             ydel = -out_data[:, 9].astype(np.float64) / Const.hartree
             yvar = out_data[:, 10].astype(np.float64) / Const.hartree
 
-            chi2_best, rms_init, _ = stats
+            chi2_best, rms_best = stats[0], stats[1]
 
             if regular != 0.0:
                 ydiff = yreg - ypar
@@ -211,22 +212,22 @@ class Fitting:
                 c = cmult * regular
                 chi2r = np.sum(np.square(c))
                 chi2_best = chi2_best + chi2r
+                rms_best = rms_best + math.sqrt(chi2r)
 
             self.progress_str.write(
                 f'\nChi square initial{"":>8}= {chi2_best:.8f}'
-                f'\nRMS initial{"":>15}= {rms_init:.8f} cm-1\n'
+                f'\nRMS initial{"":>15}= {rms_best:.8f} cm-1\n'
             )
 
             # (2) generate the matrix A - the matrix containing the
             # derivatives of the energies with respect to the parameters
 
             if deriv == 'n':
-                dydp = self.generate_derivatives_numerical(
+                dydp = self._generate_numerical_derivatives(
                     ypar, yfixed, ycal, is_weighted=is_weighted,
                     step_size=step_size
                 )
 
-                # np.savetxt('dydp_numerical.dat', dydp, fmt='%.6e')
             else:
                 # the quantum numbers are aranged as follows:
                 # v, J, par, iso, state
@@ -235,7 +236,7 @@ class Fitting:
                     (out_data[:, 6] % self.ml.nisotopes)+1, out_data[:, -1]
                 ))
 
-                dydp = self.generate_derivatives_analytical(
+                dydp = self._generate_analytical_derivatives(
                     ypar, yfixed, qnums, is_weighted=is_weighted
                 )
 
@@ -263,52 +264,28 @@ class Fitting:
                 b = np.hstack((b, c))
 
             # the proposed corrections to the parameters is the solution
-            x, rank, sv = self.find_corrections(A, b, tol, lapack_driver)
+            x, rank, sv = Fitting._find_corrections(A, b, tol, lapack_driver)
 
             # (4) calculate new energies using the proposed corrections
-            _, stats_try = self.get_eigenvalues(
+            _, stats_try = self._get_eigenvalues(
                 ypar+x, is_weighted=is_weighted
             )
 
-            chi2_try = stats_try[0]
+            chi2_try, rms_try = stats_try[0], stats_try[1]
 
             if regular != 0.0:
                 chi2r = np.sum(np.square((c - np.dot(B, x))))
                 chi2_try = chi2_try + chi2r
+                rms_try = rms_try + math.sqrt(chi2r)
 
-            self.progress_str.write(
-                # f'\nChi square best{"":>11}= {chi2_best:.8f}'
-                f'\nChi square current{"":>8}= {chi2_try:.8f}\n'
-            )
-
-            # Another improvment: added 08.2020. Change tol if for 2 successive
-            # iterations the corrections are smaller than some small value eps
-
-            # is_tol_changed = False
-            # eps = 1.0e-5
-
-            # if np.all(np.absolute(x) < eps):
-            #     if it % 2 == 0:
-            #         change_tol[0] = True
-            #     if it % 2 == 1:
-            #         change_tol[1] = True
-
-            #     # change tol on odd iteration if the above condition is True
-            #     if change_tol[0] and change_tol[1]:
-            #         tol /= 5.0
-            #         # reset the boolean array
-            #         change_tol = np.array([False, False], dtype=bool)
-            #         is_tol_changed = True
-
-            #         self.progress_str.write(
-            #             f'\nTOL CHANGED{"":>15}={tol:.1e}'
-            #         )
+            eps = 1.0e-5
 
             # (5) Try to change the corrections
             is_failed = False
 
-            if chi2_try < chi2_best:
+            if abs(chi2_try - chi2_best) < eps:
                 chi2_best = chi2_try
+                rms_best = rms_try
                 ypar = ypar + x
             else:  # chi2try >= chi2best
                 step = 10.0
@@ -321,64 +298,59 @@ class Fitting:
                     # x_try = x_try / step
                     ypar_try = ypar_try + x_try
 
-                    _, stats_new = self.get_eigenvalues(
+                    _, stats_new = self._get_eigenvalues(
                         ypar_try, is_weighted=is_weighted
                     )
 
-                    chi2_new = stats_new[0]
+                    chi2_new, rms_new = stats_new[0], stats_new[1]
 
                     if regular != 0.0:
                         chi2r = np.sum(
                             np.square(((yreg-ypar_try)) - np.dot(B, x_try))
                         )
                         chi2_new = chi2_new + chi2r
+                        rms_new = rms_new + math.sqrt(chi2r)
 
-                    if chi2_new < chi2_best:
+                    if abs(chi2_new - chi2_best) < eps:
                         chi2_best = chi2_new
+                        rms_best = rms_new
                         ypar = ypar_try
 
                     else:  # chi2new >= chi2best:
                         is_failed = True
 
                         self.progress_str.write(
-                            f'\nCorrections changed =>\nchi square = '
+                            f'\nCorrections changed =>\nChi square = '
                             f'{chi2_best:.8f}\n'
+                            f'RMS = {rms_best:.8f}\n'
                         )
 
                         break
 
-            # if it isn't get improved then change tol
+            # if it isn't got improved then change tol
             if is_failed and not is_tol_changed:
                 tol /= 5.0
                 self.progress_str.write(f'\nTOL CHANGED {"":>15}= {tol:.1e}')
 
             # (6) Save the final parameters
             if self.progress:
-                self.save_svd_parameters(rank, sv, tol, ypar, x, yfixed, it)
-
-            _, stats_final = self.get_eigenvalues(
-                ypar, is_weighted=is_weighted
-            )
+                self._save_svd_parameters(rank, sv, tol, ypar, x, yfixed, it)
 
             Channel.edit_channel_parameters(ypar, self.ml.channels)
 
             if len(self.ml.couplings) > 0:
                 Coupling.edit_coupling_parameters(ypar, self.ml.couplings)
 
-            rms_final, rmsd_final = stats_final[1], stats_final[2]
-
             self.progress_str.write(
                 f'\nChi square final/best{"":>6}= {chi2_best:.8f} '
                 f'for iteration {it}'
-                f'\nRMS final{"":>18}= {rms_final:.8f} cm-1'
-                f'\nRMSD final{"":>17}= {rmsd_final:.8f}\n'
+                f'\nRMS final{"":>18}= {rms_best:.8f} cm-1'
             )
 
             print(self.progress_str.getvalue())
 
-    def generate_derivatives_numerical(self, ypar, yfixed, ycal_init,
+    def _generate_numerical_derivatives(self, ypar, yfixed, ycal_init,
                                        is_weighted, step_size):
-
         """Compute the derivatives matrix by the parameters
 
         Args:
@@ -392,35 +364,35 @@ class Fitting:
             array: the matrix with the derivatives
         """
 
-        # TODO: Rewrite to optimize this procedure with numpy
-        # perc = 1.0e-4 -> replaced by step_size
-
-        # get changes in the parameters
         dp = np.zeros(ypar.shape[0])
-        dydp = np.zeros(
-            shape=(ycal_init.shape[0], ypar.shape[0]), dtype=np.float64
+        dpar = np.zeros(ypar.shape[0])
+
+        dp = np.abs(ypar) * step_size
+        dpar = ypar + dp
+        dpar[yfixed == 0] = 0.0
+        out_data, _ = self._get_eigenvalues(dpar, is_weighted=is_weighted)
+        ycal = out_data[:, 7] / Const.hartree
+
+        dydp = Fitting._fillin_derivatives_matrix(
+            ypar.shape[0], ycal_init, ycal, dp
         )
-
-        for prm in range(0, len(ypar)):
-            # set all changes to zero
-            dp.fill(0.0)
-
-            if yfixed[prm]:
-                dp[prm] = abs(ypar[prm]) * step_size
-                dpar = ypar + dp
-
-                out_data, _ = self.get_eigenvalues(
-                    dpar, is_weighted=is_weighted
-                )
-
-                ycal = out_data[:, 7] / Const.hartree
-
-                for i in range(0, len(ycal)):
-                    dydp[i, prm] = (ycal[i] - ycal_init[i]) / dp[prm]
 
         return dydp
 
-    def find_corrections(self, A, b, tol, lapack_driver):
+    @staticmethod
+    @njit
+    def _fillin_derivatives_matrix(n, ycal_init, ycal, dp):
+        dydp = np.zeros(
+            shape=(ycal_init.shape[0], n), dtype=np.float64
+        )
+
+        for prm in range(0, n):
+            dydp[:, prm] = ycal - ycal_init / dp[prm]
+
+        return dydp
+
+    @staticmethod
+    def _find_corrections(A, b, tol, lapack_driver):
 
         """Find the corrections to the parameters by solving
         the system of linear equations with SVD technique
@@ -444,10 +416,11 @@ class Fitting:
         """
 
         x, _, rank, s = sp.linalg.lstsq(A, b, tol, lapack_driver)
+        #x, _, rank, s = np.linalg.lstsq(A, b, rcond=tol)
 
         return x, rank, s
 
-    def generate_derivatives_analytical(self, ypar, yfixed,
+    def _generate_analytical_derivatives(self, ypar, yfixed,
                                         qnums, is_weighted):
 
         if not self.ml.sderiv:
@@ -488,7 +461,7 @@ class Fitting:
 
         return dydp
 
-    def save_svd_parameters(self, rank, sv, tol, ypar, x, yfixed, it):
+    def _save_svd_parameters(self, rank, sv, tol, ypar, x, yfixed, it):
 
         # singular values are sorted from the largest to the smallest one
         # singular values smaller than tol*largest_singular_value are set to 0
