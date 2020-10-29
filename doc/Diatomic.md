@@ -92,6 +92,8 @@ to make the file executable and then run it. To execute the file from the ```IPy
 In [1]: run main.py
 ```
 
+It is recommended to use ```IPython``` (or ```Jupyter```) for running the code because the total execution time will be smaller and more importantly this will significantly reduce the startup (import) time after the initial run.
+
 The **```DiAtomic```** module is tested on Linux platform but works under Windows and MacOS as well.
 
 # Diatomic molecule: basic theoretical concepts
