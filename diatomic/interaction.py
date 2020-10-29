@@ -12,11 +12,11 @@ class Interaction:
         self.nch = nch
         self.rgrid2 = rgrid2
 
-    def get_perturbations(self, jrot, mass, par, channels,
-                          couplings, fgrid, dd, Gy2):
+    def get_perturbations_matrix(self, jrotn, mass, par, channels,
+                                 couplings, fgrid, dd, Gy2):
 
         self.fgrid = fgrid
-        self.jrot = jrot
+        self.jrotn = jrotn
 
         self.pert_matrix = np.zeros((self.nch*self.ngrid)**2).reshape(
             self.nch*self.ngrid, self.nch*self.ngrid
@@ -83,7 +83,7 @@ class Interaction:
             'lambdadf': self.lambda_doubling_f_parity,
             'lambdade': self.lambda_doubling_e_parity,
             'lambdad': self.lambda_doubling,
-            'bobc': self.BOBC,
+            'ndbobc': self.NDBOBC,
             'dbobc': self.DBOBC,
             'spin-rot': self.spin_rotation_interaction,
             'spin-spin': self.spin_spin_interaction,
@@ -103,15 +103,13 @@ class Interaction:
 
         interaction_keys = self.define_interaction_keys()
 
-        cfunc = np.zeros(self.ngrid)
-
-        jjrot = self.jrot*(self.jrot + 1.0)
+        jjrotn = self.jrotn*(self.jrotn + 1.0)
 
         i1 = cp*self.ngrid
         i2 = (cp+1)*self.ngrid
         ycs = self.fgrid[i1:i2]
 
-        cfunc = interaction_keys[ctype](jjrot, mass, m, par, ycs, args)  # *Gy2
+        cfunc = interaction_keys[ctype](jjrotn, mass, m, par, ycs, args)  # Gy2
 
         ch1, ch2 = cb
         row1 = (ch1-1)*self.ngrid
@@ -121,7 +119,7 @@ class Interaction:
 
         self.pert_matrix[row1:row2, col1:col2][dd] += cfunc
 
-    def spin_orbit_interaction(self, jjrot, mass, m, par, ycs, args):
+    def spin_orbit_interaction(self, jjrotn, mass, m, par, ycs, args):
 
         """
         Calculate diagonal and off-diagonal Spin-Orbit coupling matrix element
@@ -154,7 +152,7 @@ class Interaction:
 
         return 0
 
-    def lj_interaction(self, jjrot, mass, m, par, ycs, args):
+    def lj_interaction(self, jjrotn, mass, m, par, ycs, args):
 
         """
         Calculate the matrix element of L-uncoupling operator
@@ -167,7 +165,7 @@ class Interaction:
         qexpression = 1.0
 
         rule_omegaj = self.rule_lj_interaction(args) and \
-            math.sqrt(jjrot - (args['om1'] * args['om2']))
+            math.sqrt(jjrotn - (args['om1'] * args['om2']))
 
         ljcoef = m * qexpression * rule_omegaj
 
@@ -207,14 +205,14 @@ class Interaction:
         # args['s1'] == args['s2'] and rule_lj and \
 
         if sg1 == sg2 and args['s1'] == args['s2'] and rule_lj and \
-           (args['om1'] <= self.jrot and args['om2'] <= self.jrot+1.0):
+           (args['om1'] <= self.jrotn and args['om2'] <= self.jrotn+1.0):
             return 1
 
         return 0
 
-    def lj_parity_interaction(self, jjrot, mass, m, par, ycs, args):
+    def lj_parity_interaction(self, jjrotn, mass, m, par, ycs, args):
 
-        qexpression = math.sqrt(jjrot + args['om1'] * args['om2'])
+        qexpression = math.sqrt(jjrotn + args['om1'] * args['om2'])
 
         ljcoef = m * qexpression * self.rule_lj_parity(args)
 
@@ -243,7 +241,7 @@ class Interaction:
 
         return 0
 
-    def sj_interaction(self, jjrot, mass, m, par, ycs, args):
+    def sj_interaction(self, jjrotn, mass, m, par, ycs, args):
 
         """
         Calculate the matrix element of S-uncoupling operator
@@ -260,7 +258,7 @@ class Interaction:
         # TODO: check this!
         rule_omegaj = \
             self.rule_sj_interaction(args) and \
-            math.sqrt(jjrot - (args['om1'] * args['om2']))
+            math.sqrt(jjrotn - (args['om1'] * args['om2']))
 
         sjcoef = m * qexpression * rule_omegaj
 
@@ -279,19 +277,18 @@ class Interaction:
             (omega_diff == sigma_diff == -1.0)
 
         if args['lm1'] == args['lm2'] and args['s1'] == args['s2'] and \
-           (args['om1'] <= self.jrot and args['om2'] <= self.jrot+1.0) and \
+           (args['om1'] <= self.jrotn and args['om2'] <= self.jrotn+1.0) and \
            rule_sj:
             return 1
 
         return 0
 
-    def sj_parity_interaction(self, jjrot, mass, m, par, ycs, args):
-
+    def sj_parity_interaction(self, jjrotn, mass, m, par, ycs, args):
         """
             only between Sigma states
         """
 
-        qexpression = math.sqrt(jjrot + args['om1'] * args['om2'])
+        qexpression = math.sqrt(jjrotn + args['om1'] * args['om2'])
 
         sjcoef = m * qexpression * self.rule_sj_parity(args)
 
@@ -310,8 +307,7 @@ class Interaction:
 
         return 0
 
-    def spin_electornic_interaction(self, jjrot, mass, m, par, ycs, args):
-
+    def spin_electornic_interaction(self, jjrotn, mass, m, par, ycs, args):
         """
         Calculate the matrix element of spin-electronic operator
         <State1| LS |State1> =
@@ -333,6 +329,7 @@ class Interaction:
         return sign * ycs * brot * slcoef
 
     def rule_spin_electronic(self, args):
+
         lambda_diff = args['lm1'] - args['lm2']
         sigma_diff = args['sg2'] - args['sg1']
 
@@ -345,33 +342,33 @@ class Interaction:
 
         return 0
 
-    def lambda_doubling(self, jjrot, mass, m, par, ycs, args):
+    def lambda_doubling(self, jjrotn, mass, m, par, ycs, args):
 
-        ldcoef = jjrot / (2.0 * mass * self.rgrid2)**2
+        ldcoef = jjrotn / (2.0 * mass * self.rgrid2)**2
 
         return ycs * m * ldcoef * Const.hartree
 
-    def lambda_doubling_e_parity(self, jjrot, mass, m, par, ycs, args):
+    def lambda_doubling_e_parity(self, jjrotn, mass, m, par, ycs, args):
 
         if par == 1:
-            return self.lambda_doubling(jjrot, mass, m, par, ycs, args)
+            return self.lambda_doubling(jjrotn, mass, m, par, ycs, args)
         else:
             return np.zeros(ycs.shape[0])
 
-    def lambda_doubling_f_parity(self, jjrot, mass, m, par, ycs, args):
+    def lambda_doubling_f_parity(self, jjrotn, mass, m, par, ycs, args):
 
         if par == 0:
-            return self.lambda_doubling(jjrot, mass, m, par, ycs, args)
+            return self.lambda_doubling(jjrotn, mass, m, par, ycs, args)
         else:
             return np.zeros(ycs.shape[0])
 
-    def BOBC(self, jjrot, mass, m, par, ycs, args):
+    def NDBOBC(self, jjrotn, mass, m, par, ycs, args):
 
-        bocoef = jjrot / (2.0 * mass * self.rgrid2)
+        bocoef = jjrotn / (2.0 * mass * self.rgrid2)
 
         return ycs * m * bocoef * Const.hartree
 
-    def DBOBC(self, jjrot, mass, m, par, ycs, args):
+    def DBOBC(self, jjrotn, mass, m, par, ycs, args):
 
         return (ycs / Const.hartree) * m
 
@@ -384,7 +381,7 @@ class Interaction:
         elif self.rule_spin_rot_nondiag(args):
             ss1 = args['s1'] * (args['s1'] + 1)
             qexpression = \
-                math.sqrt(jjrot - (args['om1'] * args['om2'])) * \
+                math.sqrt(jjrotn - (args['om1'] * args['om2'])) * \
                 math.sqrt(ss1 - args['sg1'] * args['sg2'])
 
         srcoef = m * qexpression
@@ -407,7 +404,7 @@ class Interaction:
 
         self.rule_sj_interaction(args)
 
-    def spin_spin_interaction(self, jjrot, mass, m, par, ycs, args):
+    def spin_spin_interaction(self, jjrotn, mass, m, par, ycs, args):
 
         if self.rule_spin_spin_diag(args):
             qexpression = 3 * args['sg1']**2 - args['s1']*(args['s2'] + 1.0)
