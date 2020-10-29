@@ -750,7 +750,7 @@ class Spectrum:
                     # lower state
                     evec_file2 = evec_file.replace('p'+str(p1), 'p'+str(p2))
                     path2 = os.path.join(evec_dir, evec_file2)
-                    fcfq = -1
+                    # fcfq = -1
 
                     if os.path.isfile(path1) and os.path.isfile(path2):
                         fcfq = self.compute_single_FCF(
@@ -779,7 +779,7 @@ class Spectrum:
                         replace('p'+str(p1), 'p'+str(p2))
 
                     path2 = os.path.join(evec_dir, evec_file2)
-                    fcfr = -1
+                    # fcfr = -1
 
                     if os.path.isfile(path1) and os.path.isfile(path2):
                         fcfr = self.compute_single_FCF(
@@ -807,7 +807,7 @@ class Spectrum:
                         replace('p'+str(p1), 'p'+str(p2))
 
                     path2 = os.path.join(evec_dir, evec_file2)
-                    fcfp = -1
+                    # fcfp = -1
 
                     if os.path.isfile(path1) and os.path.isfile(path2):
                         fcfp = self.compute_single_FCF(
