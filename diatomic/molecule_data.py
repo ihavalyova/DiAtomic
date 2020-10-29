@@ -5,7 +5,6 @@ import logging
 import numpy as np
 from more_itertools import unique_everseen
 from collections import OrderedDict
-
 from atomic_database import AtomicDatabase
 from constants import Const
 
@@ -146,14 +145,19 @@ class MoleculeData:
 
     def _calculate_molecule_reduced_mass(self, molecule, database=None):
 
-        molecule_data = re.search(r'(\d+)(\D+)(\d+)(\D+)', molecule).groups()
+        found = re.search(r'^(\d+)(\D+)(\d+)(\D+)\b', molecule.strip())
+
+        err_msg = f'Error: Molecule {molecule} not in the correct format'
+
+        if found is None:
+            raise SystemExit(err_msg)
+
+        molecule_data = found.groups()
 
         if len(molecule_data) != 4:
-            raise SystemExit(
-                f'Error: Molecule {molecule} not in the correct format'
-            )
+            raise SystemExit(err_msg)
 
-        atoms = (molecule_data[1], molecule_data[3])
+        atoms = (molecule_data[1].strip(), molecule_data[3].strip())
         mass_numbers = (int(molecule_data[0]), int(molecule_data[2]))
 
         db_name = AtomicDatabase.database
@@ -200,30 +204,26 @@ class MoleculeData:
 
         self.exp_file = exp_file
         try:
-            if markers is None:
-                return self._read_experimental_data(exp_file, average)
-            else:
-                return self._read_exp_data_with_markers(
-                    exp_file, markers, average
-                )
+            return self._read_experimental_data(markers, average)
         except Exception as e:
             raise SystemExit(e)
 
-    def _read_exp_data_with_markers(self, exp_file, markers, average):
+    def _read_experimental_data(self, markers, average):
 
         ndata = np.genfromtxt(
-            exp_file, max_rows=1, comments='#'
+            self.exp_file, max_rows=1, comments='#'
         )
 
         self.exp_data = np.genfromtxt(
-            exp_file, skip_header=1, max_rows=int(ndata), comments='#'
+            self.exp_file, skip_header=1, max_rows=int(ndata), comments='#'
         )
 
         # filter by marker
-        marker_mask = np.in1d(
-            self.exp_data[:, 6], np.fromiter(markers, dtype=np.int64)
-        )
-        self.exp_data = self.exp_data[marker_mask]
+        if markers is not None:
+            marker_mask = np.in1d(
+                self.exp_data[:, 6], np.fromiter(markers, dtype=np.int64)
+            )
+            self.exp_data = self.exp_data[marker_mask]
 
         # filter by parity
         if len(self.pars) == 1:
@@ -245,23 +245,14 @@ class MoleculeData:
         rot_mask = np.in1d(
             self.exp_data[:, 2], np.fromiter(self.jqnumbers, dtype=np.float64)
         )
+
         self.exp_data = self.exp_data[rot_mask]
         self.exp_data[:, 0] = np.arange(1.0, self.exp_data.shape[0]+1)
 
         if average:
-            self._average_experimental_data(exp_file)
+            self._average_experimental_data()
 
-    def _read_experimental_data(self, exp_file, average):
-
-        with open(exp_file, 'r') as expf:
-            expf.readline()
-
-        self.exp_data = np.genfromtxt(exp_file, skip_header=1)
-
-        if average:
-            self._average_experimental_data(exp_file)
-
-    def _average_experimental_data(self, exp_file):
+    def _average_experimental_data(self):
 
         # TODO: will not work when markers are not provided
         # TODO: to account for different isotopes
@@ -307,9 +298,9 @@ class MoleculeData:
 
         avg_data[:, 0] = np.arange(1.0, avg_data.shape[0]+1)
 
-        self._save_averaged_experimental_data(exp_file, avg_data)
+        self._save_averaged_experimental_data(avg_data)
 
-    def _save_averaged_experimental_data(self, exp_file, avg_data):
+    def _save_averaged_experimental_data(self, avg_data):
 
         header = str(avg_data.shape[0]) + '\n' + '# markers: ' + \
             np.array2string(
@@ -319,7 +310,7 @@ class MoleculeData:
 
         fmt = 2*['%5d'] + ['%7.1f', '%15.6f', '%7d', '%11.5f'] + 2*['%6d']
 
-        fname, fext = os.path.splitext(exp_file)
+        fname, fext = os.path.splitext(self.exp_file)
         avg_file = fname + '_averaged' + fext
 
         np.savetxt(avg_file, avg_data, header=header, comments='', fmt=fmt)

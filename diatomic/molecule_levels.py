@@ -1,9 +1,8 @@
 import math
 import os
-
 import numpy as np
 import scipy as sp
-
+from numba import njit
 from scipy.interpolate import CubicSpline
 from interaction import Interaction
 from molecule_data import Channel
@@ -62,14 +61,14 @@ class MoleculeLevels:
         # spline derivatives
         self.sderiv = False
 
-        # maximum number of parameters
+        # maximum number of fit parameters
         nmax_params = 200
         self.sk_grid = np.zeros((self.nch * self.ngrid, nmax_params))
 
         self.pot_enr = np.zeros((self.nch*self.ngrid, self.nch*self.ngrid))
         self.kin_enr = np.zeros_like(self.pot_enr)
 
-        # total number of potential parameters
+        # initilizie the total number of potential parameters
         self._ctot = 0
 
         self.evals_file = 'eigenvalues.dat'
@@ -78,9 +77,6 @@ class MoleculeLevels:
 
         self.evec_dir = os.path.join(Utils.get_current_dir(), 'eigenvectors')
         self.wavef_dir = os.path.join(Utils.get_current_dir(), 'wavefunctions')
-
-        # self.evectors = np.zeros(
-        # ((self.nch*self.ngrid)**2, len(jqnumbers)*self.vmax))
 
     def _get_eig_decomp_keys(self):
 
@@ -511,7 +507,7 @@ class MoleculeLevels:
         for niso, iso in enumerate(self.nisotopes):
 
             self.evals_predicted = np.zeros(
-                (self.nch * self.exp_data.shape[0], 6+self.nch)
+                (2 * self.nch * self.exp_data.shape[0], 6+self.nch)
             )
 
             mass = self.masses[iso-1]
@@ -558,7 +554,6 @@ class MoleculeLevels:
                     ).reshape(evalues.shape[0], -1)
 
                     nrow, ncol = calc_data.shape[0], calc_data.shape[1]
-
                     self.evals_predicted[count:count+nrow, 0:ncol] = calc_data
 
                     count += calc_data.shape[0]
@@ -780,7 +775,8 @@ class MoleculeLevels:
         elif self.identify == 3:
             return self._get_output_identified_by_energy2()
 
-    def _view1D(self, a, b):  # a, b are arrays
+    @staticmethod
+    def _view1D(a, b):  # a, b are arrays
 
         a = np.ascontiguousarray(a)
         b = np.ascontiguousarray(b)
@@ -788,9 +784,10 @@ class MoleculeLevels:
 
         return a.view(void_dt).ravel(),  b.view(void_dt).ravel()
 
-    def _get_indices_of_matching_rows_argsorted(self, a, b):
+    @staticmethod
+    def _get_indices_of_matching_rows_argsorted(a, b):
 
-        viewA, viewB = self._view1D(a, b)
+        viewA, viewB = MoleculeLevels._view1D(a, b)
         c = np.r_[viewA, viewB]
         idx = np.argsort(c, kind='mergesort')
         cs = c[idx]
@@ -798,9 +795,10 @@ class MoleculeLevels:
 
         return idx[:-1][m0], idx[1:][m0]-len(viewA)
 
-    def _get_indices_of_matching_rows_searchsorted(self, a, b):
+    @staticmethod
+    def _get_indices_of_matching_rows_searchsorted(a, b):
 
-        A, B = self._view1D(a, b)
+        A, B = MoleculeLevels._view1D(a, b)
         sidxB = B.argsort()
         mask = np.isin(A, B)
         cm = A[mask]
@@ -810,9 +808,10 @@ class MoleculeLevels:
         # idx0 : indices in A, idx1 : indices in B
         return idx0, idx1
 
-    def _get_indices_of_matching_rows_simple(self, a, b):
+    @staticmethod
+    def _get_indices_of_matching_rows_simple(a, b):
 
-        A, B = self._view1D(a, b)
+        A, B = MoleculeLevels._view1D(a, b)
         inds = np.argwhere(A[:, None] == B)
 
         return inds[:, 0], inds[:, 1]
