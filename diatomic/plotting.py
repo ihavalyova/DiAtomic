@@ -7,6 +7,7 @@ from scipy.interpolate import CubicSpline
 # from collections import defaultdict
 from utils import Utils
 from constants import Const
+import matplotlib.ticker as tck
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter)
 
 import matplotlib
@@ -61,141 +62,125 @@ class Plotting:
         )
 
     @classmethod
-    def full_residuals_plot(cls, mlevels, path=None, fformat='png',
-                            show=False, props=None):
+    def full_residuals_plot(cls, ml, path=None, fformat='png', show=False):
 
         path = path or Utils.get_plot_dir('resid_path')
 
-        data = mlevels.out_data
+        data = ml.out_data
 
         gen_color = cls._get_color()
         gen_marker = cls._get_marker(limit=True)
 
-        fillstyle = ['none', 'none', 'full', 'full']
-        random.shuffle(fillstyle)
+        fig, ax = plt.subplots()
 
-        props_def = {
-            'xlabel': 'Energy',
-            'ylabel': 'E_obs - E_calc',
-            'title': 'Residuals',
+        nisotopes = len(ml.nisotopes)
+
+        # for ni in range(1, nisotopes + 1):
+
+        edata = data[data[:, 5] == 1]
+        fdata = data[data[:, 5] == 0]
+
+        line_styles = {
+            'color': (next(gen_color), next(gen_color)),
+            'marker': (next(gen_marker), next(gen_marker)),
+            'markersize': (6, 6),
+            'markeredgewidth': (0.8, 0.8),
+            'linewidth': (0.0, 0.0),
+            'fillstyle': ('none', 'none')
         }
 
-        # will change props values
-        props = cls._combine_props(props, props_def)
+        ax.plot(
+            edata[:, 8],
+            edata[:, 9],
+            color=line_styles['color'][0],
+            marker=line_styles['marker'][0],
+            markersize=line_styles['markersize'][0],
+            markeredgewidth=line_styles['markeredgewidth'][0],
+            linewidth=line_styles['linewidth'][0],
+            fillstyle=line_styles['fillstyle'][0]
+        )
 
-        nisotopes = len(mlevels.masses)
+        ax.plot(
+            fdata[:, 8],
+            fdata[:, 9],
+            color=line_styles['color'][1],
+            marker=line_styles['marker'][1],
+            markersize=line_styles['markersize'][1],
+            markeredgewidth=line_styles['markeredgewidth'][1],
+            linewidth=line_styles['linewidth'][1],
+            fillstyle=line_styles['fillstyle'][1]
+        )
 
-        for _ in range(1, nisotopes+1):
-            mrng = (9*(nisotopes-1)+1, (nisotopes+9)-1)
+        # annotate average uncertanty
+        average_uncert = np.sum(data[:, 10]) / data.shape[0]
 
-            # split e- and f-levels
-            if mrng is None:
-                edata = data[data[:, 6] == 1]
-                fdata = data[data[:, 6] == 0]
-            else:
-                edata = data[
-                    data[:, 6] == 1 & (mrng[0] <= data[:, 7].all() <= mrng[1])
-                ]
-                fdata = data[
-                    data[:, 6] == 0 & (mrng[0] <= data[:, 7].all() <= mrng[1])
-                ]
+        plt.axhline(
+            y=average_uncert, color='r', linestyle='-', linewidth=0.5
+        )
+        plt.axhline(
+            y=-1.0*average_uncert, color='r', linestyle='-', linewidth=0.5
+        )
 
-            line_styles = {
-                'color': (next(gen_color), next(gen_color)),
-                'marker': (next(gen_marker), next(gen_marker)),
-                'markersize': (6.5, 6.5),
-                'markeredgewidth': (0.8, 0.8),
-                'linewidth': (0.0, 0.0),
-                'fillstyle': ('none', 'none')
-            }
+        os.makedirs(path, exist_ok=True)
 
-            fig, ax = plt.subplots()
+        ax.set_xlabel('Energy')
+        ax.set_ylabel('E_calc - E_obs')
+        ax.legend(['e-parity levels', 'f-parity levels'], loc=0)
 
-            ax.plot(
-                edata[:, 9],
-                edata[:, 10],
-                color=line_styles['color'][0],
-                marker=line_styles['marker'][0],
-                markersize=line_styles['markersize'][0],
-                markeredgewidth=line_styles['markeredgewidth'][0],
-                linewidth=line_styles['linewidth'][0],
-                fillstyle=line_styles['fillstyle'][0]
-            )
+        ax.xaxis.set_minor_locator(tck.AutoMinorLocator())
+        ax.yaxis.set_minor_locator(tck.AutoMinorLocator())
+        ax.grid(which='major', alpha=0.5, linestyle='dashdot')
+        ax.grid(which='minor', alpha=0.25, linestyle='dotted')
+        # fig.tight_layout()
 
-            ax.plot(
-                fdata[:, 9],
-                fdata[:, 10],
-                color=line_styles['color'][1],
-                marker=line_styles['marker'][1],
-                markersize=line_styles['markersize'][1],
-                markeredgewidth=line_styles['markeredgewidth'][1],
-                linewidth=line_styles['linewidth'][1],
-                fillstyle=line_styles['fillstyle'][1]
-            )
+        fig.set_size_inches(13, 7)
+        fig_path = os.path.join(path, 'residuals' + f'.{fformat}')
+        fig.savefig(fig_path, format=fformat, dpi=400)  # transparent=True
+        print(f'Created figure: {fig_path}', sep='')
 
-            # annotate average uncertanty
-            average_uncert = np.sum(data[:, 11]) / data[:, 11].shape
-
-            plt.axhline(
-                y=average_uncert, color='r', linestyle='-', linewidth=0.5
-            )
-            plt.axhline(
-                y=-1.0*average_uncert, color='r', linestyle='-', linewidth=0.5
-            )
-
-            os.makedirs(path, exist_ok=True)
-
-            ax.set_title(props['title'])
-            ax.set_xlabel(props['xlabel'])
-            ax.set_ylabel(props['ylabel'])
-            ax.legend(['e-parity levels', 'f-parity levels'], loc=0)
-            # fig.tight_layout()
-
-            fig.set_size_inches(13, 7)
-            fig_path = os.path.join(path, 'residuals' + f'.{fformat}')
-            fig.savefig(fig_path, format=fformat, dpi=100)  # transparent=True
-            print(f'Created figure: {fig_path}', sep='')
-            if show:
-                plt.show()
+        if show:
+            plt.show()
 
     @classmethod
     def plot_couplings_on_grid(cls, mlevels, path=None, fformat='png',
-                               show=False, props=None):
+                               show=False, kwargs={}):
+
+        xlim_so, ylim_so = kwargs.get('xlim_so'), kwargs.get('ylim_so')
+        xlim_lj, ylim_lj = kwargs.get('xlim_lj'), kwargs.get('ylim_lj')
+        xlim_sj, ylim_sj = kwargs.get('xlim_sj'), kwargs.get('ylim_sj')
+        xlim_ld, ylim_ld = kwargs.get('xlim_ld'), kwargs.get('ylim_ld')
+        xlim_sr, ylim_sr = kwargs.get('xlim_sr'), kwargs.get('ylim_sr')
 
         path = path or Utils.get_plot_dir('func_path')
-
-        props_def = {
-            'xlabel': 'Internuclear Distance',
-            'ylabel': 'Interaction',
-            'title': 'Couplings',
-        }
-
-        # will change props values
-        props = cls._combine_props(props, props_def)
 
         fig1, ax1 = plt.subplots()
         fig2, ax2 = plt.subplots()
         fig3, ax3 = plt.subplots()
         fig4, ax4 = plt.subplots()
 
+        # TODO: try in this way
+        # axs[0].hist(x, bins=n_bins)
+        # axs[1].hist(y, bins=n_bins)
+
         gen_color = cls._get_color()
         gen_marker = cls._get_marker()
 
         fgrid_cols = np.hstack((
-            mlevels.rgrid[:, np.newaxis],
+            mlevels.rgrid[:, np.newaxis] * Const.bohr,
             mlevels.fgrid.reshape(mlevels.ncp, mlevels.ngrid).T
         ))
-        rgrid_col = fgrid_cols[:, 0] * Const.bohr
-        n = rgrid_col.shape[0]
+
+        n = fgrid_cols.shape[0]
 
         leg1, leg2, leg3, leg4 = [], [], [], []
 
         for col in range(1, fgrid_cols.shape[1]):
+            # TODO: chanage to real markers
             markers_on = [0, int(n/4), int(n/2), int(n/1.6), int(n/1.2), -1]
 
             if 'spin-orbit' in mlevels.couplings[col-1].coupling:
                 ax1.plot(
-                    rgrid_col,
+                    fgrid_cols[:, 0],
                     fgrid_cols[:, col],
                     color=next(gen_color),
                     marker=next(gen_marker),
@@ -205,15 +190,23 @@ class Plotting:
                     linewidth=1.5,
                     markevery=markers_on
                 )
-                ax1.set_title('Spin-Orbit interactions')
-                ax1.set_xlabel(props['xlabel'])
-                ax1.set_ylabel(props['ylabel'])
-                ax1.set_ylim(-800, -200)  # only for nih - to remove
+                ax1.set_xlabel('Internuclear Distance')
+                ax1.set_ylabel('SO Interaction')
+                # ax1.set_ylim(-800, -200)  # for nih
+                if ylim_so is not None:
+                    ax1.set_ylim(ylim_so[0], ylim_so[1])
+
+                ax1.xaxis.set_minor_locator(tck.AutoMinorLocator())
+                ax1.yaxis.set_minor_locator(tck.AutoMinorLocator())
+                ax1.grid(which='major', alpha=0.5, linestyle='dashdot')
+                ax1.grid(which='minor', alpha=0.25, linestyle='dotted')
+
+                fig1.set_size_inches(8, 6)
                 leg1.append(mlevels.couplings[col-1].interact)
 
             if 'LJ' in mlevels.couplings[col-1].coupling:
                 ax2.plot(
-                    rgrid_col,
+                    fgrid_cols[:, 0],
                     fgrid_cols[:, col],
                     color=next(gen_color),
                     marker=next(gen_marker),
@@ -223,16 +216,23 @@ class Plotting:
                     linewidth=1.5,
                     markevery=markers_on
                 )
+                ax2.set_xlabel('Internuclear Distance')
+                ax2.set_ylabel('LJ Interaction')
+                # ax2.set_ylim(0, 2) # for nih
+                if ylim_so is not None:
+                    ax2.set_ylim(ylim_so[0], ylim_so[1])
 
-                ax2.set_title('LJ interactions')
-                ax2.set_xlabel(props['xlabel'])
-                ax2.set_ylabel(props['ylabel'])
-                ax2.set_ylim(0, 2)
+                ax2.xaxis.set_minor_locator(tck.AutoMinorLocator())
+                ax2.yaxis.set_minor_locator(tck.AutoMinorLocator())
+                ax2.grid(which='major', alpha=0.5, linestyle='dashdot')
+                ax2.grid(which='minor', alpha=0.25, linestyle='dotted')
+
+                fig2.set_size_inches(8, 6)
                 leg2.append(mlevels.couplings[col-1].interact)
 
             if 'SJ' in mlevels.couplings[col-1].coupling:
                 ax3.plot(
-                    rgrid_col,
+                    fgrid_cols[:, 0],
                     fgrid_cols[:, col],
                     color=next(gen_color),
                     marker=next(gen_marker),
@@ -242,16 +242,23 @@ class Plotting:
                     linewidth=1.5,
                     markevery=markers_on
                 )
+                ax3.set_xlabel('Internuclear Distance')
+                ax3.set_ylabel('SJ Interaction')
+                # ax3.set_ylim(0, 3.5) # for nih
+                if ylim_so is not None:
+                    ax3.set_ylim(ylim_so[0], ylim_so[1])
 
-                ax3.set_title('SJ interactions')
-                ax3.set_xlabel(props['xlabel'])
-                ax3.set_ylabel(props['ylabel'])
-                ax3.set_ylim(0, 3.5)
+                ax3.xaxis.set_minor_locator(tck.AutoMinorLocator())
+                ax3.yaxis.set_minor_locator(tck.AutoMinorLocator())
+                ax3.grid(which='major', alpha=0.5, linestyle='dashdot')
+                ax3.grid(which='minor', alpha=0.25, linestyle='dotted')
+
+                fig3.set_size_inches(8, 6)
                 leg3.append(mlevels.couplings[col-1].interact)
 
             if 'LambdaD' in mlevels.couplings[col-1].coupling:
                 ax4.plot(
-                    rgrid_col,
+                    fgrid_cols[:, 0],
                     fgrid_cols[:, col],
                     color=next(gen_color),
                     marker=next(gen_marker),
@@ -261,11 +268,18 @@ class Plotting:
                     linewidth=1.5,
                     markevery=markers_on
                 )
+                ax4.set_xlabel('Internuclear Distance')
+                ax4.set_ylabel('2nd order Correction')
+                # ax4.set_ylim(-0.1, 0.1) # for nih
+                if ylim_so is not None:
+                    ax4.set_ylim(ylim_so[0], ylim_so[1])
 
-                ax4.set_title('Lambda doubling interactions')
-                ax4.set_xlabel(props['xlabel'])
-                ax4.set_ylabel(props['ylabel'])
-                ax4.set_ylim(-0.1, 0.1)
+                ax4.xaxis.set_minor_locator(tck.AutoMinorLocator())
+                ax4.yaxis.set_minor_locator(tck.AutoMinorLocator())
+                ax4.grid(which='major', alpha=0.5, linestyle='dashdot')
+                ax4.grid(which='minor', alpha=0.25, linestyle='dotted')
+
+                fig4.set_size_inches(8, 6)
                 leg4.append(mlevels.couplings[col-1].interact)
 
         ax1.legend(leg1, loc=0)
@@ -291,7 +305,7 @@ class Plotting:
     @classmethod
     def save_figure(self, fig, path, fformat, bbox):
 
-        fig.savefig(path, format=fformat, bbox_inches=bbox)
+        fig.savefig(path, format=fformat, bbox_inches=bbox, dpi=400)
 
     @classmethod
     def plot_residuals_level(cls, mlevels, path=None, fformat='png',
@@ -370,10 +384,9 @@ class Plotting:
                     ax_data.legend(['e', 'f'], loc=0, prop={'size': 6})
                     ax_data.set_title(props['title'].format(vn, stn, i+1))
 
-                    ax_data.xaxis.set_major_locator(MultipleLocator(20))
-                    ax_data.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-                    ax_data.xaxis.set_minor_locator(MultipleLocator(5))
-                    ax_data.grid(which='both')
+                    # ax_data.xaxis.set_major_locator(tck.AutoMajorLocator())
+                    # ax_data.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+                    ax_data.xaxis.set_minor_locator(tck.AutoMinorLocator())
                     ax_data.grid(which='major', alpha=0.5)
                     ax_data.grid(which='minor', alpha=0.2)
 
@@ -382,7 +395,7 @@ class Plotting:
                     figname = f'residual_{vn}_{stn}_{i}.{fformat}'
                     figpath = os.path.join(path, figname)
                     fig.savefig(
-                        figpath, format=fformat, dpi=100, transparent=False
+                        figpath, format=fformat, dpi=400, transparent=False
                     )
                     fig.tight_layout()
 
@@ -442,7 +455,7 @@ class Plotting:
         ax.legend(unique_pfiles, loc=0)
 
         figpath = os.path.join(path, f'potentials.{fformat}')
-        plt.savefig(figpath, format=fformat)
+        plt.savefig(figpath, format=fformat, dpi=400)
 
         print(f'Created figure: {figpath}', sep='')
 
@@ -505,7 +518,7 @@ class Plotting:
             ax.legend(files, loc=0)
 
             figpath = os.path.join(path, f'potential_points.{fformat}')
-            plt.savefig(figpath, format=fformat)
+            plt.savefig(figpath, format=fformat, dpi=400)
 
             print(f'Created figure: {figpath}', sep='')
 
@@ -567,12 +580,26 @@ class Plotting:
         path = path or Utils.get_plot_dir('plot_path')
 
         figpath = os.path.join(path, f'hcolormesh.{fformat}')
-        plt.savefig(figpath, format=fformat)
+        plt.savefig(figpath, format=fformat, dpi=400)
 
         print(f'Created figure: {figpath}', sep='')
 
         if show:
             plt.show()
+
+    @staticmethod
+    def make_hist(mlevels):
+        x = mlevels.out_data[:, 9]
+        num_bins = 60
+        fig, ax = plt.subplots()
+
+        ax.hist(x, bins=num_bins)
+        print(x)
+        # n is the count in each bin
+
+        n, bins, patches = plt.hist(x, num_bins, facecolor='green', alpha=0.5)
+        # y = mlab.normpdf(bins, mu, sigma)
+        plt.show()
 
     @staticmethod
     def plot_wavefunctions(wffile, props=None, path=None,
@@ -607,7 +634,7 @@ class Plotting:
             plt.ylabel(ylabel)
             plt.legend(leg)
             plt.plot(igrid, wavefunc)
-            plt.savefig(fig_name, format=fformat, dpi=250)
+            plt.savefig(fig_name, format=fformat, dpi=400)
 
             print(f'Created figure: {fig_name}', sep='')
         else:
