@@ -144,7 +144,7 @@ def run_tests(options, testsuite, runner=None):
 
 def main(args=None):
 
-    pkgname = 'DiAtomic'
+    pkgname = 'mpi4py'
 
     parser = getoptionparser()
     options, args = parser.parse_args(args)
