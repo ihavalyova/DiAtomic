@@ -1,6 +1,10 @@
-import sys, os
+import sys
+import os
+import re
+import glob
 import optparse
 import unittest
+
 
 def getoptionparser():
 
@@ -27,15 +31,17 @@ def getoptionparser():
 
     return parser
 
+
 def import_package(options, pkgname):
 
     package = __import__(pkgname)
 
     return package
 
+
 def setup_unittest(options):
 
-    from unittest import TestSuite
+    # from unittest import TestSuite
     try:
         from unittest.runner import _WritelnDecorator
     except ImportError:
@@ -44,54 +50,44 @@ def setup_unittest(options):
     writeln_orig = _WritelnDecorator.writeln
 
     def writeln(self, message=''):
-        try: 
+        try:
             self.stream.flush()
-        except: 
+        except Exception:
             pass
         writeln_orig(self, message)
 
-        try: 
+        try:
             self.stream.flush()
-        except: 
+        except Exception:
             pass
 
     _WritelnDecorator.writeln = writeln
+
 
 def getbuilddir():
 
     from distutils.util import get_platform
     s = os.path.join("build", "lib.%s-%.3s" % (get_platform(), sys.version))
-    if hasattr(sys, 'gettotalrefcount'): s += '-pydebug'
+    if hasattr(sys, 'gettotalrefcount'):
+        s += '-pydebug'
     return s
 
-def setup_python(options):
 
-    rootdir = os.path.dirname(os.path.dirname(__file__))
-    builddir = os.path.join(rootdir, getbuilddir())
+# def setup_python(options):
+
+#     rootdir = os.path.dirname(os.path.dirname(__file__))
+#     builddir = os.path.join(rootdir, getbuilddir())
+
 
 def getpythoninfo():
 
     x, y = sys.version_info[:2]
     return ("Python %d.%d (%s)" % (x, y, sys.executable))
 
-def writeln(message='', endl='\n'):
-
-    sys.stderr.flush()
-    sys.stderr.write(message+endl)
-    sys.stderr.flush()
-
-def print_banner(options, package):
-
-    fmt = "[%d@%s] %s"
-    if options.verbose:
-        writeln(getpythoninfo())
-        #writeln(fmt % (getlibraryinfo()))
-        #writeln(fmt % (getpackageinfo(package)))
 
 def load_tests(options, args):
 
     # Find tests
-    import re, glob
     testsuitedir = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, testsuitedir)
     pattern = 'test_*.py'
@@ -108,7 +104,7 @@ def load_tests(options, args):
         filename = os.path.basename(testfile)
         testname = os.path.splitext(filename)[0]
         if ((exclude and exclude(testname)) or
-            (include and not include(testname))):
+           (include and not include(testname))):
             continue
         testnames.append(testname)
     testnames.sort()
@@ -129,6 +125,7 @@ def load_tests(options, args):
             testsuite.addTests(cases)
     return testsuite
 
+
 def run_tests(options, testsuite, runner=None):
 
     if runner is None:
@@ -142,22 +139,19 @@ def run_tests(options, testsuite, runner=None):
     result = runner.run(testsuite)
     return result.wasSuccessful()
 
-def main(args=None):
 
-    pkgname = 'mpi4py'
+def main(args=None):
 
     parser = getoptionparser()
     options, args = parser.parse_args(args)
-    setup_python(options)
+    # setup_python(options)
     setup_unittest(options)
-    package = import_package(options, pkgname)
-    print_banner(options, package)
     testsuite = load_tests(options, args)
     success = run_tests(options, testsuite)
-    
+
     return not success
 
+
 if __name__ == '__main__':
-    import sys
-    sys.dont_write_bytecode = True
-    sys.exit(main())
+
+    main()

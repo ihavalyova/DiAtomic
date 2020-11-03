@@ -18,4 +18,4 @@ from grids import CSpline
 
 from fitting import Fitting
 from plotting import Plotting
-
+from constants import Const

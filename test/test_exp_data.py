@@ -1,6 +1,7 @@
-from diatom import *
+from diatom import MoleculeData
 import unittest
 import io
+
 
 class TestExpData(unittest.TestCase):
 
@@ -30,7 +31,7 @@ class TestExpData(unittest.TestCase):
         mdata.set_exp_data(data_stream, markers=[1])
 
         self.assertEqual(mdata.exp_data.shape[0], 8)
-    
+
     def test_exp_data_shape2(self):
 
         mdata = MoleculeData()
@@ -44,7 +45,7 @@ class TestExpData(unittest.TestCase):
         mdata.set_exp_data(data_stream, markers=[1])
 
         self.assertEqual(mdata.exp_data.shape[0], 2)
-    
+
     def test_exp_data_shape1(self):
 
         mdata = MoleculeData()
@@ -104,7 +105,7 @@ class TestExpData(unittest.TestCase):
         self.assertRaises(
             SystemExit, mdata.set_exp_data, data_stream, markers=[1]
         )
-    
+
     def test_exp_data_both_parities(self):
 
         mdata = MoleculeData()
@@ -170,7 +171,7 @@ class TestExpData(unittest.TestCase):
         mdata.set_exp_data(data_stream)
 
         self.assertEqual(mdata.exp_data.shape[0], 3)
-    
+
     def test_exp_data_empty_lines(self):
 
         mdata = MoleculeData()
@@ -202,6 +203,8 @@ class TestExpData(unittest.TestCase):
         # comment
         2  0  3.5  27.92907799  1  2.554E-03  1  5
         3  0  4.5  63.82044637  1  2.589E-03  1  5
+        #4  0  4.5  64.82044637  1  2.589E-03  1  5   # skip commented lines
+        #5  0  4.5  65.82044637  1  2.589E-03  1  5   # skip commented lines
         # comment
         # comment
         """
