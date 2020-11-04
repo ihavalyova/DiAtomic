@@ -1,7 +1,6 @@
 import math
 import numpy as np
-
-from constants import Const
+import Utils.C_hartree as C_hartree
 
 
 class Interaction:
@@ -132,7 +131,7 @@ class Interaction:
 
         socoef = m * (self.rule_SOdiag(args) or self.rule_SOnondiag(args))
 
-        return (ycs / Const.hartree) * socoef
+        return (ycs / C_hartree) * socoef
 
     def rule_SOdiag(self, args):
 
@@ -346,7 +345,7 @@ class Interaction:
 
         ldcoef = jjrotn / (2.0 * mass * self.rgrid2)**2
 
-        return ycs * m * ldcoef * Const.hartree
+        return ycs * m * ldcoef * C_hartree
 
     def lambda_doubling_e_parity(self, jjrotn, mass, m, par, ycs, args):
 
@@ -366,13 +365,13 @@ class Interaction:
 
         bocoef = jjrotn / (2.0 * mass * self.rgrid2)
 
-        return ycs * m * bocoef * Const.hartree
+        return ycs * m * bocoef * C_hartree
 
     def DBOBC(self, jjrotn, mass, m, par, ycs, args):
 
-        return (ycs / Const.hartree) * m
+        return (ycs / C_hartree) * m
 
-    def spin_rotation_interaction(self, jjrot, mass, m, par, ycs, args):
+    def spin_rotation_interaction(self, jjrotn, mass, m, par, ycs, args):
 
         if self.rule_spin_rot_diag(args):
 

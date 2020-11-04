@@ -5,8 +5,10 @@ import logging
 import numpy as np
 from more_itertools import unique_everseen
 from collections import OrderedDict
-from atomic_database import AtomicDatabase
-from constants import Const
+from .atomic_database import AtomicDatabase
+import Utils.C_hartree as C_hartree
+import Utils.C_bohr as C_bohr
+import Utils.C_massau as C_massau
 
 # to check if C loader is present on current machine
 # /path/to/python -c "import ruamel.yaml;
@@ -24,7 +26,7 @@ class MoleculeData:
         self.molecule_names = None
         self.pars = (0, 1)
         self.niso = None
-        self.rots = None
+        self.rot_range = None
         self.rot_values = None
         self.refj = None
         self.refE = None
@@ -38,64 +40,52 @@ class MoleculeData:
 
     @property
     def molecule(self):
-
         return self.molecule_names
 
     @molecule.setter
     def molecule(self, molecule_names):
-
+        self.reduced_masses = []
         self.molecule_names = molecule_names
 
         for molecule_name in self.molecule_names:
-            rmass = self._calculate_molecule_reduced_mass(molecule_name)
-            rmass *= Const.massau
+            rmass = self._calculate_reduced_mass(molecule_name) * C_massau
             self.reduced_masses.append(rmass)
 
     @property
     def masses(self):
-
         return self.imasses
 
     @masses.setter
     def masses(self, imasses):
-
-        self.imasses = [m * Const.massau for m in imasses]
+        self.imasses = [m * C_massau for m in imasses]
 
     @property
     def nisotopes(self):
-
         return self.niso
 
     @nisotopes.setter
     def nisotopes(self, niso):
-
         self.niso = niso
 
     @property
     def jrange(self):
-
         return self.jqnumbers
 
     @jrange.setter
-    def jrange(self, rots):
-
-        self.rots = rots
-
-        self.jqnumbers = np.unique(np.hstack(
-            (
-                self.jqnumbers,
-                np.arange(rots[0], rots[1]+1.0, dtype=np.float64)
-            )
+    def jrange(self, rot_range):
+        self.rot_range = rot_range
+        self.jqnumbers = np.hstack((
+            self.jqnumbers,
+            np.arange(rot_range[0], rot_range[1]+1.0, dtype=np.float64)
         ))
+        self.jqnumbers = np.unique(self.jqnumbers)
 
     @property
     def jvalues(self):
-
         return self.jqnumbers
 
     @jvalues.setter
     def jvalues(self, rot_values):
-
         self.rot_values = rot_values
         self.jqnumbers = np.unique(
             np.hstack((self.jqnumbers, rot_values))
@@ -103,23 +93,19 @@ class MoleculeData:
 
     @property
     def referencej(self):
-
         return self.refj
 
     @referencej.setter
     def referencej(self, refj):
-
         self.refj = refj
         self._arange_jqnumbers()
 
     @property
     def parities(self):
-
         return self.pars
 
     @parities.setter
     def parities(self, pars):
-
         if isinstance(pars, int):
             pars = pars,
 
@@ -133,17 +119,16 @@ class MoleculeData:
     @referenceE.setter
     def referenceE(self, refE):
 
-        self.refE = refE / Const.hartree
+        self.refE = refE / C_hartree
 
     def _arange_jqnumbers(self):
 
         self.jqnumbers = np.delete(
             self.jqnumbers, np.argwhere(self.jqnumbers == self.refj)
         )
-
         self.jqnumbers = np.insert(self.jqnumbers, 0, self.refj)
 
-    def _calculate_molecule_reduced_mass(self, molecule, database=None):
+    def _calculate_reduced_mass(self, molecule, database=None):
 
         found = re.search(r'^(\d+)(\D+)(\d+)(\D+)\b', molecule.strip())
 
@@ -203,20 +188,34 @@ class MoleculeData:
     def set_exp_data(self, exp_file, markers=None, average=False):
 
         self.exp_file = exp_file
+
         try:
-            return self._read_experimental_data(markers, average)
+            self._read_experimental_data(markers, average)
         except Exception as e:
+            # logging.error('Failed to read the experimental data: '+ str(e))
             raise SystemExit(e)
+
+        if self.exp_data.shape[0] == 0 or self.exp_data.shape[1] != 8:
+            raise SystemExit(
+                f'Wrong shape of experimental data: '
+                f'{self.exp_data.shape[0]} x {self.exp_data.shape[1]}\n'
+                f'Check markers, Js, the format of the data and so forth...'
+            )
 
     def _read_experimental_data(self, markers, average):
 
         ndata = np.genfromtxt(
-            self.exp_file, max_rows=1, comments='#'
+            self.exp_file, max_rows=1, comments='#', autostrip=True
         )
 
         self.exp_data = np.genfromtxt(
-            self.exp_file, skip_header=1, max_rows=int(ndata), comments='#'
+            self.exp_file, skip_header=1, max_rows=int(ndata),
+            comments='#', autostrip=True
         )
+
+        # if the data contains one line
+        if self.exp_data.ndim == 1:
+            self.exp_data = self.exp_data[np.newaxis, :]
 
         # filter by marker
         if markers is not None:
@@ -226,27 +225,29 @@ class MoleculeData:
             self.exp_data = self.exp_data[marker_mask]
 
         # filter by parity
-        if len(self.pars) == 1:
-            parity_mask = np.in1d(
-                self.exp_data[:, 4], np.fromiter(self.pars, dtype=np.int64)
-            )
-            self.exp_data = self.exp_data[parity_mask]
+        # if len(self.pars) == 1:
+        self.pars = np.intersect1d(
+            self.pars, np.unique(self.exp_data[:, 4])
+        )
+
+        parity_mask = np.in1d(
+            self.exp_data[:, 4], np.fromiter(self.pars, dtype=np.int64)
+        )
+        self.exp_data = self.exp_data[parity_mask]
 
         self.jqnumbers = np.intersect1d(
             self.jqnumbers, np.unique(self.exp_data[:, 2])
         )
 
-        if self.refj is not None:
-            self._arange_jqnumbers()
-
-        # TODO: change parity above in the same way as j
+        # if self.refj is not None:
+        #     self._arange_jqnumbers()
 
         # filter by J
         rot_mask = np.in1d(
             self.exp_data[:, 2], np.fromiter(self.jqnumbers, dtype=np.float64)
         )
-
         self.exp_data = self.exp_data[rot_mask]
+
         self.exp_data[:, 0] = np.arange(1.0, self.exp_data.shape[0]+1)
 
         if average:
@@ -390,7 +391,7 @@ class Channel:
                channel.model == cls.models[2]:
 
                 channel.R, channel.U, channel.fixedU = \
-                    cls._get_pointwise_data(channel.filep)
+                    cls._get_pointwise_data_safe(channel.filep)
 
                 channel.npnts = channel.U.shape[0]
 
@@ -434,10 +435,21 @@ class Channel:
     def _get_pointwise_data(cls, filep):
 
         pot = np.loadtxt(filep, skiprows=1)
-        R = pot[:, 0] / Const.bohr
-        U = pot[:, 1] / Const.hartree
+        R = pot[:, 0] / C_bohr
+        U = pot[:, 1] / C_hartree
+        fixedU = pot[:, 2]
 
-        # set default third column if it's not provided
+        return R, U, fixedU
+
+    @classmethod
+    def _get_pointwise_data_safe(cls, filep):
+
+        pot = np.loadtxt(filep, skiprows=1)
+
+        R = pot[:, 0] / C_bohr
+        U = pot[:, 1] / C_hartree
+
+        # set default third column if not provided
         fixedU = np.zeros_like(U)
         if pot.shape[1] == 3:
             fixedU = pot[:, 2]
@@ -465,10 +477,10 @@ class Channel:
         mapp = {0: 'Te', 1: 'De', 2: 'a', 3: 're'}
         U, fixedU = np.zeros(npt), np.zeros(npt, dtype=np.int64)
 
-        U[0] = float(morse_data[mapp[0]][0]) / Const.hartree
-        U[1] = float(morse_data[mapp[1]][0]) / Const.hartree
-        U[2] = float(morse_data[mapp[2]][0]) * Const.bohr
-        U[3] = float(morse_data[mapp[3]][0]) / Const.bohr
+        U[0] = float(morse_data[mapp[0]][0]) / C_hartree
+        U[1] = float(morse_data[mapp[1]][0]) / C_hartree
+        U[2] = float(morse_data[mapp[2]][0]) * C_bohr
+        U[3] = float(morse_data[mapp[3]][0]) / C_bohr
 
         if def_fixed:
             for i in range(0, 4):
@@ -503,14 +515,14 @@ class Channel:
 
         U, fixedU = np.zeros(npt), np.zeros(npt, dtype=np.int64)
 
-        U[0] = float(emo_data[mapp[0]][0]) / Const.hartree
-        U[1] = float(emo_data[mapp[1]][0]) / Const.hartree
+        U[0] = float(emo_data[mapp[0]][0]) / C_hartree
+        U[1] = float(emo_data[mapp[1]][0]) / C_hartree
         U[2] = float(emo_data[mapp[2]][0])
-        U[3] = float(emo_data[mapp[3]][0]) / Const.bohr
+        U[3] = float(emo_data[mapp[3]][0]) / C_bohr
 
         # all beta coefficients have dimentions 1/distance
         bvalues = list(
-            map(lambda x: float(x[0]) * Const.bohr, bparams.values())
+            map(lambda x: float(x[0]) * C_bohr, bparams.values())
         )
         ni, nb = 4, len(bvalues)
 
@@ -584,18 +596,18 @@ class Channel:
 
         U, fixedU = np.zeros(npt), np.zeros(npt, dtype=np.int64)
 
-        U[0] = float(mlr_data[mapp[0]][0]) / Const.hartree
-        U[1] = float(mlr_data[mapp[1]][0]) / Const.hartree
+        U[0] = float(mlr_data[mapp[0]][0]) / C_hartree
+        U[1] = float(mlr_data[mapp[1]][0]) / C_hartree
         U[2] = float(mlr_data[mapp[2]][0])
         U[3] = float(mlr_data[mapp[3]][0])
-        U[4] = float(mlr_data[mapp[4]][0]) / Const.bohr
-        U[5] = float(mlr_data[mapp[5]][0]) / Const.bohr
-        U[6] = float(mlr_data[mapp[6]][0]) * Const.bohr
+        U[4] = float(mlr_data[mapp[4]][0]) / C_bohr
+        U[5] = float(mlr_data[mapp[5]][0]) / C_bohr
+        U[6] = float(mlr_data[mapp[6]][0]) * C_bohr
 
         # TODO: check dimenstions of C and D parameters - they are not correct!
 
         bvalues = list(
-            map(lambda x: float(x[0]) * Const.bohr, bparams.values())
+            map(lambda x: float(x[0]) * C_bohr, bparams.values())
         )
         cvalues = list(
             map(lambda x: float(x[0]), cparams.values())
@@ -681,13 +693,13 @@ class Channel:
               channel.model == cls.models[2]:
 
                 npnts = channel.U.shape[0]
-                xpnts = channel.R * Const.bohr
+                xpnts = channel.R * C_bohr
                 fix = channel.fixedU
                 st, en = onpnts, onpnts + npnts
 
                 np.savetxt(
                     channel.filep,
-                    np.column_stack([xpnts, ypar[st:en] * Const.hartree, fix]),
+                    np.column_stack([xpnts, ypar[st:en] * C_hartree, fix]),
                     header=str(npnts),
                     comments='',
                     fmt=['%20.12f', '%25.14f', '%6d']
@@ -704,18 +716,18 @@ class Channel:
 
                 with open(channel.filep, 'w') as fp:
                     fp.write(
-                        f'Te = {Te*Const.hartree:>17.8e}'
+                        f'Te = {Te*C_hartree:>17.8e}'
                         f'{channel.fixedU[0]:>10}\n'
                     )
                     fp.write(
-                        f'De = {De*Const.hartree:>17.8e}'
+                        f'De = {De*C_hartree:>17.8e}'
                         f'{channel.fixedU[1]:>10}\n'
                     )
                     fp.write(
                         f'a  = {a:>17.8f}{channel.fixedU[2]:>10}\n'
                     )
                     fp.write(
-                        f're = {re*Const.bohr:>17.8f}{channel.fixedU[3]:>10}\n'
+                        f're = {re*C_bohr:>17.8f}{channel.fixedU[3]:>10}\n'
                     )
 
                 cls.tot_npts += npnts
@@ -784,7 +796,7 @@ class Coupling:
                coupling.model == cls.models[2]:
                 coupling.xc = np.fromiter(
                     map(float, params[:, 0]), dtype=np.float64
-                ) / Const.bohr
+                ) / C_bohr
                 coupling.yc = np.fromiter(
                     map(float, params[:, 1]), dtype=np.float64
                 )
@@ -998,7 +1010,7 @@ class Validator:
                 raise SystemExit()
 
             if molecule_data.jrange is not None:
-                cls._check_jrange(molecule_data.rots)
+                cls._check_jrange(molecule_data.rot_range)
                 cls._check_jqnumbers(molecule_data.jqnumbers)
 
             if molecule_data.jvalues is not None:
@@ -1016,11 +1028,11 @@ class Validator:
                 grid.rgrid, grid.npoints, grid.alpha, grid.rbar
             )
         if channels is not None:
-            pass
+            cls._check_channel_data(channels)
         if couplings is not None:
-            pass
+            cls._check_couplings_data(couplings)
         if fitting is not None:
-            pass
+            cls._check_fitting_data(fitting)
 
     @classmethod
     def _check_type_iterable(cls, iterable):
@@ -1200,7 +1212,7 @@ class Validator:
             )
 
     @classmethod
-    def _check_channel_data(cls, ml):
+    def check_molecule_levels_parameters(cls, ml):
 
         try:
             cls._check_negative_values([ml.nch])
@@ -1211,7 +1223,53 @@ class Validator:
             raise ValueError('At least one channel should be defined.')
 
         cls._check_type_iterable(ml.energy_subset_index)
-
         cls._check_type_iterable(ml.energy_subset_value)
 
-    # TODO: check if model 'custom' is defined and custom_func is missing
+    @classmethod
+    def _check_channel_data(cls, channels):
+
+        for ch in channels:
+            if ch.model == 'pointwise':
+                if not os.path.exists(ch.filep):
+                    raise FileNotFoundError(
+                        f'The file {ch.filep} does not exist.'
+                    )
+                if os.stat(ch.filep).st_size == 0:
+                    raise OSError(f'The file {ch.filep} is empty.')
+
+                pot_data = np.loadtxt(ch.filep, skiprows=1)
+
+                msg_init = 'The pointwise potential file'
+                if pot_data.shape[0] < 5:
+                    logging.warning(
+                        f'{msg_init} {ch.filep} has less than 5 parameters'
+                    )
+                if pot_data.shape[0] < 2:
+                    logging.error(
+                        f'{msg_init} {ch.filep} has less than 2 parameters'
+                    )
+                if pot_data.shape[1] == 2:
+                    logging.warning(
+                        f'{msg_init} {ch.filep} has 2 columns'
+                    )
+                if pot_data.shape[1] < 2:
+                    logging.error(
+                        f'{msg_init} {ch.filep} has less than 2 columns'
+                    )
+
+            if ch.model == 'custom':
+                if not hasattr(ch, '__call__'):
+                    logging.error(
+                        'Model is set to custum but ' +
+                        'custom function is not provided'
+                    )
+
+        # TODO: check if model 'custom' is defined and custom_func is missing
+
+    @classmethod
+    def _check_couplings_data(cls, couplings):
+        pass
+
+    @classmethod
+    def _check_fitting_data(cls, fitting):
+        pass

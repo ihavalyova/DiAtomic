@@ -2,14 +2,16 @@ import math
 import os
 import numpy as np
 import scipy as sp
-from numba import njit
+# from numba import njit
 from scipy.interpolate import CubicSpline
-from interaction import Interaction
-from molecule_data import Channel
-from molecule_data import Coupling
+from .interaction import Interaction
+from .molecule_data import Channel, Coupling
 from constants import Const
-from utils import Utils
-from grids import CSpline
+from .grids import CSpline
+from .utils import Utils
+import Utils.C_hartree as C_hartree
+import Utils.C_bohr as C_bohr
+import Utils.C_massau as C_massau
 
 
 class MoleculeLevels:
@@ -484,8 +486,8 @@ class MoleculeLevels:
             self.evalues_subseti = (self.emini, self.emaxi-1)
 
         if self.energy_subset_value is not None:
-            self.eminv = self.energy_subset_value[0] / Const.hartree
-            self.emaxv = self.energy_subset_value[-1] / Const.hartree
+            self.eminv = self.energy_subset_value[0] / C_hartree
+            self.emaxv = self.energy_subset_value[-1] / C_hartree
             self.evalues_subsetv = (self.eminv, self.emaxv)
 
         chi2, rms, _ = self.calculate_eigenvalues(ypar)
@@ -609,7 +611,7 @@ class MoleculeLevels:
         elif self.refE is not None:
             shiftE[0] = self.refE
 
-        evalues = (evalues - shiftE[0]) * Const.hartree
+        evalues = (evalues - shiftE[0]) * C_hartree
 
         calc_data = np.column_stack((
                 evalues[:evalues.shape[0]],
@@ -1136,7 +1138,9 @@ class MoleculeLevels:
             evec = np.loadtxt(efile)
             for col in range(evec.shape[1]):
                 wavefunc = self.sinc_interp(evec[2:, col], gridr, igrid)
-                norm_wavefunc = wavefunc / np.linalg.norm(wavefunc)
+                nwavefunc = wavefunc / np.linalg.norm(wavefunc)
+
+                self.save_wavefunctions(np.column_stack((igrid, nwavefunc)))
 
     def sinc_interp(self, x, s, u):
         """
@@ -1150,9 +1154,8 @@ class MoleculeLevels:
         # Find the period
         T = s[1] - s[0]
 
-        sincM = np.tile(u, (len(s), 1)) - np.tile(s[:, np.newaxis], (1, len(u)))
-        y = np.dot(x, np.sinc(sincM/T))
-        return y
+        sinc_m = np.tile(u, (len(s), 1))-np.tile(s[:, np.newaxis], (1, len(u)))
+        return np.dot(x, np.sinc(sinc_m/T))
 
     # def interpolate_wavefunction(self, ninter=200, jrange=(0, 1), pars=(1,)):
     #     igrid, istep = np.linspace(
@@ -1360,15 +1363,15 @@ class MoleculeLevels:
             outf.write(f'{30*"#"} Grid and Molecule Data {30*"#"}\n\n')
             outf.write(f'{s:>4}Number of Grid Points = {self.ngrid:<5d}\n\n')
             outf.write(
-                f'{s:>4}Rmin = {self.rmin*Const.bohr:>12.10f} '
+                f'{s:>4}Rmin = {self.rmin*C_bohr:>12.10f} '
                 f'Angstrom = {self.rmin:>12.10f} Bohr\n'
             )
             outf.write(
-                f'{s:>4}Rmax = {self.rmax*Const.bohr:>12.10f} '
+                f'{s:>4}Rmax = {self.rmax*C_bohr:>12.10f} '
                 f'Angstrom = {self.rmax:>12.10f} Bohr\n\n'
             )
 
-            rgrid_str = np.array2string(self.rgrid, precision=12)
+            # rgrid_str = np.array2string(self.rgrid, precision=12)
             outf.write(f'{s:>4}Grid Points:\n\n')
 
             nd = self._find_divisors(self.rgrid.shape[0])
@@ -1387,7 +1390,7 @@ class MoleculeLevels:
                 mass = self.masses[n+1]
                 outf.write(
                     f'{s:>6}Isotope {niso}: Mass = {mass:>15.9} au = '
-                    f'{mass/Const.massau:>15.9} amu\n'
+                    f'{mass / C_massau:>15.9} amu\n'
                 )
 
             outf.write(
@@ -1434,12 +1437,12 @@ class MoleculeLevels:
                     for i in range(0, len(ch.R)):
                         outf.writelines(
                             f'{ch.R[i]:>29.14f}'
-                            f'{ch.U[i]*Const.hartree:>25.14f}\n'
+                            f'{ch.U[i]*C_hartree:>25.14f}\n'
                         )
 
             ugrid_cols = np.hstack((
                 self.rgrid[:, np.newaxis] * Const.bohr,
-                self.ugrid.reshape(self.nch, self.ngrid).T * Const.hartree
+                self.ugrid.reshape(self.nch, self.ngrid).T * C_hartree
             ))
             outf.write(f'\n{30*"#"} Channel Functions on Grid {30*"#"}\n\n')
             np.savetxt(outf, ugrid_cols, fmt=ugrid_cols.shape[1] * ['%21.12f'])

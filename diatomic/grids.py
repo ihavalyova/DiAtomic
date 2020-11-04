@@ -1,6 +1,5 @@
 import numpy as np
-
-from constants import Const
+import Utils.C_bohr as C_bohr
 
 
 class Grid:
@@ -8,9 +7,9 @@ class Grid:
     def __init__(self, npoints, rgrid, solver='sinc', alpha=0.0, rbar=0.0):
 
         self.ngrid = npoints
-        self.rmin = rgrid[0] / Const.bohr
-        self.rmax = rgrid[1] / Const.bohr
-        rbar = rbar / Const.bohr
+        self.rmin = rgrid[0] / C_bohr
+        self.rmax = rgrid[1] / C_bohr
+        rbar = rbar / C_bohr
         self.solver = solver.lower()
 
         self.Gy = np.ones(self.ngrid)

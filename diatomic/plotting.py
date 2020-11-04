@@ -1,17 +1,14 @@
 import os
 import random
 import numpy as np
-import matplotlib.pyplot as plt
-
 from scipy.interpolate import CubicSpline
-# from collections import defaultdict
-from utils import Utils
-from constants import Const
+from .utils import Utils
+import Utils.C_hartree as C_hartree
+import Utils.C_bohr as C_bohr
+import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
-from matplotlib.ticker import (MultipleLocator, FormatStrFormatter)
-
-import matplotlib
-matplotlib.use('TkAgg')
+import matplotlib as mpl
+mpl.use('TkAgg')
 
 
 class Plotting:
@@ -73,8 +70,7 @@ class Plotting:
 
         fig, ax = plt.subplots()
 
-        nisotopes = len(ml.nisotopes)
-
+        # nisotopes = len(ml.nisotopes)
         # for ni in range(1, nisotopes + 1):
 
         edata = data[data[:, 5] == 1]
@@ -145,11 +141,11 @@ class Plotting:
     def plot_couplings_on_grid(cls, mlevels, path=None, fformat='png',
                                show=False, kwargs={}):
 
-        xlim_so, ylim_so = kwargs.get('xlim_so'), kwargs.get('ylim_so')
-        xlim_lj, ylim_lj = kwargs.get('xlim_lj'), kwargs.get('ylim_lj')
-        xlim_sj, ylim_sj = kwargs.get('xlim_sj'), kwargs.get('ylim_sj')
-        xlim_ld, ylim_ld = kwargs.get('xlim_ld'), kwargs.get('ylim_ld')
-        xlim_sr, ylim_sr = kwargs.get('xlim_sr'), kwargs.get('ylim_sr')
+        # xlim_so, ylim_so = kwargs.get('xlim_so'), kwargs.get('ylim_so')
+        # xlim_lj, ylim_lj = kwargs.get('xlim_lj'), kwargs.get('ylim_lj')
+        # xlim_sj, ylim_sj = kwargs.get('xlim_sj'), kwargs.get('ylim_sj')
+        # xlim_ld, ylim_ld = kwargs.get('xlim_ld'), kwargs.get('ylim_ld')
+        # xlim_sr, ylim_sr = kwargs.get('xlim_sr'), kwargs.get('ylim_sr')
 
         path = path or Utils.get_plot_dir('func_path')
 
@@ -166,7 +162,7 @@ class Plotting:
         gen_marker = cls._get_marker()
 
         fgrid_cols = np.hstack((
-            mlevels.rgrid[:, np.newaxis] * Const.bohr,
+            mlevels.rgrid[:, np.newaxis] * C_bohr,
             mlevels.fgrid.reshape(mlevels.ncp, mlevels.ngrid).T
         ))
 
@@ -193,8 +189,8 @@ class Plotting:
                 ax1.set_xlabel('Internuclear Distance')
                 ax1.set_ylabel('SO Interaction')
                 # ax1.set_ylim(-800, -200)  # for nih
-                if ylim_so is not None:
-                    ax1.set_ylim(ylim_so[0], ylim_so[1])
+                # if ylim_so is not None:
+                #     ax1.set_ylim(ylim_so[0], ylim_so[1])
 
                 ax1.xaxis.set_minor_locator(tck.AutoMinorLocator())
                 ax1.yaxis.set_minor_locator(tck.AutoMinorLocator())
@@ -219,8 +215,8 @@ class Plotting:
                 ax2.set_xlabel('Internuclear Distance')
                 ax2.set_ylabel('LJ Interaction')
                 # ax2.set_ylim(0, 2) # for nih
-                if ylim_so is not None:
-                    ax2.set_ylim(ylim_so[0], ylim_so[1])
+                # if ylim_so is not None:
+                #     ax2.set_ylim(ylim_so[0], ylim_so[1])
 
                 ax2.xaxis.set_minor_locator(tck.AutoMinorLocator())
                 ax2.yaxis.set_minor_locator(tck.AutoMinorLocator())
@@ -245,8 +241,8 @@ class Plotting:
                 ax3.set_xlabel('Internuclear Distance')
                 ax3.set_ylabel('SJ Interaction')
                 # ax3.set_ylim(0, 3.5) # for nih
-                if ylim_so is not None:
-                    ax3.set_ylim(ylim_so[0], ylim_so[1])
+                # if ylim_so is not None:
+                #     ax3.set_ylim(ylim_so[0], ylim_so[1])
 
                 ax3.xaxis.set_minor_locator(tck.AutoMinorLocator())
                 ax3.yaxis.set_minor_locator(tck.AutoMinorLocator())
@@ -271,8 +267,8 @@ class Plotting:
                 ax4.set_xlabel('Internuclear Distance')
                 ax4.set_ylabel('2nd order Correction')
                 # ax4.set_ylim(-0.1, 0.1) # for nih
-                if ylim_so is not None:
-                    ax4.set_ylim(ylim_so[0], ylim_so[1])
+                # if ylim_so is not None:
+                #     ax4.set_ylim(ylim_so[0], ylim_so[1])
 
                 ax4.xaxis.set_minor_locator(tck.AutoMinorLocator())
                 ax4.yaxis.set_minor_locator(tck.AutoMinorLocator())
@@ -436,9 +432,9 @@ class Plotting:
         gen_color = cls._get_color()
 
         for i, _ in enumerate(unique_pfiles):
-            gridr = mlevels.rgrid * Const.bohr
+            gridr = mlevels.rgrid * C_bohr
             gridu_range = mlevels.ugrid[i*mlevels.ngrid:(i+1)*mlevels.ngrid]
-            gridu = gridu_range * Const.hartree
+            gridu = gridu_range * C_hartree
 
             ax.plot(
                 gridr,
@@ -587,19 +583,21 @@ class Plotting:
         if show:
             plt.show()
 
-    @staticmethod
-    def make_hist(mlevels):
-        x = mlevels.out_data[:, 9]
-        num_bins = 60
-        fig, ax = plt.subplots()
+    # @staticmethod
+    # def make_hist(mlevels):
+    #     x = mlevels.out_data[:, 9]
+    #     num_bins = 60
+    #     fig, ax = plt.subplots()
 
-        ax.hist(x, bins=num_bins)
-        print(x)
-        # n is the count in each bin
+    #     ax.hist(x, bins=num_bins)
+    #     print(x)
+    #     # n is the count in each bin
 
-        n, bins, patches = plt.hist(x, num_bins, facecolor='green', alpha=0.5)
-        # y = mlab.normpdf(bins, mu, sigma)
-        plt.show()
+    #     n, bins, patches = plt.hist(
+    #         x, num_bins, facecolor='green', alpha=0.5
+    #     )
+    #     # y = mlab.normpdf(bins, mu, sigma)
+    #     plt.show()
 
     @staticmethod
     def plot_wavefunctions(wffile, props=None, path=None,

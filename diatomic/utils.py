@@ -1,11 +1,24 @@
 import os
 import shutil
 import datetime
+import scipy.constants as cnst
 
 
 class Utils:
-    def __init__(self):
-        pass
+
+    @classmethod
+    def define_constants(cls):
+
+        chartree_name = 'hartree-inverse meter relationship'
+        # convert from m^-1 to cm^-1
+        cls.C_hartree = cnst.physical_constants[chartree_name][0] / 100.0
+
+        cbohr_name = 'Bohr radius'
+        # convert from m to angstrom
+        cls.C_bohr = cnst.physical_constants[cbohr_name][0] / cnst.angstrom
+
+        cme_name = 'electron mass'
+        cls.C_massau = cnst.atomic_mass / cnst.physical_constants[cme_name]
 
     @classmethod
     def createBackup(cls, ref_file):

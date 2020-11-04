@@ -3,11 +3,10 @@ import io
 import math
 import numpy as np
 import scipy as sp
-from numba import njit, guvectorize, int64, float64
-from molecule_data import Channel
-from molecule_data import Coupling
-from constants import Const
-from utils import Utils
+from numba import njit  # , guvectorize, int64, float64
+from .molecule_data import Channel, Coupling
+from .utils import Utils
+import Utils.C_hartree as C_hartree
 
 try:
     from iminuit import Minuit
@@ -81,8 +80,8 @@ class Fitting:
         """
 
         out_data, _ = self._get_eigenvalues(ypar)
-        ydel = out_data[:, 9] / Const.hartree
-        yvar = out_data[:, 10] / Const.hartree
+        ydel = out_data[:, 9] / C_hartree
+        yvar = out_data[:, 10] / C_hartree
 
         Channel.edit_channel_parameters(ypar, self.ml.channels)
 
@@ -198,9 +197,9 @@ class Fitting:
                 ypar, is_weighted=is_weighted
             )
 
-            ycal = out_data[:, 7].astype(np.float64) / Const.hartree
-            ydel = -out_data[:, 9].astype(np.float64) / Const.hartree
-            yvar = out_data[:, 10].astype(np.float64) / Const.hartree
+            ycal = out_data[:, 7].astype(np.float64) / C_hartree
+            ydel = -out_data[:, 9].astype(np.float64) / C_hartree
+            yvar = out_data[:, 10].astype(np.float64) / C_hartree
 
             chi2_best, rms_best = stats[0], stats[1]
 
@@ -350,7 +349,7 @@ class Fitting:
             print(self.progress_str.getvalue())
 
     def _generate_numerical_derivatives(self, ypar, yfixed, ycal_init,
-                                       is_weighted, step_size):
+                                        is_weighted, step_size):
         """Compute the derivatives matrix by the parameters
 
         Args:
@@ -364,14 +363,11 @@ class Fitting:
             array: the matrix with the derivatives
         """
 
-        dp = np.zeros(ypar.shape[0])
-        dpar = np.zeros(ypar.shape[0])
-
         dp = np.abs(ypar) * step_size
         dpar = ypar + dp
         dpar[yfixed == 0] = 0.0
         out_data, _ = self._get_eigenvalues(dpar, is_weighted=is_weighted)
-        ycal = out_data[:, 7] / Const.hartree
+        ycal = out_data[:, 7] / C_hartree
 
         dydp = Fitting._fillin_derivatives_matrix(
             ypar.shape[0], ycal_init, ycal, dp
@@ -416,12 +412,12 @@ class Fitting:
         """
 
         x, _, rank, s = sp.linalg.lstsq(A, b, tol, lapack_driver)
-        #x, _, rank, s = np.linalg.lstsq(A, b, rcond=tol)
+        # x, _, rank, s = np.linalg.lstsq(A, b, rcond=tol)
 
         return x, rank, s
 
     def _generate_analytical_derivatives(self, ypar, yfixed,
-                                        qnums, is_weighted):
+                                         qnums, is_weighted):
 
         if not self.ml.sderiv:
             raise SystemExit(
