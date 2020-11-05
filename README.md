@@ -20,7 +20,7 @@ It supports object-oriented approach with easy to use functionality and efficien
 
 **To install**: call Python pip from the command line:
 
-```pip install diatomic```
+```pip install diatomic-computations```
 
 **Documentation**: <a href="https://github.com/ihavalyova/DiAtomic/blob/master/doc/Diatomic.md" target="_blank">Detailed version</a>
 
