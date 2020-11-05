@@ -29,7 +29,7 @@
 
 
 # **DiAtomic** module: what is it used for?
-The Python library **```DiAtomic```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data.
+The Python library **```DiAtomic```** allows various calculations for diatomic molecules to be performed. It supports single and coupled channels computations of bound rovibrational levels, intensity calculations, fitting to the experimental data. The diatomic package makes extensive use of ```NumPy``` arrays, vectorization and utility functions.
 <!-- It also provides some usefull plotting options, for example, if we have a set of files for electronic potentials represented by points (abinitio, RKR and etc.) and want to see how they look then:
 <!-- ```python
 p = Plotting()
@@ -48,53 +48,50 @@ Plotting.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=120, xl
 
 # **DiAtomic**  module: how to install and setup?
 
-**```DiAtomic```**  module can be installed from the Python software repository PyPI (Python Package Index) via pip. From Linux command line execute
-
-```console
-pip install diatomic
-```
-
-and from ```Jupyter``` or ```IPython``` execute
+**```DiAtomic```**  module can be installed from the Python software repository PyPI (Python Package Index) via pip. To install using ```IPython``` (```Jupyter```) or the Linux command line write
 
 ````python
-In [1]: ! pip install diatomic
+In [1]: pip install diatomic-compuations
 ````
-To quickly check whether the installation has been successful type
-```console
-python
->>> import diatomic
->>> diatomic
+Import and call the module to quickly check whether the installation has been successful:
+```python
+In [2]: import diatomic
+In [3]: diatomic
 ```
-which should show the path to the ```__init__.py``` file in the install location.
+which will show the path to the ```__init__.py``` file in the install location.
 
-After installing create a new python file for example called main.py and import the diatomic module
+> **_NOTE:_** The package and the module (actual import) names are different.
+
+For writing the code after the instalation either use a ```Jupyter``` notebook or create a new python file (for example called run.py) and then import the diatomic module
 
 ```python
 #!/usr/bin/env python
 
 from diatomic import *
 ```
+
 To execute the file from the Linux command line write
 ```console
-python main.py
+python run.py
 ```
 
-or type
-
-```console
+<!-- or type
+console
 chmod u+x main.py
 ./main.py
-```
+to make the file executable and then run it. -->
 
-to make the file executable and then run it. To execute the file from the ```IPython``` (Interactive Python) shell enter
+or to run it from ```IPython``` shell enter 
 
 ```python
-In [1]: run main.py
+In [1]: run run.py
 ```
-
-It is recommended to use ```IPython``` (or ```Jupyter```) for running the code because the total execution time will be smaller and more importantly this will significantly reduce the startup (import) time after the initial run.
+> **_NOTE:_** It is recommended to use ```IPython``` (or ```Jupyter```) for running the code because this will significantly reduce the startup (import) time after the initial run which means less total execution time.
 
 The **```DiAtomic```** module is tested on Linux platform but works under Windows and MacOS as well.
+
+> **_NOTE:_** It is highly recommended to install/build ```NumPy``` with the optimized  <a href="https://software.intel.com/content/www/us/en/develop/tools/math-kernel-library.html" target="_blank">Intel MKL</a> versions of BLAS and Lapack libraries.
+If ```NumPy``` is installed by ```conda``` package manager from its default channel it will already be built against Intel MKL and no further steps are needed. To check which linear algebra library is used on Linux see the second part of <a href="https://stackoverflow.com/questions/37184618/find-out-if-which-blas-library-is-used-by-numpy#37190672" target="_blank">this answer</a> (note that numpy.show_config() does not always show what numpy actually uses).
 
 # Diatomic molecule: basic theoretical concepts
 

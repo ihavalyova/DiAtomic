@@ -22,6 +22,8 @@ DiAtomic is an open-source library written in Python with useful routines for pe
 
 - fit of the computed energy levels to the experimental data
 
+It supports object-oriented approach with easy to use functionality and efficiently vectorized code.
+
 **To install**: call Python pip from the command line:
 
 ```pip install diatomic```
