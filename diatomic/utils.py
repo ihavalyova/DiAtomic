@@ -1,24 +1,22 @@
-import os
-import shutil
+from scipy.constants import atomic_mass as _atomic_mass, angstrom as _angstrom
+from scipy.constants import physical_constants as _physical_constants
+from shutil import copy2 as _copy2
 import datetime
-import scipy.constants as cnst
+import os
+
+__all__ = ['Utils']
+
+# convert from m^-1 to cm^-1
+C_hartree = _physical_constants['hartree-inverse meter relationship'][0]/100.0
+
+# convert from m to angstrom
+C_bohr = _physical_constants['Bohr radius'][0] / _angstrom
+
+# devide by m_e to convert from amu to au
+C_massau = _atomic_mass / _physical_constants['electron mass'][0]
 
 
 class Utils:
-
-    @classmethod
-    def define_constants(cls):
-
-        chartree_name = 'hartree-inverse meter relationship'
-        # convert from m^-1 to cm^-1
-        cls.C_hartree = cnst.physical_constants[chartree_name][0] / 100.0
-
-        cbohr_name = 'Bohr radius'
-        # convert from m to angstrom
-        cls.C_bohr = cnst.physical_constants[cbohr_name][0] / cnst.angstrom
-
-        cme_name = 'electron mass'
-        cls.C_massau = cnst.atomic_mass / cnst.physical_constants[cme_name]
 
     @classmethod
     def createBackup(cls, ref_file):
@@ -33,7 +31,7 @@ class Utils:
 
         name_bkp = '_'.join([fname, 'bkp', cls.getDatetime()]) + fext
 
-        shutil.copy2(ref_file, os.path.join(backup_folder, name_bkp))
+        _copy2(ref_file, os.path.join(backup_folder, name_bkp))
 
     @classmethod
     def getDatetime(cls):

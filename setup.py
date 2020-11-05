@@ -2,7 +2,7 @@
 
 import io
 import os
-from setuptools import find_packages, setup
+from setuptools import setup, find_packages
 
 
 name = 'diatomic-computations'
@@ -11,13 +11,19 @@ url = 'https://github.com/ihavalyova/DiAtomic'
 email = 'havaliova@gmail.com'
 author = 'Ilvie Havalyova'
 requires_python = '>=3.6.0'
-version = '0.0.2'
+version = 'v0.0.1'
 required_install = [
-    'scipy>=0.18.1',
+    'scipy>=1.5.0',
     'numpy>=1.16.0',
-    'matplotlib>=1.5.3',
+    'matplotlib>=3.2.0',
+    'more_itertools',
+    'ruamel.yaml',
+    'numba'
 ]
-required_extras = {}
+required_extras = {
+    'iminuit': ['iminuit'],
+    'py3nj': ['py3nj']
+}
 
 here = os.path.abspath(os.path.dirname(__file__))
 readme = os.path.join(here, 'README.md')
@@ -41,17 +47,18 @@ def run_setup():
         author_email=email,
         python_requires=requires_python,
         url=url,
+        download_url='',
         keywords=[
             'physics', 'diatomic-molecule', 'coupled-channels',
             'energy-levels', 'deperturbation',
         ],
         packages=find_packages(
-            exclude=['test', '*.tests']
+            exclude=['test', '*.tests', 'test*']
         ),
         install_requires=required_install,
         extras_require=required_extras,
         package_data={
-            'diatomic': ['diatomic/*']
+            'diatomic': []
         },
         include_package_data=True,
         license='BSD License',
@@ -62,6 +69,7 @@ def run_setup():
             "Programming Language :: Python :: 3.8",
             "Programming Language :: Python :: 3.9",
         ],
+        zip_safe=False,
     )
 
 

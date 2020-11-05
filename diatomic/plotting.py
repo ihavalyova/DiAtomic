@@ -1,10 +1,9 @@
-import os
-import random
+from os import makedirs as _makedirs
+from os.path import join as _join
+from random import shuffle as _shuffle
+from scipy.interpolate import CubicSpline as _CubicSpline
 import numpy as np
-from scipy.interpolate import CubicSpline
-from .utils import Utils
-import Utils.C_hartree as C_hartree
-import Utils.C_bohr as C_bohr
+from .utils import Utils, C_hartree, C_bohr
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 import matplotlib as mpl
@@ -117,7 +116,7 @@ class Plotting:
             y=-1.0*average_uncert, color='r', linestyle='-', linewidth=0.5
         )
 
-        os.makedirs(path, exist_ok=True)
+        _makedirs(path, exist_ok=True)
 
         ax.set_xlabel('Energy')
         ax.set_ylabel('E_calc - E_obs')
@@ -130,7 +129,7 @@ class Plotting:
         # fig.tight_layout()
 
         fig.set_size_inches(13, 7)
-        fig_path = os.path.join(path, 'residuals' + f'.{fformat}')
+        fig_path = _join(path, 'residuals' + f'.{fformat}')
         fig.savefig(fig_path, format=fformat, dpi=400)  # transparent=True
         print(f'Created figure: {fig_path}', sep='')
 
@@ -283,12 +282,12 @@ class Plotting:
         ax3.legend(leg3, loc=0)
         ax4.legend(leg4, loc=0)
 
-        os.makedirs(path, exist_ok=True)
+        _makedirs(path, exist_ok=True)
 
-        fig1_path = os.path.join(path, f'SO.{fformat}')
-        fig2_path = os.path.join(path, f'LJ.{fformat}')
-        fig3_path = os.path.join(path, f'SJ.{fformat}')
-        fig4_path = os.path.join(path, f'LD.{fformat}')
+        fig1_path = _join(path, f'SO.{fformat}')
+        fig2_path = _join(path, f'LJ.{fformat}')
+        fig3_path = _join(path, f'SJ.{fformat}')
+        fig4_path = _join(path, f'LD.{fformat}')
 
         cls.save_figure(fig1, fig1_path, fformat, "tight")
         cls.save_figure(fig2, fig2_path, fformat, "tight")
@@ -309,7 +308,7 @@ class Plotting:
 
         plt.rcParams.update({'font.size': 8})
         res_path = Utils.get_plot_dir('res_path')
-        os.makedirs(res_path, exist_ok=True)
+        _makedirs(res_path, exist_ok=True)
         path = path or res_path
 
         props_def = {
@@ -389,7 +388,7 @@ class Plotting:
                     fig.set_size_inches(7, 5)
 
                     figname = f'residual_{vn}_{stn}_{i}.{fformat}'
-                    figpath = os.path.join(path, figname)
+                    figpath = _join(path, figname)
                     fig.savefig(
                         figpath, format=fformat, dpi=400, transparent=False
                     )
@@ -450,7 +449,7 @@ class Plotting:
         ax.set_ylabel(props['ylabel'])
         ax.legend(unique_pfiles, loc=0)
 
-        figpath = os.path.join(path, f'potentials.{fformat}')
+        figpath = _join(path, f'potentials.{fformat}')
         plt.savefig(figpath, format=fformat, dpi=400)
 
         print(f'Created figure: {figpath}', sep='')
@@ -483,7 +482,7 @@ class Plotting:
                 ipoints = ipoints or x.shape[0]
                 x_interp = np.linspace(x[0], x[-1], ipoints, endpoint=True)
 
-                cs = CubicSpline(x, y, bc_type='natural')
+                cs = _CubicSpline(x, y, bc_type='natural')
                 y_interp = cs(x_interp)
 
                 ax.plot(
@@ -513,7 +512,7 @@ class Plotting:
             ax.set_ylim(ylim[0], ylim[1])
             ax.legend(files, loc=0)
 
-            figpath = os.path.join(path, f'potential_points.{fformat}')
+            figpath = _join(path, f'potential_points.{fformat}')
             plt.savefig(figpath, format=fformat, dpi=400)
 
             print(f'Created figure: {figpath}', sep='')
@@ -575,7 +574,7 @@ class Plotting:
         # fig.tight_layout()
         path = path or Utils.get_plot_dir('plot_path')
 
-        figpath = os.path.join(path, f'hcolormesh.{fformat}')
+        figpath = _join(path, f'hcolormesh.{fformat}')
         plt.savefig(figpath, format=fformat, dpi=400)
 
         print(f'Created figure: {figpath}', sep='')
@@ -622,11 +621,11 @@ class Plotting:
 
         path = path or Utils.get_plot_dir('wavefunc_path')
 
-        os.makedirs(path, exist_ok=True)
+        _makedirs(path, exist_ok=True)
 
         if not subplots:
 
-            fig_name = os.path.join(path, 'wavefunctions' + f'.{fformat}')
+            fig_name = _join(path, 'wavefunctions' + f'.{fformat}')
 
             plt.xlabel(xlabel)
             plt.ylabel(ylabel)
@@ -686,7 +685,7 @@ class Plotting:
             '#00ABFF', '#10C7EC', '#10ECEC', '#BA5FFF',
             '#800080', '#1E90FF', '#4682B4', '#4B0082',
         ]
-        random.shuffle(bcolors)
+        _shuffle(bcolors)
 
         rcolors = [
             '#FA0A0A', '#D44141', '#B53232', '#EF262D',
@@ -694,7 +693,7 @@ class Plotting:
             '#A8639C', '#DF211A', '#F3592A', '#FF8F44',
             '#C71585', '#D2691E', '#DC143C', '#800000'
         ]
-        random.shuffle(rcolors)
+        _shuffle(rcolors)
 
         gcolors = [
             '#00FF2B', '#3AA44C', '#165F22', '#54FC70',
@@ -702,7 +701,7 @@ class Plotting:
             '#13987D', '#32B30B', '#77D11D', '#D1BE15',
             '#556B2F', '#2E8B57', '#008B8B', '#2E8B57'
         ]
-        random.shuffle(gcolors)
+        _shuffle(gcolors)
 
         colors = []
         for color in zip(gcolors, bcolors, rcolors):
@@ -731,7 +730,7 @@ class Plotting:
                 '*', 'x', 'D', 'd', 'X'
             ]
 
-        random.shuffle(markers)
+        _shuffle(markers)
 
         for marker in markers:
             yield marker

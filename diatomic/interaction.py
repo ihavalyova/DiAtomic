@@ -1,6 +1,6 @@
-import math
+from math import sqrt as _sqrt
 import numpy as np
-import Utils.C_hartree as C_hartree
+from .utils import C_hartree
 
 
 class Interaction:
@@ -164,7 +164,7 @@ class Interaction:
         qexpression = 1.0
 
         rule_omegaj = self.rule_lj_interaction(args) and \
-            math.sqrt(jjrotn - (args['om1'] * args['om2']))
+            _sqrt(jjrotn - (args['om1'] * args['om2']))
 
         ljcoef = m * qexpression * rule_omegaj
 
@@ -211,7 +211,7 @@ class Interaction:
 
     def lj_parity_interaction(self, jjrotn, mass, m, par, ycs, args):
 
-        qexpression = math.sqrt(jjrotn + args['om1'] * args['om2'])
+        qexpression = _sqrt(jjrotn + args['om1'] * args['om2'])
 
         ljcoef = m * qexpression * self.rule_lj_parity(args)
 
@@ -250,14 +250,14 @@ class Interaction:
         with selection rules:
         """
 
-        qexpression = math.sqrt(
+        qexpression = _sqrt(
             args['s1'] * (args['s1'] + 1) - args['sg1'] * args['sg2']
         )
 
         # TODO: check this!
         rule_omegaj = \
             self.rule_sj_interaction(args) and \
-            math.sqrt(jjrotn - (args['om1'] * args['om2']))
+            _sqrt(jjrotn - (args['om1'] * args['om2']))
 
         sjcoef = m * qexpression * rule_omegaj
 
@@ -287,7 +287,7 @@ class Interaction:
             only between Sigma states
         """
 
-        qexpression = math.sqrt(jjrotn + args['om1'] * args['om2'])
+        qexpression = _sqrt(jjrotn + args['om1'] * args['om2'])
 
         sjcoef = m * qexpression * self.rule_sj_parity(args)
 
@@ -315,7 +315,7 @@ class Interaction:
         with selection rules:
         """
 
-        qexpression = math.sqrt(
+        qexpression = _sqrt(
             (args['s1'] * (args['s1'] + 1)) - args['sg1'] * args['sg2']
         )
 
@@ -380,8 +380,8 @@ class Interaction:
         elif self.rule_spin_rot_nondiag(args):
             ss1 = args['s1'] * (args['s1'] + 1)
             qexpression = \
-                math.sqrt(jjrotn - (args['om1'] * args['om2'])) * \
-                math.sqrt(ss1 - args['sg1'] * args['sg2'])
+                _sqrt(jjrotn - (args['om1'] * args['om2'])) * \
+                _sqrt(ss1 - args['sg1'] * args['sg2'])
 
         srcoef = m * qexpression
 

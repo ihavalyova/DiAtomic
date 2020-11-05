@@ -1,17 +1,14 @@
-import math
-import os
+from math import sqrt as _sqrt, floor as _floor
+from os import makedirs as _makedirs
+from os.path import join as _join
 import numpy as np
 import scipy as sp
-# from numba import njit
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline as _CubicSpline
 from .interaction import Interaction
 from .molecule_data import Channel, Coupling
-from constants import Const
 from .grids import CSpline
-from .utils import Utils
-import Utils.C_hartree as C_hartree
-import Utils.C_bohr as C_bohr
-import Utils.C_massau as C_massau
+from .utils import Utils, C_hartree, C_bohr, C_massau
+# from numba import njit
 
 
 class MoleculeLevels:
@@ -77,8 +74,8 @@ class MoleculeLevels:
         self.predicted_file = 'evalues_predicted.dat'
         self.info_outfile = 'data_info.dat'
 
-        self.evec_dir = os.path.join(Utils.get_current_dir(), 'eigenvectors')
-        self.wavef_dir = os.path.join(Utils.get_current_dir(), 'wavefunctions')
+        self.evec_dir = _join(Utils.get_current_dir(), 'eigenvectors')
+        self.wavef_dir = _join(Utils.get_current_dir(), 'wavefunctions')
 
     def _get_eig_decomp_keys(self):
 
@@ -165,7 +162,7 @@ class MoleculeLevels:
         else:
             ypnts = self.channels[ch-1].U
 
-        cs = CubicSpline(xpnts, ypnts, bc_type='natural', extrapolate=True)
+        cs = _CubicSpline(xpnts, ypnts, bc_type='natural', extrapolate=True)
         self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = cs(self.rgrid)
 
     def _calculate_custom_pointwise_pec_on_grid(self, ch, ypar, pot_ranges,
@@ -336,7 +333,7 @@ class MoleculeLevels:
         xpnts = self.couplings[cp].xc
         ypnts = self.calculate_coupling_points(cp, yrange, ypar)
 
-        cs = CubicSpline(xpnts, ypnts, bc_type='natural', extrapolate=True)
+        cs = _CubicSpline(xpnts, ypnts, bc_type='natural', extrapolate=True)
 
         self.fgrid[cp*self.ngrid:(cp+1)*self.ngrid] = cs(self.rgrid)
 
@@ -1096,9 +1093,9 @@ class MoleculeLevels:
 
     def _save_eigenvectors(self, jn, par, iso, evector, vibnums, states):
 
-        os.makedirs(self.evec_dir, exist_ok=True)
-        fname = f'evector_J{str(math.floor(jn))}_p{str(par)}_i{str(iso)}'
-        efile = os.path.join(self.evec_dir, fname)
+        _makedirs(self.evec_dir, exist_ok=True)
+        fname = f'evector_J{str(_floor(jn))}_p{str(par)}_i{str(iso)}'
+        efile = _join(self.evec_dir, fname)
 
         evec_ext = np.vstack((vibnums, states, evector))
 
@@ -1128,7 +1125,7 @@ class MoleculeLevels:
         )
 
         efiles = [
-            os.path.join(self.evec_dir, f'evector_J{j}_p{k}_i{i}.dat')
+            _join(self.evec_dir, f'evector_J{j}_p{k}_i{i}.dat')
             for j in jrange for k in pars for i in self.nisotopes
         ]
 
@@ -1194,9 +1191,9 @@ class MoleculeLevels:
 
     def save_wavefunctions(self, wavefunc):
 
-        os.makedirs(self.wavef_dir, exist_ok=True)
+        _makedirs(self.wavef_dir, exist_ok=True)
 
-        efile = os.path.join(self.wavef_dir, 'wavefunctions.dat')
+        efile = _join(self.wavef_dir, 'wavefunctions.dat')
 
         fmt = wavefunc.shape[1] * ['%15.8e']
 
@@ -1216,10 +1213,10 @@ class MoleculeLevels:
 
         # calculate rms
         s = np.sum(diff_square) / yobs.shape[0]
-        rms = math.sqrt(s)
+        rms = _sqrt(s)
 
         # calculate dimensionless rms
-        rmsd = math.sqrt(chi2)
+        rmsd = _sqrt(chi2)
 
         return chi2, rms, rmsd
 
@@ -1441,7 +1438,7 @@ class MoleculeLevels:
                         )
 
             ugrid_cols = np.hstack((
-                self.rgrid[:, np.newaxis] * Const.bohr,
+                self.rgrid[:, np.newaxis] * C_bohr,
                 self.ugrid.reshape(self.nch, self.ngrid).T * C_hartree
             ))
             outf.write(f'\n{30*"#"} Channel Functions on Grid {30*"#"}\n\n')
@@ -1466,7 +1463,7 @@ class MoleculeLevels:
                         )
 
             fgrid_cols = np.hstack((
-                self.rgrid[:, np.newaxis] * Const.bohr,
+                self.rgrid[:, np.newaxis] * C_bohr,
                 self.fgrid.reshape(self.ncp, self.ngrid).T
             ))
 

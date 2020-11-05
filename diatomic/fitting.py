@@ -5,8 +5,7 @@ import numpy as np
 import scipy as sp
 from numba import njit  # , guvectorize, int64, float64
 from .molecule_data import Channel, Coupling
-from .utils import Utils
-import Utils.C_hartree as C_hartree
+from .utils import Utils, C_hartree
 
 try:
     from iminuit import Minuit
@@ -181,8 +180,6 @@ class Fitting:
         # (0) get the initial parameters
         ypar, yfixed, yreg, ylam = self.get_initial_parameters()
         is_failed = False
-        # change_tol = np.array([False, False], dtype=bool)
-        is_tol_changed = False
 
         for it in range(1, niter + 1):
 
@@ -327,7 +324,7 @@ class Fitting:
                         break
 
             # if it isn't got improved then change tol
-            if is_failed and not is_tol_changed:
+            if is_failed:
                 tol /= 5.0
                 self.progress_str.write(f'\nTOL CHANGED {"":>15}= {tol:.1e}')
 

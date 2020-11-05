@@ -1,14 +1,13 @@
-import io
-import os
-import re
-import logging
+from re import compile as _compile, search as _search, findall as _findall
+from os.path import exists as _exists, splitext as _splitext
+from logging import error as _error, warning as _warning
+from io import open as _open
+from os import stat as _stat
 import numpy as np
 from more_itertools import unique_everseen
 from collections import OrderedDict
 from .atomic_database import AtomicDatabase
-import Utils.C_hartree as C_hartree
-import Utils.C_bohr as C_bohr
-import Utils.C_massau as C_massau
+from .utils import C_hartree, C_bohr, C_massau
 
 # to check if C loader is present on current machine
 # /path/to/python -c "import ruamel.yaml;
@@ -130,7 +129,7 @@ class MoleculeData:
 
     def _calculate_reduced_mass(self, molecule, database=None):
 
-        found = re.search(r'^(\d+)(\D+)(\d+)(\D+)\b', molecule.strip())
+        found = _search(r'^(\d+)(\D+)(\d+)(\D+)\b', molecule.strip())
 
         err_msg = f'Error: Molecule {molecule} not in the correct format'
 
@@ -165,13 +164,13 @@ class MoleculeData:
 
     def _match_atomic_mass(self, atomic_db, symbol, mnumber):
 
-        pattern = re.compile(
+        pattern = _compile(
             fr'Atomic\s+Symbol\s+=\s+{symbol}[\r\n]'
             fr'Mass\s+Number\s+=\s+{mnumber}'
             fr'[\r\n]Relative\s+Atomic\s+Mass\s+=\s+\d+\.\d+'
         )
 
-        atom_data = re.findall(pattern, atomic_db)
+        atom_data = _findall(pattern, atomic_db)
 
         if len(atom_data) != 1:
             raise SystemExit(
@@ -192,7 +191,7 @@ class MoleculeData:
         try:
             self._read_experimental_data(markers, average)
         except Exception as e:
-            # logging.error('Failed to read the experimental data: '+ str(e))
+            # _error('Failed to read the experimental data: '+ str(e))
             raise SystemExit(e)
 
         if self.exp_data.shape[0] == 0 or self.exp_data.shape[1] != 8:
@@ -239,8 +238,8 @@ class MoleculeData:
             self.jqnumbers, np.unique(self.exp_data[:, 2])
         )
 
-        # if self.refj is not None:
-        #     self._arange_jqnumbers()
+        if self.refj is not None:
+            self._arange_jqnumbers()
 
         # filter by J
         rot_mask = np.in1d(
@@ -311,7 +310,7 @@ class MoleculeData:
 
         fmt = 2*['%5d'] + ['%7.1f', '%15.6f', '%7d', '%11.5f'] + 2*['%6d']
 
-        fname, fext = os.path.splitext(self.exp_file)
+        fname, fext = _splitext(self.exp_file)
         avg_file = fname + '_averaged' + fext
 
         np.savetxt(avg_file, avg_data, header=header, comments='', fmt=fmt)
@@ -521,9 +520,7 @@ class Channel:
         U[3] = float(emo_data[mapp[3]][0]) / C_bohr
 
         # all beta coefficients have dimentions 1/distance
-        bvalues = list(
-            map(lambda x: float(x[0]) * C_bohr, bparams.values())
-        )
+        bvalues = list(map(lambda x: float(x[0]) * C_bohr, bparams.values()))
         ni, nb = 4, len(bvalues)
 
         U[ni:ni+nb] = bvalues
@@ -727,7 +724,8 @@ class Channel:
                         f'a  = {a:>17.8f}{channel.fixedU[2]:>10}\n'
                     )
                     fp.write(
-                        f're = {re*C_bohr:>17.8f}{channel.fixedU[3]:>10}\n'
+                        f're = {re*C_bohr:>17.8f}'
+                        f'{channel.fixedU[3]:>10}\n'
                     )
 
                 cls.tot_npts += npnts
@@ -976,7 +974,7 @@ class Coupling:
 
             cpl_data[coupling.label] = new_item
 
-        with io.open(cls.cpl_file, 'w', encoding='utf8') as stream:
+        with _open(cls.cpl_file, 'w', encoding='utf8') as stream:
             yaml.dump(cpl_data, stream=stream)
 
 
@@ -992,7 +990,7 @@ class Validator:
         if molecule_data is not None:
 
             if molecule_data.masses is None and molecule_data.molecule is None:
-                logging.error(
+                _error(
                     f'At least one of the required parameters '
                     f'{molecule_data.massses} or {molecule_data.molecule}'
                     f'should be set.'
@@ -1006,7 +1004,7 @@ class Validator:
                 cls._check_molecule(molecule_data.molecule)
 
             if molecule_data.nisotopes is None:
-                logging.error('The required parameter "nisotopes" is missing.')
+                _error('The required parameter "nisotopes" is missing.')
                 raise SystemExit()
 
             if molecule_data.jrange is not None:
@@ -1040,7 +1038,7 @@ class Validator:
         try:
             _ = iter(iterable)
         except TypeError as te:
-            logging.error(f'The type of {iterable} raised an error')
+            _error(f'The type of {iterable} raised an error')
             raise SystemExit(te)
         else:
             if isinstance(iterable, str):
@@ -1056,7 +1054,7 @@ class Validator:
         try:
             cls._check_negative_values(masses)
         except ValueError as ve:
-            logging.error(f'Masses={masses} raised an error')
+            _error(f'Masses={masses} raised an error')
             raise SystemExit(ve)
 
     @classmethod
@@ -1072,7 +1070,7 @@ class Validator:
             cls._check_parity_values(parities)
             cls._check_parity_length(parities)
         except (ValueError, IndexError) as e:
-            logging.error(f'Parities={parities} raised an error')
+            _error(f'Parities={parities} raised an error')
             raise SystemExit(e)
 
     @classmethod
@@ -1107,14 +1105,14 @@ class Validator:
             for x in [jmin, jmax]:
                 cls._check_type_int_or_float(x)
         except TypeError as te:
-            logging.error('The type of "jrange" raised an error')
+            _error('The type of "jrange" raised an error')
             raise SystemExit(te)
 
         try:
             cls._check_negative_values(jrange)
             cls._check_jrange_values(jmin, jmax)
         except ValueError as ve:
-            logging.error(f'jrange data {jmin}, {jmax} raised an error')
+            _error(f'jrange data {jmin}, {jmax} raised an error')
             raise SystemExit(ve)
 
     @classmethod
@@ -1165,7 +1163,7 @@ class Validator:
             for x in [ngrid, rmin, rmax, rbar]:
                 cls._check_type_int_or_float(x)
         except TypeError as te:
-            logging.error(
+            _error(
                 'Incorrect type for parameters "rrange" and/or "npoints".'
             )
             raise SystemExit(te)
@@ -1174,7 +1172,7 @@ class Validator:
             cls._check_negative_values([rmax, rmin, ngrid, rbar])  # rbar?
             cls._check_grid_values(rmin, rmax)
         except ValueError as ve:
-            logging.error(
+            _error(
                 f'Incorrect values for {rmin}//{rmax}//{ngrid}.'
             )
             raise SystemExit(ve)
@@ -1230,36 +1228,36 @@ class Validator:
 
         for ch in channels:
             if ch.model == 'pointwise':
-                if not os.path.exists(ch.filep):
+                if not _exists(ch.filep):
                     raise FileNotFoundError(
                         f'The file {ch.filep} does not exist.'
                     )
-                if os.stat(ch.filep).st_size == 0:
+                if _stat(ch.filep).st_size == 0:
                     raise OSError(f'The file {ch.filep} is empty.')
 
                 pot_data = np.loadtxt(ch.filep, skiprows=1)
 
                 msg_init = 'The pointwise potential file'
                 if pot_data.shape[0] < 5:
-                    logging.warning(
+                    _warning(
                         f'{msg_init} {ch.filep} has less than 5 parameters'
                     )
                 if pot_data.shape[0] < 2:
-                    logging.error(
+                    _error(
                         f'{msg_init} {ch.filep} has less than 2 parameters'
                     )
                 if pot_data.shape[1] == 2:
-                    logging.warning(
+                    _warning(
                         f'{msg_init} {ch.filep} has 2 columns'
                     )
                 if pot_data.shape[1] < 2:
-                    logging.error(
+                    _error(
                         f'{msg_init} {ch.filep} has less than 2 columns'
                     )
 
             if ch.model == 'custom':
                 if not hasattr(ch, '__call__'):
-                    logging.error(
+                    _error(
                         'Model is set to custum but ' +
                         'custom function is not provided'
                     )

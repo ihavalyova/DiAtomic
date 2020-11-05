@@ -1,5 +1,5 @@
 import numpy as np
-import Utils.C_bohr as C_bohr
+from .utils import C_bohr
 
 
 class Grid:
