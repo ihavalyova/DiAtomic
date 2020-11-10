@@ -3,14 +3,17 @@ import io
 import math
 import numpy as np
 import scipy as sp
-from numba import njit  # , guvectorize, int64, float64
 from .molecule_data import Channel, Coupling
 from .utils import Utils, C_hartree
+# from numba import njit, guvectorize, int64, float64
 
 try:
     from iminuit import Minuit
 except ModuleNotFoundError:
-    print("'iminuit' module is not installed!\n")
+    pass
+    # print("'iminuit' module is not installed!\n")
+
+__all__ = ['Fitting']
 
 
 class Fitting:
@@ -25,31 +28,20 @@ class Fitting:
         except AttributeError:
             pass
 
-        for pname in Channel.pnames:
-            Utils.createBackup(pname)
-
-    def get_initial_parameters(self):
-
-        """Combine all parameters in one array which to be used in the fit
-
-        Returns:
-            tuple of 2 arrays: values of all parameters and fixed/free value
-        """
-
-        ppar, pfixed = Channel.get_unique_channels_parameters(self.ml.channels)
-        preg, plambda = np.zeros(ppar.shape[0]), np.zeros(ppar.shape[0])
-        cpar, cfixed = np.array([]), np.array([])
-        creg, clambda = np.array([]), np.array([])
+    def _get_initial_parameters(self):
 
         if len(self.ml.couplings) > 0:
-            cpar, cfixed, creg, clambda = \
-                Coupling.get_coupling_parameters(self.ml.couplings)
-
-        ypar = np.hstack((ppar, cpar))
-        yfixed = np.hstack((pfixed, cfixed))
-        yfixed = yfixed.astype(int)
-        yreg = np.hstack((preg, creg))
-        ylam = np.hstack((plambda, clambda))
+            ypar = np.hstack((Channel.ppar, Coupling.cpar))
+            yfixed = np.hstack((Channel.pfixed, Coupling.cfixed))
+            preg = np.zeros(Channel.ppar.shape[0])
+            plambda = np.zeros(Channel.ppar.shape[0])
+            yreg = np.hstack((preg, Coupling.cregular))
+            ylam = np.hstack((plambda, Coupling.clambda))
+        else:
+            ypar = np.copy(Channel.ppar)
+            yfixed = np.copy(Channel.pfixed)
+            yreg = np.zeros(Channel.ppar.shape[0])
+            ylam = np.zeros(Channel.ppar.shape[0])
 
         return ypar, yfixed, yreg, ylam
 
@@ -60,7 +52,7 @@ class Fitting:
         stats = self.ml.calculate_eigenvalues(ypar=ypar)
 
         # Uncomment this if intermediate results are needed for debugging
-        # print(f'Chi Square = {stats[0]:<18.8f} |RMS = {stats[1]:<15.8f}cm-1')
+        print(f'Chi Square = {stats[0]:<18.8f} |RMS = {stats[1]:<15.8f}cm-1')
 
         return self.ml.out_data, stats
 
@@ -109,7 +101,7 @@ class Fitting:
 
         print_level = int(self.progress) + 1
 
-        ypar, yfixed, *_ = self.get_initial_parameters()
+        ypar, yfixed, *_ = self._get_initial_parameters()
 
         # TODO: # check if this is correct
         errors = np.abs(ypar) * step_size
@@ -178,7 +170,7 @@ class Fitting:
         """
 
         # (0) get the initial parameters
-        ypar, yfixed, yreg, ylam = self.get_initial_parameters()
+        ypar, yfixed, yreg, ylam = self._get_initial_parameters()
         is_failed = False
 
         for it in range(1, niter + 1):
@@ -223,7 +215,7 @@ class Fitting:
                     ypar, yfixed, ycal, is_weighted=is_weighted,
                     step_size=step_size
                 )
-
+                # np.savetxt('dydp_numerical.dat', dydp, fmt='%.6e')
             else:
                 # the quantum numbers are aranged as follows:
                 # v, J, par, iso, state
@@ -231,11 +223,9 @@ class Fitting:
                     out_data[:, 0], out_data[:, 1], out_data[:, 5],
                     (out_data[:, 6] % self.ml.nisotopes)+1, out_data[:, -1]
                 ))
-
                 dydp = self._generate_analytical_derivatives(
                     ypar, yfixed, qnums, is_weighted=is_weighted
                 )
-
                 # np.savetxt('dydp_analytical.dat', dydp, fmt='%.6e')
 
             A = (dydp.T / yvar).T
@@ -274,12 +264,12 @@ class Fitting:
                 chi2_try = chi2_try + chi2r
                 rms_try = rms_try + math.sqrt(chi2r)
 
-            eps = 1.0e-5
+            # eps = 1.0e-5
 
             # (5) Try to change the corrections
             is_failed = False
 
-            if abs(chi2_try - chi2_best) < eps:
+            if chi2_try < chi2_best:  # abs(chi2_try - chi2_best) < eps:
                 chi2_best = chi2_try
                 rms_best = rms_try
                 ypar = ypar + x
@@ -307,7 +297,8 @@ class Fitting:
                         chi2_new = chi2_new + chi2r
                         rms_new = rms_new + math.sqrt(chi2r)
 
-                    if abs(chi2_new - chi2_best) < eps:
+                    # if abs(chi2_new - chi2_best) < eps:
+                    if chi2_new < chi2_best:
                         chi2_best = chi2_new
                         rms_best = rms_new
                         ypar = ypar_try
@@ -360,33 +351,75 @@ class Fitting:
             array: the matrix with the derivatives
         """
 
-        dp = np.abs(ypar) * step_size
-        dpar = ypar + dp
-        dpar[yfixed == 0] = 0.0
-        out_data, _ = self._get_eigenvalues(dpar, is_weighted=is_weighted)
-        ycal = out_data[:, 7] / C_hartree
-
-        dydp = Fitting._fillin_derivatives_matrix(
-            ypar.shape[0], ycal_init, ycal, dp
+        dydp = np.zeros(
+            shape=(ycal_init.shape[0], ypar.shape[0]), dtype=np.float64
         )
+        # change all free parameters
+        dp = np.abs(ypar) * step_size
+        dp[yfixed == 0] = 0.0
+
+        for prm in range(0, ypar.shape[0]):
+            if yfixed[prm]:
+                dpar = np.copy(ypar)
+                dpar[prm] += dp[prm]
+                out_data, _ = \
+                    self._get_eigenvalues(dpar, is_weighted=is_weighted)
+                ycal = out_data[:, 7] / C_hartree
+                dydp[:, prm] = (ycal - ycal_init) / dp[prm]
 
         return dydp
 
-    @staticmethod
-    @njit
-    def _fillin_derivatives_matrix(n, ycal_init, ycal, dp):
-        dydp = np.zeros(
-            shape=(ycal_init.shape[0], n), dtype=np.float64
-        )
+    def _generate_analytical_derivatives(self, ypar, yfixed,
+                                         qnums, is_weighted):
 
-        for prm in range(0, n):
-            dydp[:, prm] = ycal - ycal_init / dp[prm]
+        if not self.ml.sderiv:
+            raise SystemExit(
+                'Error: Spline derivatives should be calculated. '
+                'Change model to cspline.'
+            )
+
+        size = self.ml.nch*self.ml.ngrid
+        evec_selected = np.zeros((size, qnums.shape[0]))
+
+        for i in range(0, qnums.shape[0]):
+            evec_name = \
+                f'evector_J{int(qnums[i, 1])}_' + \
+                f'p{int(qnums[i, 2])}_i{int(qnums[i, 3])}.npy'
+
+            evectors = np.load(os.path.join('eigenvectors', evec_name))
+            vibnums = evectors[0, :].astype(np.int64)
+            states = evectors[1, :].astype(np.int64)
+            vi = np.where(vibnums == int(qnums[i, 0]))[0]
+            sti = np.where(states == int(qnums[i, 4]))[0]
+            evector = evectors[2:, np.intersect1d(vi, sti)[0]]
+            evec_selected[0:size, i] = evector
+
+        dydp = np.zeros((evec_selected.shape[1], ypar.shape[0]))
+
+        for prm in range(0, ypar.shape[0]):
+            if yfixed[prm]:
+                sk = np.zeros((size, size))
+                for ind in self.ml.block_index[prm]:
+                    r1, r2, c1, c2, count = ind
+                    if r1 == c1 and r2 == c2:
+                        # not working for non-diagonal block
+                        sk = sk + np.diag(self.ml.sk_grid[:, count])
+                    else:
+                        # i don't know why this is not working in both cases
+                        np.fill_diagonal(
+                            sk[r1:r2, c1:c2], self.ml.sk_grid[:, prm]
+                        )
+                        np.fill_diagonal(
+                            sk[c1:c2, r1:r2], self.ml.sk_grid[:, prm]
+                        )
+                        # sk = sk + sk.T  # <-- not working for diagonal block
+                enr_vec = np.diag(evec_selected.T @ sk @ evec_selected)
+                dydp[:, prm] = enr_vec
 
         return dydp
 
     @staticmethod
     def _find_corrections(A, b, tol, lapack_driver):
-
         """Find the corrections to the parameters by solving
         the system of linear equations with SVD technique
 
@@ -412,47 +445,6 @@ class Fitting:
         # x, _, rank, s = np.linalg.lstsq(A, b, rcond=tol)
 
         return x, rank, s
-
-    def _generate_analytical_derivatives(self, ypar, yfixed,
-                                         qnums, is_weighted):
-
-        if not self.ml.sderiv:
-            raise SystemExit(
-                'Error: Spline derivatives should be calculated. '
-                'Change model to cspline.'
-            )
-
-        # make sure that the energies in ycal_init are in the same order as the
-        # originally generated eigenvectors - sorting should not be avoided!
-
-        evec_selected = np.zeros((self.ml.nch*self.ml.ngrid, qnums.shape[0]))
-
-        for i in range(0, qnums.shape[0]):
-            evec_name = \
-                f'evector_J{int(qnums[i, 1])}_' + \
-                f'p{int(qnums[i, 2])}_i{int(qnums[i, 3])}.dat'
-
-            evectors = np.loadtxt(os.path.join('eigenvectors', evec_name))
-
-            vibnums = evectors[0, :].astype(np.int64)
-            states = evectors[1, :].astype(np.int64)
-            vi = np.where(vibnums == int(qnums[i, 0]))[0]
-            sti = np.where(states == int(qnums[i, 4]))[0]
-            evector = evectors[2:, np.intersect1d(vi, sti)[0]]
-            evec_selected[0:self.ml.nch*self.ml.ngrid, i] = evector
-
-        dydp = np.zeros((evec_selected.shape[1], ypar.shape[0]))
-
-        # np.savetxt('sk_grid.dat', self.ml.sk_grid, fmt='%10.3e')
-
-        for prm in range(0, ypar.shape[0]):
-            if yfixed[prm]:
-                sk = np.diag(self.ml.sk_grid[:, prm])
-                # np.savetxt(f'sk_{prm}.dat', sk, fmt='%8.3e')
-                enr_vec = np.diag(evec_selected.T @ sk @ evec_selected)
-                dydp[:, prm] = enr_vec
-
-        return dydp
 
     def _save_svd_parameters(self, rank, sv, tol, ypar, x, yfixed, it):
 

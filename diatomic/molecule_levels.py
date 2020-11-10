@@ -10,10 +10,12 @@ from .grids import CSpline
 from .utils import Utils, C_hartree, C_bohr, C_massau
 # from numba import njit
 
+__all__ = ['MoleculeLevels']
+
 
 class MoleculeLevels:
 
-    def __init__(self, md, grid, channels, couplings=[], data=None):
+    def __init__(self, md, grid):
 
         self.jqnumbers = md.jqnumbers
         self.pars = md.parities
@@ -23,8 +25,18 @@ class MoleculeLevels:
         self.refE = md.refE
         self.exp_data = md.exp_data
 
+        self.channels = Channel.get_channel_objects()
+        self.nch = len(self.channels)
+
+        try:
+            self.couplings = Coupling.get_coupling_objects()
+            self.ncp = len(self.couplings)
+        except AttributeError:
+            self.couplings = []
+            self.ncp = 0
+
         # filter by state
-        state_numbers = np.arange(1, len(channels)+1, dtype=np.int64)
+        state_numbers = np.arange(1, len(self.channels)+1, dtype=np.int64)
         state_mask = np.in1d(
             self.exp_data[:, -1], np.fromiter(state_numbers, dtype=np.float64)
         )
@@ -40,40 +52,28 @@ class MoleculeLevels:
         # to multiply all R dependant functions with this array
         self.Gy2 = np.power(grid.Gy, 2)
 
-        self.channels = channels
-        self.nch = len(self.channels)
-
-        self.couplings = couplings
-        self.ncp = len(self.couplings)
-
         self.evalues_subseti = None
         self.evalues_subsetv = None
 
         self.eig_decomp_keys = self._get_eig_decomp_keys()
-
         self.solver_keys = self._get_solver_keys()
 
         self.rgrid2 = np.square(self.rgrid)
         self.ugrid = np.zeros(self.nch * self.ngrid)
         self.fgrid = np.zeros(self.ncp * self.ngrid)
 
-        # spline derivatives
-        self.sderiv = False
+        self.sderiv = False  # spline derivatives
+        self.block_index = {}
 
-        # maximum number of fit parameters
-        nmax_params = 200
+        nmax_params = 200  # maximum number of fit parameters
         self.sk_grid = np.zeros((self.nch * self.ngrid, nmax_params))
 
         self.pot_enr = np.zeros((self.nch*self.ngrid, self.nch*self.ngrid))
         self.kin_enr = np.zeros_like(self.pot_enr)
 
-        # initilizie the total number of potential parameters
-        self._ctot = 0
-
         self.evals_file = 'eigenvalues.dat'
         self.predicted_file = 'evalues_predicted.dat'
         self.info_outfile = 'data_info.dat'
-
         self.evec_dir = _join(Utils.get_current_dir(), 'eigenvectors')
         self.wavef_dir = _join(Utils.get_current_dir(), 'wavefunctions')
 
@@ -94,199 +94,153 @@ class MoleculeLevels:
 
     def calculate_channels_on_grid(self, ypar=None):
 
-        self._ctot = 0
-        unique = set()
-        pot_ranges = dict()
-
+        self.block_index = {}
         # pass by reference
-        index = [-1]
+        ci, counter = [0, 0], [0]
 
         for ch in range(1, self.nch+1):
 
-            # determine _ctot value
-            if self.channels[ch-1].filep not in unique:
-                unique.add(self.channels[ch-1].filep)
-
-                self._ctot += self.channels[ch-1].npnts
-
             # built-in cubic spline function
             if self.channels[ch-1].model.lower() == Channel.models[1]:
-                self._calculate_pointwise_pec_on_grid(
-                    ch, ypar, pot_ranges, index
-                )
+                self._calculate_pointwise_pec_on_grid(ch, ypar, ci)
 
-            # cubic spline function using with custom implementation
+            # custom implementation of cubic spline function
             if self.channels[ch-1].model.lower() == Channel.models[2]:
-                self._calculate_custom_pointwise_pec_on_grid(
-                    ch, ypar, pot_ranges, index
-                )
+                self._calculate_cspline_pec_on_grid(ch, ypar, ci, counter)
 
             # Morse potential function
             if self.channels[ch-1].model.lower() == Channel.models[3]:
-                self._calculate_Morse_pec_on_grid(ch, ypar, pot_ranges, index)
+                self._calculate_Morse_pec_on_grid(ch, ypar, ci)
 
             # EMO potential function
             if self.channels[ch-1].model.upper() == Channel.models[4]:
-                self._calculate_EMO_pec_on_grid(ch, ypar, pot_ranges, index)
+                self._calculate_EMO_pec_on_grid(ch, ypar, ci)
 
             # MLR potential function
             if self.channels[ch-1].model.upper() == Channel.models[5]:
-                self._calculate_MLR_pec_on_grid(ch, ypar, pot_ranges, index)
+                self._calculate_MLR_pec_on_grid(ch, ypar, ci)
 
-            # Custom potential function
+            # custom potential function
             if self.channels[ch-1].model.lower() == Channel.models[6]:
-                self._calculate_custom_pec_on_grid(ch, ypar, pot_ranges, index)
+                self._calculate_custom_pec_on_grid(ch, ypar, ci)
 
-    def _calculate_pointwise_pec_on_grid(self, ch, ypar, pot_ranges, index):
+    def _calculate_pointwise_pec_on_grid(self, ch, ypar, ci):
 
-        # xpnts, ypnts = self.calculate_pec_points(ch, ypar, pot_ranges, index)
-
+        # TODO: check if this works for different number of pot parameters
         xpnts = self.channels[ch-1].R
-
-        # ypar contains parameters from all potentials and they
-        # have to be transformed to each channel
-        if ypar is not None:
-            pname = self.channels[ch-1].filep
-            npt = self.channels[ch-1].npnts
-
-            if pname in pot_ranges:
-                st = pot_ranges[pname][0]
-                en = pot_ranges[pname][1]
-            else:
-                st = index[0] + 1
-                en = st + npt
-                pot_ranges[pname] = (st, en)
-                index[0] += npt
-
-            ypnts = ypar[st:en]
-        else:
-            ypnts = self.channels[ch-1].U
+        npnts = xpnts.shape[0]
+        isunique = self.channels[ch-1].isunique
+        ci[1] = ci[0] + npnts * isunique
+        ci[0] = (ci[1] - npnts) * (1 - isunique) + ci[0] * isunique
+        ypnts = ypar[ci[0]:ci[1]]
 
         cs = _CubicSpline(xpnts, ypnts, bc_type='natural', extrapolate=True)
         self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = cs(self.rgrid)
 
-    def _calculate_custom_pointwise_pec_on_grid(self, ch, ypar, pot_ranges,
-                                                index):
+        ci[0] = ci[1]
+
+    def _calculate_cspline_pec_on_grid(self, ch, ypar, ci, counter):
 
         xpnts = self.channels[ch-1].R
-        ypnts, st, en = self._calculate_pec_points(ch, ypar, pot_ranges, index)
+        npnts = self.channels[ch-1].npnts
+        isunique = self.channels[ch-1].isunique
+        ci[1] = ci[0] + npnts * isunique
+        ci[0] = (ci[1] - npnts) * (1 - isunique) + ci[0] * isunique
+        ypnts = ypar[ci[0]:ci[1]]
 
         cs = CSpline(xpnts, ypnts)
-        index = (ch-1)*self.ngrid, ch*self.ngrid
+        index1, index2 = (ch-1)*self.ngrid, ch*self.ngrid
+        self.ugrid[index1:index2], sk = cs(self.rgrid, return_deriv=True)
 
-        self.ugrid[index[0]:index[1]], sk = \
-            cs(self.rgrid, return_deriv=True)
-
-        self.sk_grid[index[0]:index[1], st:en] = sk
+        for pkey in range(ci[0], ci[1]):
+            indices = (index1, index2, index1, index2, counter[0])
+            if pkey not in self.block_index:
+                self.block_index[pkey] = [indices]
+            else:
+                self.block_index[pkey].append(indices)
+            counter[0] += 1
+        ci[0] = ci[1]
+        stp, enp = (ch-1)*npnts, ch*npnts
+        self.sk_grid[(ch-1)*self.ngrid:ch*self.ngrid, stp:enp] = sk
         self.sderiv = True
 
-    def _calculate_pec_points(self, ch, ypar, pot_ranges, index):
+    def _calculate_Morse_pec_on_grid(self, ch, ypar, ci):
 
-        # map the potential parameters in ypar to each channel
-        if ypar is not None:
-            pname = self.channels[ch-1].filep
-            npt = self.channels[ch-1].npnts
+        ypnts = self.channels[ch-1].U
+        self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = self._VMorse(ypnts)
 
-            if pname in pot_ranges:
-                st = pot_ranges[pname][0]
-                en = pot_ranges[pname][1]
-            else:
-                st = index[0] + 1
-                en = st + npt
-                pot_ranges[pname] = (st, en)
-                index[0] += npt
-
-            ypnts = ypar[st:en]
-
-        else:
-            st = (ch-1)*self.channels[ch-1].npnts
-            en = ch*self.channels[ch-1].npnts
-            ypnts = self.channels[ch-1].U
-
-        return ypnts, st, en
-
-    def _calculate_Morse_pec_on_grid(self, ch, ypar, pot_ranges, index):
-
-        ypnts, *_ = self._calculate_pec_points(ch, ypar, pot_ranges, index)
-
-        self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = \
-            self._VMorse(ypnts, self.rgrid)
-
-    def _VMorse(self, params, rgrid):
+    def _VMorse(self, params):
 
         Te, De, a, re = params
+        return Te + De*np.power((1.0 - np.exp(-a*(self.rgrid-re))), 2.0)
 
-        return Te + De*np.power((1.0 - np.exp(-a*(rgrid-re))), 2.0)
+    def _calculate_EMO_pec_on_grid(self, ch, ypar, ci):
 
-    def _calculate_EMO_pec_on_grid(self, ch, ypar, pot_ranges, index):
+        ypnts = self.channels[ch-1].U
+        self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = self._VEMO(ypnts)
 
-        if ypar is not None:
-            pass
-        else:
-            self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = \
-                self._VEMO(self.channels[ch-1].U, self.rgrid)
-
-    def _VEMO(self, params, rgrid):
+    def _VEMO(self, params):
 
         Te, De, p, re = params[:4]
         bparams = np.array(params[4:])[::-1]
 
-        yr = (np.power(rgrid, p) - re ** p) / (np.power(rgrid, p) + re ** p)
+        yr = self.calculate_emo_power_expression(re, p)
 
         bemo = np.polyval(bparams, yr)
-        vemo = Te + De * np.power((1.0 - np.exp((-1.0*bemo)*(rgrid-re))), 2.0)
+        pwr = np.power((1.0 - np.exp((-1.0*bemo)*(self.rgrid-re))), 2.0)
+        vemo = Te + De * pwr
 
         return vemo
 
-    def _calculate_MLR_pec_on_grid(self, ch, ypar, pot_ranges, index):
+    def _calculate_MLR_pec_on_grid(self, ch, ypar, ci):
 
-        if ypar is not None:
-            pass
-        else:
-            ni = self.channels[ch-1].ni
-            nb = self.channels[ch-1].nb
-            nc = self.channels[ch-1].nc
-            nd = self.channels[ch-1].nd
+        ni = self.channels[ch-1].ni
+        nb = self.channels[ch-1].nb
+        nc = self.channels[ch-1].nc
+        nd = self.channels[ch-1].nd
 
-            self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = \
-                self._VMLR(self.channels[ch-1].U, self.rgrid, (ni, nb, nc, nd))
+        ypnts = self.channels[ch-1].U
+        self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = \
+            self._VMLR(ypnts, (ni, nb, nc, nd))
 
-    def _VMLR(self, params, rgrid, nparams):
+    def _VMLR(self, params, nparams):
 
         ni, nb, nc, nd = nparams
-
         Te, De, p, q, rref, re, binf = params[:ni]
 
         bparams = np.array(params[ni:ni+nb])[::-1]
         cparams = np.array(params[ni+nb:ni+nb+nc])[::-1]
         dparams = np.array(params[ni+nb+nc:ni+nb+nc+nd])[::-1]
 
-        yrp = (np.power(rgrid, p) - rref**p) / (np.power(rgrid, p) + rref**p)
-        yrq = (np.power(rgrid, q) - rref**q) / (np.power(rgrid, q) + rref**q)
+        yrp = self.calculate_emo_power_expression(rref, p)
+        yrq = self.calculate_emo_power_expression(rref, q)
 
         bmlj = yrp * binf + (1.0 - yrp) * np.polyval(bparams, yrq)
-
-        ulrr = self._long_range_function(rgrid, cparams, dparams)
+        ulrr = self._long_range_function(self.rgrid, cparams, dparams)
         ulrre = self._long_range_function(re, cparams, dparams)
-
         ulr = ulrr / ulrre
-
         vmlj = Te + De * np.power(1.0 - ulr * np.exp((-1.0*bmlj)*yrp), 2.0)
 
         return vmlj
 
+    def calculate_emo_power_expression(self, rr, power):
+
+        numer = np.power(self.rgrid, power) - rr**power
+        denom = np.power(self.rgrid, power) + rr**power
+
+        return numer / denom
+
     def _long_range_function(self, r, cparams, dparams):
 
-        # TODO: Rewrite using numpy
+        # TODO: rewrite using numpy
         ulr = 0
         for i in range(0, cparams.shape[0]):
             ulr += dparams[i] * (cparams[i] / np.power(r, i+1))
-
         return ulr
 
-    def _calculate_custom_pec_on_grid(self, ch, ypar, pot_ranges, index):
+    def _calculate_custom_pec_on_grid(self, ch, ypar, pranges, index):
 
-        ypnts, *_ = self._calculate_pec_points(ch, ypar, pot_ranges, index)
+        ypnts = self.channels[ch-1].U
 
         self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = \
             self.channels[ch-1].cfunc(ypnts, self.rgrid)
@@ -306,17 +260,18 @@ class MoleculeLevels:
     def calculate_couplings_on_grid(self, ypar=None):
 
         # pass by reference
-        yrange = {'start': self._ctot, 'end': self._ctot}
+        yrange = {'start': Channel.tot_punique, 'end': Channel.tot_punique}
+        self._countp = Channel.totp
 
         for cp in range(0, self.ncp):
 
             # built-in cubic spline function
             if self.couplings[cp].model.lower() == Coupling.models[1]:
-                self._calculate_pointwise_couplings_on_grid(cp, yrange, ypar)
+                self._calculate_pointwise_coupling_on_grid(cp, yrange, ypar)
 
             # custom implementation of cubic spline function
             if self.couplings[cp].model.lower() == Coupling.models[2]:
-                self._calculate_custom_pointwise_couplings_on_grid(
+                self._calculate_cspline_coupling_on_grid(
                     cp, yrange, ypar
                 )
 
@@ -328,49 +283,56 @@ class MoleculeLevels:
             if self.couplings[cp].model.lower() == Coupling.models[4]:
                 self._calculate_custom_coupling_on_grid(cp, yrange, ypar)
 
-    def _calculate_pointwise_couplings_on_grid(self, cp, yrange, ypar):
+            self._countp += self.couplings[cp].npnts
+
+    def _calculate_pointwise_coupling_on_grid(self, cp, yrange, ypar):
 
         xpnts = self.couplings[cp].xc
         ypnts = self.calculate_coupling_points(cp, yrange, ypar)
 
         cs = _CubicSpline(xpnts, ypnts, bc_type='natural', extrapolate=True)
-
         self.fgrid[cp*self.ngrid:(cp+1)*self.ngrid] = cs(self.rgrid)
 
-    def _calculate_custom_pointwise_couplings_on_grid(self, cp, yrange, ypar):
+    def _calculate_cspline_coupling_on_grid(self, cp, yrange, ypar):
 
         xpnts = self.couplings[cp].xc
+        # stp = yrange['start']
+
+        # will change yrange
         ypnts = self.calculate_coupling_points(cp, yrange, ypar)
+        # enp = yrange['end']
 
         cs = CSpline(xpnts, ypnts)
+        index = cp*self.ngrid, (cp+1)*self.ngrid
 
-        self.fgrid[cp*self.ngrid:(cp+1)*self.ngrid] = cs(self.rgrid)
+        self.fgrid[index[0]:index[1]], sk = cs(self.rgrid, return_deriv=True)
+
+        for pair in self.couplings[cp].interact:
+            stpr = self._countp
+            enpr = stpr + self.couplings[cp].npnts
+            ch1, ch2 = pair
+            row1, row2 = (ch1-1)*self.ngrid, ch1*self.ngrid
+            col1, col2 = (ch2-1)*self.ngrid, ch2*self.ngrid
+
+            self.block_index.update(
+                {pkey: [row1, row2, col1, col2] for pkey in range(stpr, enpr)}
+            )
+            self.sk_grid[row1:row2, stpr:enpr] = sk
+        self.sderiv = True
 
     def calculate_coupling_points(self, cp, yrange, ypar):
 
         yrange['end'] = yrange['start'] + self.couplings[cp].npnts
-
-        if ypar is None:
-            ypnts = self.couplings[cp].yc
-        else:
-            ypnts = ypar[yrange['start']:yrange['end']]
-
+        ypnts = ypar[yrange['start']:yrange['end']]
         yrange['start'] += self.couplings[cp].npnts
 
         return ypnts
 
     def calculate_constant_coupling_on_grid(self, cp, ypar):
 
-        ygrid = np.empty(self.rgrid.shape[0])
-
-        st = self._ctot
+        st = Channel.tot_punique
         en = st + self.couplings[cp].npnts
-
-        if ypar is None:
-            ygrid.fill(self.couplings[cp].yc[0])
-        else:
-            ygrid = ypar[st:en]
-
+        ygrid = ypar[st:en]
         st += self.couplings[cp].npnts
 
         self.fgrid[cp*self.ngrid:(cp+1)*self.ngrid] = ygrid
@@ -437,7 +399,6 @@ class MoleculeLevels:
             2: 'energy_subset_index',
             3: 'energy_subset_value',
             4: 'identify',
-            5: 'evecs_binary',
             7: 'store_evecs',
             8: 'weighted',
             11: 'lapack_driver',
@@ -458,7 +419,6 @@ class MoleculeLevels:
         self.energy_subset_index = kwargs.get(keys[2])
         self.energy_subset_value = kwargs.get(keys[3])
         self.identify = kwargs.get(keys[4]) or 0
-        self.evecs_binary = kwargs.get(keys[5]) or True
         self.store_evecs = kwargs.get(keys[7]) or False
         self.is_weighted = kwargs.get(keys[8]) or False
         self.file_predicted = kwargs.get(keys[15]) or self.predicted_file
@@ -486,6 +446,10 @@ class MoleculeLevels:
             self.eminv = self.energy_subset_value[0] / C_hartree
             self.emaxv = self.energy_subset_value[-1] / C_hartree
             self.evalues_subsetv = (self.eminv, self.emaxv)
+
+        ypar = np.copy(Channel.ppar)
+        if len(self.couplings) > 0:
+            ypar = np.hstack((Channel.ppar, Coupling.cpar))
 
         chi2, rms, _ = self.calculate_eigenvalues(ypar)
 
@@ -1093,17 +1057,11 @@ class MoleculeLevels:
 
     def _save_eigenvectors(self, jn, par, iso, evector, vibnums, states):
 
-        _makedirs(self.evec_dir, exist_ok=True)
-        fname = f'evector_J{str(_floor(jn))}_p{str(par)}_i{str(iso)}'
-        efile = _join(self.evec_dir, fname)
-
         evec_ext = np.vstack((vibnums, states, evector))
-
-        if self.evecs_binary:
-            np.save(efile, evec_ext)
-        else:
-            efile = efile + '.dat'
-            np.savetxt(efile, evec_ext, newline='\n', fmt='%19.12e')
+        _makedirs(self.evec_dir, exist_ok=True)
+        fname = f'evector_J{str(_floor(jn))}_p{str(int(par))}_i{str(int(iso))}'
+        efile = _join(self.evec_dir, fname)
+        np.save(efile, evec_ext)
 
     def interpolate_wavefunction(self, ninter=200, jrange=(0, 1),
                                  pars=(1,), binary=True):

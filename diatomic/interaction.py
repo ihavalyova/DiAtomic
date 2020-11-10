@@ -2,6 +2,8 @@ from math import sqrt as _sqrt
 import numpy as np
 from .utils import C_hartree
 
+__all__ = ['Interaction']
+
 
 class Interaction:
 
@@ -23,29 +25,16 @@ class Interaction:
 
         for cp in range(0, len(couplings)):
 
-            if isinstance(couplings[cp].interact[0], tuple):
-                props = zip(
-                    couplings[cp].interact,
-                    couplings[cp].coupling,
-                    couplings[cp].multiplier
-                )
+            # if isinstance(couplings[cp].interact[0], tuple):
+            props = zip(
+                couplings[cp].interact,
+                couplings[cp].coupling,
+                couplings[cp].multiplier
+            )
 
-                for inter, ctype, m in props:
+            for inter, ctype, m in props:
 
-                    ch1, ch2 = inter[0:2]
-                    cb = (ch1, ch2)
-
-                    args = self.get_quantum_numbers(channels, ch1, ch2)
-
-                    self.fill_pert_matrix(
-                        Gy2, ctype=ctype, m=m, cp=cp, cb=cb,
-                        mass=mass, par=par, dd=dd, args=args
-                    )
-            else:
-                ctype = couplings[cp].coupling
-                m = couplings[cp].multiplier
-
-                ch1, ch2 = couplings[cp].interact[0:2]
+                ch1, ch2 = inter[0:2]
                 cb = (ch1, ch2)
 
                 args = self.get_quantum_numbers(channels, ch1, ch2)
@@ -90,8 +79,7 @@ class Interaction:
 
     def fill_pert_matrix(self, Gy2, **kwargs):
 
-        ctype = kwargs['ctype'].lower()
-
+        ctype = kwargs['ctype']  # .lower()
         m = kwargs['m']
         cp = kwargs['cp']
         cb = kwargs['cb']
@@ -130,8 +118,8 @@ class Interaction:
         """
 
         socoef = m * (self.rule_SOdiag(args) or self.rule_SOnondiag(args))
-
-        return (ycs / C_hartree) * socoef
+        # return (ycs / C_hartree) * socoef
+        return ycs * socoef
 
     def rule_SOdiag(self, args):
 

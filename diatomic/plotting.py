@@ -9,6 +9,8 @@ import matplotlib.ticker as tck
 import matplotlib as mpl
 mpl.use('TkAgg')
 
+__all__ = ['Plotting']
+
 
 class Plotting:
 

@@ -3,9 +3,8 @@ from os.path import exists as _exists, splitext as _splitext
 from logging import error as _error, warning as _warning
 from io import open as _open
 from os import stat as _stat
-import numpy as np
-from more_itertools import unique_everseen
 from collections import OrderedDict
+import numpy as np
 from .atomic_database import AtomicDatabase
 from .utils import C_hartree, C_bohr, C_massau
 
@@ -15,6 +14,8 @@ from .utils import C_hartree, C_bohr, C_massau
 
 from ruamel.yaml import YAML
 yaml = YAML(typ='rt', pure=False)
+
+__all__ = ['MoleculeData', 'Channel', 'Coupling']
 
 
 class MoleculeData:
@@ -326,48 +327,15 @@ class Channel:
         self.nsigma = kwargs['sigma']
         self.omega = abs(self.nlambda + self.nsigma)
         self.mult = kwargs['multiplicity']
-        self.rot_correction = kwargs.get('rot_correction') or 0.0
+        self.rot_correction = kwargs.get('rotc') or 0.0
         self.custom_function = kwargs.get('custom_function')
 
     @classmethod
-    def get_unique_channels_parameters(cls, channels):
-
-        pars = np.array([], dtype=np.float64)
-        fixed = np.array([], dtype=np.int64)
-
-        cls.unique_pfiles = OrderedDict()
-        cls.unique_channels = OrderedDict()
-
-        for channel in channels:
-            if channel.filep not in cls.unique_pfiles:
-
-                if channel.model == cls.models[1] or \
-                  channel.model == cls.models[2]:
-                    _, U, fixedU = cls._get_pointwise_data(channel.filep)
-                elif channel.model == cls.models[3]:
-                    U, fixedU = cls._get_morse_data(channel.filep)
-                elif channel.model == cls.models[4]:
-                    U, fixedU = cls._get_emo_data(channel.filep)
-                elif channel.model == cls.models[5]:
-                    U, fixedU = cls._get_mlr_data(channel.filep)
-                elif channel.model == cls.models[6]:
-                    U, fixedU = cls._get_custom_pot_data(channel.filep)
-                elif channel.model == cls.models[7]:
-                    pass
-
-                pars = np.append(pars, U)
-                fixed = np.append(fixed, fixedU)
-
-                cls.unique_pfiles[channel.filep] = channel.filep
-                cls.unique_channels[channel] = channel
-
-        cls.unique_pfiles = list(cls.unique_pfiles)
-        cls.unique_channels = list(cls.unique_channels)
-
-        return pars, fixed
+    def get_channel_objects(cls):
+        return cls.channels
 
     @classmethod
-    def _get_channel_models(cls):
+    def _define_channel_models(cls):
 
         return {
             1: 'pointwise',
@@ -382,73 +350,67 @@ class Channel:
     @classmethod
     def set_channel_parameters(cls, channels):
 
-        cls.models = cls._get_channel_models()
+        cls.models = cls._define_channel_models()
+        cls.channels = channels
+        cls.unique_channels = OrderedDict()
+        cls.totp, cls.tot_punique = 0, 0
 
-        for channel in channels:
+        for ci, ch in enumerate(channels):
 
-            if channel.model == cls.models[1] or \
-               channel.model == cls.models[2]:
+            if ch.model == cls.models[1] or ch.model == cls.models[2]:
+                ch.R, ch.U, ch.fixedU = cls._get_pointwise_data(ch.filep)
+                ch.npnts = ch.U.shape[0]
 
-                channel.R, channel.U, channel.fixedU = \
-                    cls._get_pointwise_data_safe(channel.filep)
+            elif ch.model == cls.models[3]:
+                ch.U, ch.fixedU = cls._get_morse_data(ch.filep)
+                ch.npnts = ch.U.shape[0]
 
-                channel.npnts = channel.U.shape[0]
+            elif ch.model == cls.models[4]:
+                ch.U, ch.fixedU = cls._get_emo_data(ch.filep)
+                ch.npnts = ch.U.shape[0]
 
-            elif channel.model == cls.models[3]:
+            elif ch.model == cls.models[5]:
+                ch.U, ch.fixedU = cls._get_mlr_data(ch.filep)
+                ch.npnts = ch.U.shape[0]
 
-                channel.U, channel.fixedU = \
-                    cls._get_morse_data(channel.filep)
-                channel.npnts = channel.U.shape[0]
-
-            elif channel.model == cls.models[4]:
-
-                channel.U, channel.fixedU = \
-                    cls._get_emo_data(channel.filep)
-                channel.npnts = channel.U.shape[0]
-
-            elif channel.model == cls.models[5]:
-
-                channel.U, channel.fixedU = \
-                    cls._get_mlr_data(channel.filep)
-                channel.npnts = channel.U.shape[0]
-
-            elif channel.model == cls.models[6]:
-
+            elif ch.model == cls.models[6]:
                 try:
-                    channel.U, channel.fixedU = \
-                        cls._get_custom_pot_data(channel.filep)
-
-                    channel.npnts = channel.U.shape[0]
-                    channel.cfunc = channel.custom_function
+                    ch.U, ch.fixedU = cls._get_custom_pot_data(ch.filep)
+                    ch.npnts = ch.U.shape[0]
+                    ch.cfunc = ch.custom_function
                 except TypeError as te:
                     print(te)
             else:
-                raise SystemExit(f'Invalid potential model {channel.model}')
+                raise SystemExit(f'Invalid potential model {ch.model}')
 
-        # TODO: remove this
-        cls.pnames = list(
-            unique_everseen([ch.filep for i, ch in enumerate(channels)])
-        )
+            if ch.filep not in cls.unique_channels:
+                cls.unique_channels[ch.filep] = (ci, ch)
+                ch.pointer = (ci, ch)
+                ch.isunique = 1
+                cls.tot_punique += ch.npnts
+            else:
+                ch.pointer = cls.unique_channels[ch.filep]
+                ch.isunique = 0
+
+            cls.totp += ch.npnts
+
+        cls.ppar = np.array([], dtype=np.float64)
+        cls.pfixed = np.array([], dtype=np.int64)
+        for cv in Channel.unique_channels.values():
+            cls.ppar = np.append(cls.ppar, cv[1].U)
+            cls.pfixed = np.append(cls.pfixed, cv[1].fixedU)
+
+        # print(cls.unique_channels.keys()) # unique pfiles
+        # print(cls.unique_channels.values()) # unique channels
 
     @classmethod
     def _get_pointwise_data(cls, filep):
 
         pot = np.loadtxt(filep, skiprows=1)
-        R = pot[:, 0] / C_bohr
-        U = pot[:, 1] / C_hartree
-        fixedU = pot[:, 2]
-
-        return R, U, fixedU
-
-    @classmethod
-    def _get_pointwise_data_safe(cls, filep):
-
-        pot = np.loadtxt(filep, skiprows=1)
 
         R = pot[:, 0] / C_bohr
         U = pot[:, 1] / C_hartree
 
-        # set default third column if not provided
         fixedU = np.zeros_like(U)
         if pot.shape[1] == 3:
             fixedU = pot[:, 2]
@@ -574,17 +536,14 @@ class Channel:
         dparams = dict(
             filter(lambda x: x[0].lower().startswith('d'), mlr_data.items())
         )
-
         # remove De
         dparams = dict(
             filter(lambda x: x[0].lower() != 'de', dparams.items())
         )
-
         # remove binf
         bparams = dict(
             filter(lambda x: x[0].lower() != 'binf', bparams.items())
         )
-
         # TODO: check for key error
 
         mapp = {
@@ -592,7 +551,6 @@ class Channel:
         }
 
         U, fixedU = np.zeros(npt), np.zeros(npt, dtype=np.int64)
-
         U[0] = float(mlr_data[mapp[0]][0]) / C_hartree
         U[1] = float(mlr_data[mapp[1]][0]) / C_hartree
         U[2] = float(mlr_data[mapp[2]][0])
@@ -602,7 +560,6 @@ class Channel:
         U[6] = float(mlr_data[mapp[6]][0]) * C_bohr
 
         # TODO: check dimenstions of C and D parameters - they are not correct!
-
         bvalues = list(
             map(lambda x: float(x[0]) * C_bohr, bparams.values())
         )
@@ -614,7 +571,6 @@ class Channel:
         )
 
         ni, nb, nc, nd = 7, len(bvalues), len(cvalues), len(dvalues)
-
         U[ni:ni+nb] = bvalues
         U[ni+nb:ni+nb+nc] = cvalues
         U[ni+nb+nc:ni+nb+nc+nd] = dvalues
@@ -632,7 +588,6 @@ class Channel:
             fixedU[ni+nb+nc:ni+nb+nc+nd] = dfixed
 
         # channel.npnts = ni + nb + nc + nd
-
         return U, fixedU
 
     @classmethod
@@ -684,16 +639,15 @@ class Channel:
         # the total number of potential points
         cls.tot_npts, onpnts = 0, 0
 
-        for channel in cls.unique_channels:
-
+        # for channel in cls.unique_channels:
+        for cv in Channel.unique_channels.values():
+            channel = cv[1]
             if channel.model == cls.models[1] or \
-              channel.model == cls.models[2]:
-
+               channel.model == cls.models[2]:
                 npnts = channel.U.shape[0]
                 xpnts = channel.R * C_bohr
                 fix = channel.fixedU
                 st, en = onpnts, onpnts + npnts
-
                 np.savetxt(
                     channel.filep,
                     np.column_stack([xpnts, ypar[st:en] * C_hartree, fix]),
@@ -701,14 +655,11 @@ class Channel:
                     comments='',
                     fmt=['%20.12f', '%25.14f', '%6d']
                 )
-
                 cls.tot_npts += npnts
                 onpnts = en
-
             elif channel.model == cls.models[3]:
                 npnts = channel.U.shape[0]
                 st, en = onpnts, onpnts + npnts
-
                 Te, De, a, re = ypar[st:en]
 
                 with open(channel.filep, 'w') as fp:
@@ -727,16 +678,12 @@ class Channel:
                         f're = {re*C_bohr:>17.8f}'
                         f'{channel.fixedU[3]:>10}\n'
                     )
-
                 cls.tot_npts += npnts
                 onpnts = en
-
             elif channel.model == cls.models[4]:
                 pass
-
             elif channel.model == cls.models[5]:
                 pass
-
             elif channel.model == cls.models[6]:
                 npnts = channel.U.shape[0]
                 st, en = onpnts, onpnts + npnts
@@ -748,7 +695,6 @@ class Channel:
                             f'param{i+1} = {params[i]:>17.8e}'
                             f'{channel.fixedU[i]:>10}\n'
                         )
-
                 cls.tot_npts += npnts
                 onpnts = en
 
@@ -765,7 +711,11 @@ class Coupling:
         self.custom_function = kwargs.get('custom_function')
 
     @classmethod
-    def _get_coupling_models(cls):
+    def get_coupling_objects(cls):
+        return cls.couplings
+
+    @classmethod
+    def _define_coupling_models(cls):
 
         return {
             1: 'pointwise',
@@ -775,62 +725,62 @@ class Coupling:
         }
 
     @classmethod
-    def set_coupling_parameters(cls, cpl_file, couplings):
+    def set_coupling_parameters(cls, couplings, cfile='couplings.yml'):
 
-        cls.models = cls._get_coupling_models()
-        cls.cpl_file = cpl_file
-        coupling_data = cls._get_couplings_data()
+        cls.models = cls._define_coupling_models()
+        cls.cpl_file = cfile
+        cls.couplings = couplings
+        cls.cpar = np.array([], dtype=np.float64)
+        cls.cfixed = np.array([], dtype=np.int64)
+        cls.cregular = np.array([], dtype=np.float64)
+        cls.clambda = np.array([], dtype=np.float64)
+        cdata = cls._get_couplings_data()
 
-        # convert integer keys to string
-        coupling_data = {str(k): v for k, v in coupling_data.items()}
+        for cp in couplings:
+            params_str = list(map(str.split, cdata[cp.label]))
+            params = np.array([list(map(float, i)) for i in params_str])
 
-        for coupling in couplings:
+            # if string convert to tuples
+            if isinstance(cp.coupling, str):
+                cp.coupling = (cp.coupling,)
+                cp.interact = (cp.interact,)
+                cp.multiplier = (cp.multiplier,)
 
-            params = np.array(
-                list(map(str.split, coupling_data[coupling.label]))
-            )
+            # convert to lowercase
+            cp.coupling = tuple(map(str.lower, cp.coupling))
 
-            if coupling.model == cls.models[1] or \
-               coupling.model == cls.models[2]:
-                coupling.xc = np.fromiter(
-                    map(float, params[:, 0]), dtype=np.float64
-                ) / C_bohr
-                coupling.yc = np.fromiter(
-                    map(float, params[:, 1]), dtype=np.float64
-                )
+            # set units
+            cp.xunits = 1.0 / C_bohr
+            cp.yunits = 1.0
+
+            if 'spin-orbit' in cp.coupling:
+                cp.yunits = 1.0 / C_hartree
+
+            if cp.model == cls.models[1] or cp.model == cls.models[2]:
+                cp.xc = params[:, 0] * cp.xunits
+                cp.yc = params[:, 1] * cp.yunits
+                cls.cpar = np.append(cls.cpar, cp.yc)
+
                 if params.shape[1] >= 3:
-                    coupling.fixedp = np.fromiter(
-                        map(int, params[:, 2]), dtype=np.int64
-                    )
+                    cp.fixedp = params[:, 2]
+                    cls.cfixed = np.append(cls.cfixed, cp.fixedp)
                 if params.shape[1] >= 4:
-                    coupling.regularp = np.fromiter(
-                        map(float, params[:, 3]), dtype=np.float64
-                    )
-                    coupling.lambdai = np.fromiter(
-                        map(float, params[:, 4]), dtype=np.float64
-                    )
+                    cp.regularp = params[:, 3]
+                    cp.lambdai = params[:, 4]
+                    cls.cregular = np.append(cls.cregular, cp.regularp)
+                    cls.clambda = np.append(cls.clambda, cp.lambdai)
 
-            if coupling.model == cls.models[3] or \
-               coupling.model == cls.models[4]:
+            if cp.model == cls.models[3] or cp.model == cls.models[4]:
+                cp.yc = params[:, 0]
 
-                coupling.yc = np.fromiter(
-                    map(float, params[:, 0]), dtype=np.float64
-                )
                 if params.shape[1] >= 2:
-                    coupling.fixedp = np.fromiter(
-                        map(int, params[:, 1]), dtype=np.int64
-                    )
+                    cp.fixedp = params[:, 1]
                 if params.shape[1] >= 3:
-                    coupling.regularp = np.fromiter(
-                        map(float, params[:, 2]), dtype=np.float64
-                    )
-                    coupling.lambdai = np.fromiter(
-                        map(float, params[:, 3]), dtype=np.float64
-                    )
+                    cp.regularp = params[:, 2]
+                    cp.lambdai = params[:, 3]
 
-                coupling.cfunc = coupling.custom_function
-
-            coupling.npnts = params.shape[0]
+            cp.cfunc = cp.custom_function
+            cp.npnts = params.shape[0]
 
     @classmethod
     def _get_couplings_data(cls):
@@ -845,103 +795,21 @@ class Coupling:
             raise SystemExit(e)
 
     @classmethod
-    def get_coupling_parameters(cls, couplings):
-
-        coupling_params = np.array([], dtype=np.float64)
-        coupling_fixed = np.array([], dtype=np.int64)
-        coupling_regular = np.array([], dtype=np.float64)
-        coupling_lambda = np.array([], dtype=np.float64)
-
-        coupling_data = cls._get_couplings_data()
-
-        # convert integer keys to string
-        coupling_data = {str(k): v for k, v in coupling_data.items()}
-
-        for coupling in couplings:
-            params = np.array(
-                list(map(str.split, coupling_data[coupling.label]))
-            )
-
-            if coupling.model == cls.models[1] or \
-               coupling.model == cls.models[2]:
-                coupling_params = np.append(
-                    coupling_params,
-                    np.fromiter(
-                        map(float, params[:, 1]), dtype=np.float64
-                    )
-                )
-                coupling_fixed = np.append(
-                    coupling_fixed,
-                    np.fromiter(
-                        map(int, params[:, 2]), dtype=np.int64
-                    )
-                )
-                if params.shape[1] >= 3:
-                    coupling_regular = np.append(
-                        coupling_regular,
-                        np.fromiter(
-                            map(float, params[:, 3]), dtype=np.float64
-                        )
-                    )
-                    coupling_lambda = np.append(
-                        coupling_lambda,
-                        np.fromiter(
-                            map(float, params[:, 4]), dtype=np.float64
-                        )
-                    )
-            else:
-                coupling_params = np.append(
-                    coupling_params,
-                    np.fromiter(
-                        map(float, params[:, 0]), dtype=np.float64
-                    )
-                )
-                coupling_fixed = np.append(
-                    coupling_fixed,
-                    np.fromiter(
-                        map(int, params[:, 1]), dtype=np.int64
-                    )
-                )
-                if params.shape[1] >= 2:
-                    coupling_regular = np.append(
-                        coupling_regular,
-                        np.fromiter(
-                            map(float, params[:, 2]), dtype=np.float64
-                        )
-                    )
-                    coupling_lambda = np.append(
-                        coupling_lambda,
-                        np.fromiter(
-                            map(float, params[:, 3]), dtype=np.float64
-                        )
-                    )
-
-        return coupling_params, coupling_fixed, \
-            coupling_regular, coupling_lambda
-
-    @classmethod
     def edit_coupling_parameters(cls, ypar, couplings):
 
         cpl_data = cls._get_couplings_data()
-
-        # convert integer keys to string
-        cpl_data = {str(k): v for k, v in cpl_data.items()}
-
         cpar = Channel.tot_npts
 
-        for coupling in couplings:
+        for cp in couplings:
             new_item = []
-
-            if coupling.model == cls.models[1] or \
-               coupling.model == cls.models[2]:
-
-                for item in cpl_data[coupling.label]:
+            if cp.model == cls.models[1] or cp.model == cls.models[2]:
+                units = cp.yunits
+                for item in cpl_data[cp.label]:
                     sitem = item.split()
-
                     if len(sitem) >= 3:
                         new_item.append(
                             f'{float(sitem[0]):10.12f}'
-                            f'{float(ypar[cpar]):24.14f}'
+                            f'{float(ypar[cpar]/units):24.14f}'
                             f'{int(sitem[2]):7d}'
                             f'{float(sitem[3]):14.2e}'
                             f'{float(sitem[4]):14.1e}'.lstrip()
@@ -949,15 +817,13 @@ class Coupling:
                     else:
                         new_item.append(
                             f'{float(sitem[0]):10.12f}'
-                            f'{float(ypar[cpar]):24.14f}'
+                            f'{float(ypar[cpar]/units):24.14f}'
                             f'{int(sitem[2]):7d}'
                         )
-
                     cpar += 1
             else:
-                for item in cpl_data[coupling.label]:
+                for item in cpl_data[cp.label]:
                     sitem = item.split()
-
                     if len(sitem) >= 2:
                         new_item.append(
                             f'{float(ypar[cpar]):18.12f}'
@@ -969,10 +835,8 @@ class Coupling:
                             f'{float(ypar[cpar]):18.12f}'
                             f'{int(sitem[1]):3d}'.lstrip()
                         )
-
                     cpar += 1
-
-            cpl_data[coupling.label] = new_item
+            cpl_data[cp.label] = new_item
 
         with _open(cls.cpl_file, 'w', encoding='utf8') as stream:
             yaml.dump(cpl_data, stream=stream)
