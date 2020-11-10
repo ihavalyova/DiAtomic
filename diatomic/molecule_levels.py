@@ -27,13 +27,13 @@ class MoleculeLevels:
 
         self.channels = Channel.get_channel_objects()
         self.nch = len(self.channels)
-
+        self.couplings = []
+        self.ncp = 0
         try:
             self.couplings = Coupling.get_coupling_objects()
             self.ncp = len(self.couplings)
         except AttributeError:
-            self.couplings = []
-            self.ncp = 0
+            pass
 
         # filter by state
         state_numbers = np.arange(1, len(self.channels)+1, dtype=np.int64)

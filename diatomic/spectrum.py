@@ -5,7 +5,8 @@ import numpy as np
 try:
     import py3nj
 except ModuleNotFoundError:
-    print("'py3nj' module is not installed!\n")
+    pass
+    # print("'py3nj' module is not installed!\n")
 
 
 class Spectrum:

@@ -5,7 +5,7 @@ from io import open as _open
 from os import stat as _stat
 from collections import OrderedDict
 import numpy as np
-from .atomic_database import AtomicDatabase
+from .data.atomic_database import AtomicDatabase
 from .utils import C_hartree, C_bohr, C_massau
 
 # to check if C loader is present on current machine
