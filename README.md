@@ -2,7 +2,7 @@
 
 ---
 
-![Github-Actions](https://github.com/ihavalyova/DiAtomic/workflows/build/badge.svg?branch=master)(https://github.com/ihavalyova/DiAtomic/actions)
+[![Github-Actions](https://github.com/ihavalyova/DiAtomic/workflows/build/badge.svg?branch=master)](https://github.com/ihavalyova/DiAtomic/actions)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/ihavalyova/DiAtomic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/ihavalyova/DiAtomic/context:python)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/ihavalyova/DiAtomic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/ihavalyova/DiAtomic/alerts/)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ihavalyova/DiAtomic/master)
