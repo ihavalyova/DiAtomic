@@ -8,4 +8,4 @@ dependencies:
   - scipy>=1.5.0
   - ruamel.yaml
   - iminuit
-  - py3nj
+  #- py3nj
