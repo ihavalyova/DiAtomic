@@ -3,10 +3,10 @@ from os.path import exists as _exists, splitext as _splitext
 from logging import error as _error, warning as _warning
 from io import open as _open
 from os import stat as _stat
-from collections import OrderedDict
 import numpy as np
-from .data.atomic_database import AtomicDatabase
-from .utils import C_hartree, C_bohr, C_massau
+from collections import OrderedDict
+from data.atomic_database import AtomicDatabase
+from utils import C_hartree, C_bohr, C_massau
 
 # to check if C loader is present on current machine
 # /path/to/python -c "import ruamel.yaml;
@@ -353,7 +353,7 @@ class Channel:
         cls.models = cls._define_channel_models()
         cls.channels = channels
         cls.unique_channels = OrderedDict()
-        cls.totp, cls.tot_punique = 0, 0
+        cls.totp, cls.totp_unique = 0, 0
 
         for ci, ch in enumerate(channels):
 
@@ -387,7 +387,7 @@ class Channel:
                 cls.unique_channels[ch.filep] = (ci, ch)
                 ch.pointer = (ci, ch)
                 ch.isunique = 1
-                cls.tot_punique += ch.npnts
+                cls.totp_unique += ch.npnts
             else:
                 ch.pointer = cls.unique_channels[ch.filep]
                 ch.isunique = 0
@@ -756,6 +756,10 @@ class Coupling:
             if 'spin-orbit' in cp.coupling:
                 cp.yunits = 1.0 / C_hartree
 
+            if all(item.startswith('lambdad') for item in cp.coupling):
+                cp.yunits = C_hartree
+
+            # set parameters for pointwise models
             if cp.model == cls.models[1] or cp.model == cls.models[2]:
                 cp.xc = params[:, 0] * cp.xunits
                 cp.yc = params[:, 1] * cp.yunits
@@ -770,6 +774,7 @@ class Coupling:
                     cls.cregular = np.append(cls.cregular, cp.regularp)
                     cls.clambda = np.append(cls.clambda, cp.lambdai)
 
+            # set parameters for constant or custom models
             if cp.model == cls.models[3] or cp.model == cls.models[4]:
                 cp.yc = params[:, 0]
 
@@ -790,6 +795,7 @@ class Coupling:
                 try:
                     return yaml.load(inps)
                 except yaml.YAMLError as exc:
+                    # TODO: fails with YAML object has no attribute YAMLError
                     raise SystemExit(exc)
         except IOError as e:
             raise SystemExit(e)

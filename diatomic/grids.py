@@ -1,5 +1,5 @@
 import numpy as np
-from .utils import C_bohr
+from utils import C_bohr
 
 __all__ = ['Grid']
 

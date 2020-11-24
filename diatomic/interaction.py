@@ -1,50 +1,59 @@
 from math import sqrt as _sqrt
 import numpy as np
-from .utils import C_hartree
+from utils import C_hartree
 
 __all__ = ['Interaction']
 
 
 class Interaction:
 
-    def __init__(self, ngrid, nch, rgrid2):
+    def __init__(self, ngrid, nch, ncp, rgrid2):
 
         self.ngrid = ngrid
         self.nch = nch
         self.rgrid2 = rgrid2
+        self.countl = 0
+        self.cp_map = {}
+        max_rotnj = 100
 
-    def get_perturbations_matrix(self, jrotn, mass, par, channels,
-                                 couplings, fgrid, dd, Gy2):
+        # TODO: the upper limit is not correct
+        for cp in range(0, ncp+6):
+            self.cp_map[cp] = np.zeros((self.nch * self.ngrid, max_rotnj))
 
-        self.fgrid = fgrid
+    def get_interactions_matrix(self, jrotn, mass, par, channels, couplings,
+                                fgrid, dd, Gy2):
+
         self.jrotn = jrotn
+        jjrotn = self.jrotn*(self.jrotn + 1.0)
 
-        self.pert_matrix = np.zeros((self.nch*self.ngrid)**2).reshape(
+        pert_matrix = np.zeros((self.nch*self.ngrid)**2).reshape(
             self.nch*self.ngrid, self.nch*self.ngrid
         )
 
-        for cp in range(0, len(couplings)):
+        interact_keys = self.define_interaction_keys()
 
-            # if isinstance(couplings[cp].interact[0], tuple):
-            props = zip(
+        for cp in range(0, len(couplings)):
+            cprops = zip(
                 couplings[cp].interact,
                 couplings[cp].coupling,
                 couplings[cp].multiplier
             )
 
-            for inter, ctype, m in props:
+            ycs = fgrid[cp*self.ngrid:(cp+1)*self.ngrid]
 
-                ch1, ch2 = inter[0:2]
-                cb = (ch1, ch2)
-
+            for countc, (inter, ctype, m) in enumerate(cprops):
+                ch1, ch2 = inter[:2]
                 args = self.get_quantum_numbers(channels, ch1, ch2)
+                cfunc = interact_keys[ctype](jjrotn, mass, m, par, args)  # Gy2
+                row1, row2 = (ch1-1)*self.ngrid, ch1*self.ngrid
+                col1, col2 = (ch2-1)*self.ngrid, ch2*self.ngrid
 
-                self.fill_pert_matrix(
-                    Gy2, ctype=ctype, m=m, cp=cp, cb=cb,
-                    mass=mass, par=par, dd=dd, args=args
-                )
+                pert_matrix[row1:row2, col1:col2][dd] += cfunc * ycs
+                self.cp_map[cp+countc][row1:row2, self.countl] = cfunc
 
-        return self.pert_matrix
+        self.countl += 1
+
+        return pert_matrix
 
     def get_quantum_numbers(self, channels, ch1, ch2):
 
@@ -77,36 +86,7 @@ class Interaction:
             'spin-spin': self.spin_spin_interaction,
         }
 
-    def fill_pert_matrix(self, Gy2, **kwargs):
-
-        ctype = kwargs['ctype']  # .lower()
-        m = kwargs['m']
-        cp = kwargs['cp']
-        cb = kwargs['cb']
-        mass = kwargs['mass']
-        par = kwargs['par']
-        dd = kwargs['dd']
-        args = kwargs['args']
-
-        interaction_keys = self.define_interaction_keys()
-
-        jjrotn = self.jrotn*(self.jrotn + 1.0)
-
-        i1 = cp*self.ngrid
-        i2 = (cp+1)*self.ngrid
-        ycs = self.fgrid[i1:i2]
-
-        cfunc = interaction_keys[ctype](jjrotn, mass, m, par, ycs, args)  # Gy2
-
-        ch1, ch2 = cb
-        row1 = (ch1-1)*self.ngrid
-        row2 = ch1*self.ngrid
-        col1 = (ch2-1)*self.ngrid
-        col2 = ch2*self.ngrid
-
-        self.pert_matrix[row1:row2, col1:col2][dd] += cfunc
-
-    def spin_orbit_interaction(self, jjrotn, mass, m, par, ycs, args):
+    def spin_orbit_interaction(self, jjrotn, mass, m, par, args):
 
         """
         Calculate diagonal and off-diagonal Spin-Orbit coupling matrix element
@@ -118,8 +98,9 @@ class Interaction:
         """
 
         socoef = m * (self.rule_SOdiag(args) or self.rule_SOnondiag(args))
+
         # return (ycs / C_hartree) * socoef
-        return ycs * socoef
+        return socoef
 
     def rule_SOdiag(self, args):
 
@@ -139,7 +120,7 @@ class Interaction:
 
         return 0
 
-    def lj_interaction(self, jjrotn, mass, m, par, ycs, args):
+    def lj_interaction(self, jjrotn, mass, m, par, args):
 
         """
         Calculate the matrix element of L-uncoupling operator
@@ -160,7 +141,7 @@ class Interaction:
 
         sign = -1.0
 
-        return sign * ycs * brot * ljcoef
+        return sign * brot * ljcoef
 
     def rule_lj_interaction(self, args):
 
@@ -197,7 +178,7 @@ class Interaction:
 
         return 0
 
-    def lj_parity_interaction(self, jjrotn, mass, m, par, ycs, args):
+    def lj_parity_interaction(self, jjrotn, mass, m, par, args):
 
         qexpression = _sqrt(jjrotn + args['om1'] * args['om2'])
 
@@ -209,7 +190,7 @@ class Interaction:
         if par == 1:
             sign = -1.0  # e-parity
 
-        return sign * ycs * brot * ljcoef
+        return sign * brot * ljcoef
 
     def rule_lj_parity(self, args):
 
@@ -228,7 +209,7 @@ class Interaction:
 
         return 0
 
-    def sj_interaction(self, jjrotn, mass, m, par, ycs, args):
+    def sj_interaction(self, jjrotn, mass, m, par, args):
 
         """
         Calculate the matrix element of S-uncoupling operator
@@ -253,7 +234,7 @@ class Interaction:
 
         sign = -1.0
 
-        return sign * ycs * brot * sjcoef
+        return sign * brot * sjcoef
 
     def rule_sj_interaction(self, args):
 
@@ -270,7 +251,7 @@ class Interaction:
 
         return 0
 
-    def sj_parity_interaction(self, jjrotn, mass, m, par, ycs, args):
+    def sj_parity_interaction(self, jjrotn, mass, m, par, args):
         """
             only between Sigma states
         """
@@ -285,7 +266,7 @@ class Interaction:
         if par == 1:
             sign = -1.0  # e-parity
 
-        return sign * ycs * brot * sjcoef
+        return sign * brot * sjcoef
 
     def rule_sj_parity(self, args):
 
@@ -294,7 +275,7 @@ class Interaction:
 
         return 0
 
-    def spin_electornic_interaction(self, jjrotn, mass, m, par, ycs, args):
+    def spin_electornic_interaction(self, jjrotn, mass, m, par, args):
         """
         Calculate the matrix element of spin-electronic operator
         <State1| LS |State1> =
@@ -313,7 +294,7 @@ class Interaction:
 
         sign = 1.0
 
-        return sign * ycs * brot * slcoef
+        return sign * brot * slcoef
 
     def rule_spin_electronic(self, args):
 
@@ -329,37 +310,37 @@ class Interaction:
 
         return 0
 
-    def lambda_doubling(self, jjrotn, mass, m, par, ycs, args):
+    def lambda_doubling(self, jjrotn, mass, m, par, args):
 
         ldcoef = jjrotn / (2.0 * mass * self.rgrid2)**2
 
-        return ycs * m * ldcoef * C_hartree
+        return m * ldcoef
 
-    def lambda_doubling_e_parity(self, jjrotn, mass, m, par, ycs, args):
+    def lambda_doubling_e_parity(self, jjrotn, mass, m, par, args):
 
         if par == 1:
-            return self.lambda_doubling(jjrotn, mass, m, par, ycs, args)
-        else:
-            return np.zeros(ycs.shape[0])
+            return self.lambda_doubling(jjrotn, mass, m, par, args)
 
-    def lambda_doubling_f_parity(self, jjrotn, mass, m, par, ycs, args):
+        return np.zeros(self.rgrid2.shape[0])
+
+    def lambda_doubling_f_parity(self, jjrotn, mass, m, par, args):
 
         if par == 0:
-            return self.lambda_doubling(jjrotn, mass, m, par, ycs, args)
-        else:
-            return np.zeros(ycs.shape[0])
+            return self.lambda_doubling(jjrotn, mass, m, par, args)
 
-    def NDBOBC(self, jjrotn, mass, m, par, ycs, args):
+        return np.zeros(self.rgrid2.shape[0])
+
+    def NDBOBC(self, jjrotn, mass, m, par, args):
 
         bocoef = jjrotn / (2.0 * mass * self.rgrid2)
 
-        return ycs * m * bocoef * C_hartree
+        return m * bocoef * C_hartree
 
-    def DBOBC(self, jjrotn, mass, m, par, ycs, args):
+    def DBOBC(self, jjrotn, mass, m, par, args):
 
-        return (ycs / C_hartree) * m
+        return (1.0 / C_hartree) * m
 
-    def spin_rotation_interaction(self, jjrotn, mass, m, par, ycs, args):
+    def spin_rotation_interaction(self, jjrotn, mass, m, par, args):
 
         if self.rule_spin_rot_diag(args):
 
@@ -375,7 +356,7 @@ class Interaction:
 
         sign = 1.0
 
-        return sign * ycs * srcoef
+        return sign * srcoef
 
     def rule_spin_rot_diag(self, args):
 
@@ -391,7 +372,7 @@ class Interaction:
 
         self.rule_sj_interaction(args)
 
-    def spin_spin_interaction(self, jjrotn, mass, m, par, ycs, args):
+    def spin_spin_interaction(self, jjrotn, mass, m, par, args):
 
         if self.rule_spin_spin_diag(args):
             qexpression = 3 * args['sg1']**2 - args['s1']*(args['s2'] + 1.0)
@@ -403,7 +384,7 @@ class Interaction:
 
         sign = 1.0
 
-        return sign * ycs * sscoef
+        return sign * sscoef
 
     def rule_spin_spin_nondiag(self, args):
 

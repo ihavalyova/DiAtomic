@@ -4,10 +4,10 @@ from os.path import join as _join
 import numpy as np
 import scipy as sp
 from scipy.interpolate import CubicSpline as _CubicSpline
-from .interaction import Interaction
-from .molecule_data import Channel, Coupling
-from .grids import CSpline
-from .utils import Utils, C_hartree, C_bohr, C_massau
+from interaction import Interaction
+from molecule_data import Channel, Coupling
+from grids import CSpline
+from utils import Utils, C_hartree, C_bohr, C_massau
 # from numba import njit
 
 __all__ = ['MoleculeLevels']
@@ -18,7 +18,7 @@ class MoleculeLevels:
     def __init__(self, md, grid):
 
         self.jqnumbers = md.jqnumbers
-        self.pars = md.parities
+        self.pars = sorted(md.parities)
         self.masses = md.reduced_masses or md.masses
         self.nisotopes = md.nisotopes
         self.refj = md.referencej
@@ -27,6 +27,7 @@ class MoleculeLevels:
 
         self.channels = Channel.get_channel_objects()
         self.nch = len(self.channels)
+
         self.couplings = []
         self.ncp = 0
         try:
@@ -59,20 +60,25 @@ class MoleculeLevels:
         self.solver_keys = self._get_solver_keys()
 
         self.rgrid2 = np.square(self.rgrid)
-        self.ugrid = np.zeros(self.nch * self.ngrid)
+        msize = self.nch * self.ngrid
+        self.ugrid = np.zeros(msize)
         self.fgrid = np.zeros(self.ncp * self.ngrid)
 
-        self.sderiv = False  # spline derivatives
+        # is analytical derivative for pec allowed
+        self.is_cspline_pec = False
+        # is analytical derivative for couplings allowed
+        self.is_cspline_cpl = False
+        # map potential/channel parameters to hmatrix block indices
         self.block_index = {}
-
+        self.interact = None
         nmax_params = 200  # maximum number of fit parameters
-        self.sk_grid = np.zeros((self.nch * self.ngrid, nmax_params))
+        self.sk_grid = np.zeros((msize, nmax_params))
 
-        self.pot_enr = np.zeros((self.nch*self.ngrid, self.nch*self.ngrid))
+        self.pot_enr = np.zeros((msize, msize))
         self.kin_enr = np.zeros_like(self.pot_enr)
 
         self.evals_file = 'eigenvalues.dat'
-        self.predicted_file = 'evalues_predicted.dat'
+        self.predicted_file = 'eigenvalues_predicted.dat'
         self.info_outfile = 'data_info.dat'
         self.evec_dir = _join(Utils.get_current_dir(), 'eigenvectors')
         self.wavef_dir = _join(Utils.get_current_dir(), 'wavefunctions')
@@ -120,7 +126,7 @@ class MoleculeLevels:
             if self.channels[ch-1].model.upper() == Channel.models[5]:
                 self._calculate_MLR_pec_on_grid(ch, ypar, ci)
 
-            # custom potential function
+            # custom (user-specified) potential function
             if self.channels[ch-1].model.lower() == Channel.models[6]:
                 self._calculate_custom_pec_on_grid(ch, ypar, ci)
 
@@ -153,16 +159,17 @@ class MoleculeLevels:
         self.ugrid[index1:index2], sk = cs(self.rgrid, return_deriv=True)
 
         for pkey in range(ci[0], ci[1]):
-            indices = (index1, index2, index1, index2, counter[0])
+            indices = (index1, index2, index1, index2, counter[0], -1)
             if pkey not in self.block_index:
                 self.block_index[pkey] = [indices]
             else:
                 self.block_index[pkey].append(indices)
             counter[0] += 1
+
         ci[0] = ci[1]
         stp, enp = (ch-1)*npnts, ch*npnts
         self.sk_grid[(ch-1)*self.ngrid:ch*self.ngrid, stp:enp] = sk
-        self.sderiv = True
+        self.is_cspline_pec = True
 
     def _calculate_Morse_pec_on_grid(self, ch, ypar, ci):
 
@@ -199,9 +206,10 @@ class MoleculeLevels:
         nc = self.channels[ch-1].nc
         nd = self.channels[ch-1].nd
 
+        nall = (ni, nb, nc, nd)
+
         ypnts = self.channels[ch-1].U
-        self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = \
-            self._VMLR(ypnts, (ni, nb, nc, nd))
+        self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = self._VMLR(ypnts, nall)
 
     def _VMLR(self, params, nparams):
 
@@ -260,7 +268,7 @@ class MoleculeLevels:
     def calculate_couplings_on_grid(self, ypar=None):
 
         # pass by reference
-        yrange = {'start': Channel.tot_punique, 'end': Channel.tot_punique}
+        yrange = {'start': Channel.totp_unique, 'end': Channel.totp_unique}
         self._countp = Channel.totp
 
         for cp in range(0, self.ncp):
@@ -296,29 +304,34 @@ class MoleculeLevels:
     def _calculate_cspline_coupling_on_grid(self, cp, yrange, ypar):
 
         xpnts = self.couplings[cp].xc
-        # stp = yrange['start']
+        stp = yrange['start']
 
         # will change yrange
         ypnts = self.calculate_coupling_points(cp, yrange, ypar)
-        # enp = yrange['end']
+        enp = yrange['end']
 
         cs = CSpline(xpnts, ypnts)
         index = cp*self.ngrid, (cp+1)*self.ngrid
 
         self.fgrid[index[0]:index[1]], sk = cs(self.rgrid, return_deriv=True)
 
-        for pair in self.couplings[cp].interact:
+        for countp, pair in enumerate(self.couplings[cp].interact):
             stpr = self._countp
             enpr = stpr + self.couplings[cp].npnts
             ch1, ch2 = pair
             row1, row2 = (ch1-1)*self.ngrid, ch1*self.ngrid
             col1, col2 = (ch2-1)*self.ngrid, ch2*self.ngrid
 
-            self.block_index.update(
-                {pkey: [row1, row2, col1, col2] for pkey in range(stpr, enpr)}
-            )
+            for pkey, count in zip(range(stp, enp), range(stpr, enpr)):
+                indices = (row1, row2, col1, col2, count, cp+countp)
+                if pkey not in self.block_index:
+                    self.block_index[pkey] = [indices]
+                else:
+                    self.block_index[pkey].append(indices)
+
             self.sk_grid[row1:row2, stpr:enpr] = sk
-        self.sderiv = True
+
+        self.is_cspline_cpl = True
 
     def calculate_coupling_points(self, cp, yrange, ypar):
 
@@ -330,7 +343,7 @@ class MoleculeLevels:
 
     def calculate_constant_coupling_on_grid(self, cp, ypar):
 
-        st = Channel.tot_punique
+        st = Channel.totp_unique
         en = st + self.couplings[cp].npnts
         ygrid = ypar[st:en]
         st += self.couplings[cp].npnts
@@ -399,14 +412,15 @@ class MoleculeLevels:
             2: 'energy_subset_index',
             3: 'energy_subset_value',
             4: 'identify',
+            6: 'store_predicted',
             7: 'store_evecs',
             8: 'weighted',
             11: 'lapack_driver',
             12: 'arpack_which',
             13: 'arpack_k',
             14: 'arpack_sigma',
-            15: 'file_evals_predicted',
-            16: 'file_eigenvalues',
+            15: 'eigp_file',
+            16: 'eigc_file',
         }
 
     def calculate_levels(self, ypar=None, **kwargs):
@@ -419,6 +433,7 @@ class MoleculeLevels:
         self.energy_subset_index = kwargs.get(keys[2])
         self.energy_subset_value = kwargs.get(keys[3])
         self.identify = kwargs.get(keys[4]) or 0
+        self.store_predicted = kwargs.get(keys[6]) or False
         self.store_evecs = kwargs.get(keys[7]) or False
         self.is_weighted = kwargs.get(keys[8]) or False
         self.file_predicted = kwargs.get(keys[15]) or self.predicted_file
@@ -451,7 +466,12 @@ class MoleculeLevels:
         if len(self.couplings) > 0:
             ypar = np.hstack((Channel.ppar, Coupling.cpar))
 
-        chi2, rms, _ = self.calculate_eigenvalues(ypar)
+        chi2, rms, rmsd = self.calculate_eigenvalues(ypar)
+
+        self._save_output_data(stats=(chi2, rms, rmsd))
+
+        if self.store_predicted:
+            self.save_predicted()
 
         print(f'Chi Square = {chi2:<18.8f} | RMS = {rms:<15.8f}cm-1')
         # f'\nRMSD = {rmsd:.8f}'
@@ -463,15 +483,18 @@ class MoleculeLevels:
         if self.ncp != 0:
             self.calculate_couplings_on_grid(ypar=ypar)
 
-        interact = Interaction(self.ngrid, self.nch, self.rgrid2)
+        self.interact = Interaction(
+            self.ngrid, self.nch, self.ncp, self.rgrid2
+        )
         dd = np.diag_indices(self.ngrid)
         count = 0
 
         for niso, iso in enumerate(self.nisotopes):
-
-            self.evals_predicted = np.zeros(
-                (2 * self.nch * self.exp_data.shape[0], 6+self.nch)
-            )
+            minxdim = 1000
+            xdim = 2 * self.nch * self.exp_data.shape[0]
+            if xdim < minxdim:
+                xdim = minxdim
+            self.evals_predicted = np.zeros((xdim, 6+self.nch))
 
             mass = self.masses[iso-1]
 
@@ -487,7 +510,7 @@ class MoleculeLevels:
 
                     self.hmatrix = self.kin_enr + self.pot_enr
 
-                    pert_matrix = interact.get_perturbations_matrix(
+                    pert_matrix = self.interact.get_interactions_matrix(
                         jrotn, mass, par, self.channels, self.couplings,
                         self.fgrid, dd, self.Gy2
                     )
@@ -504,7 +527,7 @@ class MoleculeLevels:
                     if self.store_evecs:
 
                         self._save_eigenvectors(
-                            jrotn, par, iso, evecs[:, 0:evalues.shape[0]],
+                            jrotn, par, iso, evecs[:, :evalues.shape[0]],
                             vibnums, states
                         )
 
@@ -517,7 +540,7 @@ class MoleculeLevels:
                     ).reshape(evalues.shape[0], -1)
 
                     nrow, ncol = calc_data.shape[0], calc_data.shape[1]
-                    self.evals_predicted[count:count+nrow, 0:ncol] = calc_data
+                    self.evals_predicted[count:count+nrow, :ncol] = calc_data
 
                     count += calc_data.shape[0]
 
@@ -544,7 +567,8 @@ class MoleculeLevels:
             self.out_data[:, 10], self.is_weighted
         )
 
-        self._save_output_data(stats=(chi2, rms, rmsd))
+        # the sorting is needed for the analytical derivative
+        self._sort_output(cols=[5, 1])
 
         return chi2, rms, rmsd
 
@@ -593,7 +617,7 @@ class MoleculeLevels:
         ml = 4.0 * mass * length**2
         h2 = h**2
 
-        ij_grid = np.mgrid[0:self.ngrid, 0:self.ngrid]
+        ij_grid = np.mgrid[:self.ngrid, :self.ngrid]
         ij_mtx = ij_grid[0] - ij_grid[1]
 
         di = np.diag_indices(self.ngrid)
@@ -601,7 +625,7 @@ class MoleculeLevels:
         sinf_mtx = np.sin((ij_mtx * np.pi) / self.ngrid)
         sinf_mtx[di] = 1.0  # set diagonal to some temporary nonzero value
 
-        self.kin_enr[0:self.ngrid, 0:self.ngrid] = \
+        self.kin_enr[:self.ngrid, :self.ngrid] = \
             (np.power(-1.0, ij_mtx) * h2) / (ml * np.power(sinf_mtx, 2))
         self.kin_enr[di] = (h2 / ml) * n2
 
@@ -610,7 +634,7 @@ class MoleculeLevels:
             ind2 = ch*self.ngrid
 
             self.kin_enr[ind1:ind2, ind1:ind2] = \
-                self.kin_enr[0:self.ngrid, 0:self.ngrid]
+                self.kin_enr[:self.ngrid, :self.ngrid]
 
     def _calculate_kinetic_energy_sinc(self, mass):
 
@@ -619,7 +643,7 @@ class MoleculeLevels:
         h = (self.rmax - self.rmin) / (self.ngrid-1)
         h2 = (pc ** 2) / (2.0 * mass)
 
-        ij_grid = np.mgrid[0:self.ngrid, 0:self.ngrid]
+        ij_grid = np.mgrid[:self.ngrid, :self.ngrid]
         ij_diff = ij_grid[0] - ij_grid[1]
         ij_sum = ij_grid[0] + ij_grid[1]
         di = np.diag_indices(self.ngrid)
@@ -627,7 +651,7 @@ class MoleculeLevels:
         # set diagonal to some temporary nonzero value
         ij_diff[di] = 1.0
 
-        self.kin_enr[0:self.ngrid, 0:self.ngrid] = \
+        self.kin_enr[:self.ngrid, :self.ngrid] = \
             (2.0 * np.power(-1.0, ij_sum)) / np.power(ij_diff, 2)
         self.kin_enr[di] = pi2 / 3.0
         self.kin_enr = self.kin_enr * (h2 / h**2)
@@ -637,7 +661,7 @@ class MoleculeLevels:
             ind4 = ch*self.ngrid
 
             self.kin_enr[ind3:ind4, ind3:ind4] = \
-                self.kin_enr[0:self.ngrid, 0:self.ngrid]
+                self.kin_enr[:self.ngrid, :self.ngrid]
 
         self.kin_enr[di] = self.kin_enr[di] - (h2 * self.Fy)
 
@@ -657,7 +681,7 @@ class MoleculeLevels:
         d2 = np.empty(self.ngrid-2)
         d2.fill(1.0/12.0)
 
-        self.kin_enr[0:self.ngrid, 0:self.ngrid] = \
+        self.kin_enr[:self.ngrid, :self.ngrid] = \
             (h2/(step**2)) * self._form_five_diagonal_symm_matrix(d0, d1, d2)
 
         corner_coef = 29.0 / 12.0
@@ -669,7 +693,7 @@ class MoleculeLevels:
             ind4 = ch*self.ngrid
 
             self.kin_enr[ind3:ind4, ind3:ind4] = \
-                self.kin_enr[0:self.ngrid, 0:self.ngrid]
+                self.kin_enr[:self.ngrid, :self.ngrid]
 
     def _form_five_diagonal_symm_matrix(self, a, b, c, k1=0, k2=1, k3=2):
 
@@ -1276,25 +1300,23 @@ class MoleculeLevels:
             self.file_predicted, eigv_data, comments='#', header=header, fmt=fm
         )
 
-    def sort_predicted(self, cols=[]):
+    def _sort_predicted(self, cols=[]):
 
         out = []
         for col in cols:
             out.append(self.out_data[:, col])
-        out = tuple(out)
 
-        self.evals_predicted = self.evals_predicted[np.lexsort(out)]
-        self.save_predicted()
+        self.evals_predicted = self.evals_predicted[np.lexsort(tuple(out))]
+        # self.save_predicted()
 
-    def sort_output(self, cols=[]):
+    def _sort_output(self, cols=[]):
 
         out = []
-        for col in cols:
+        for col in reversed(cols):
             out.append(self.out_data[:, col])
-        out = tuple(out)
 
-        self.out_data = self.out_data[np.lexsort(out)]
-        self._save_output_data()
+        self.out_data = self.out_data[np.lexsort(tuple(out))]
+        # self._save_output_data()
 
     def _group_increasing_sequences(self, iseq):
 

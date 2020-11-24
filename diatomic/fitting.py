@@ -1,10 +1,11 @@
-import os
 import io
-import math
+from os.path import join as _join
+from math import sqrt as _sqrt
+from logging import error as _error, warning as _warning
 import numpy as np
 import scipy as sp
-from .molecule_data import Channel, Coupling
-from .utils import Utils, C_hartree
+from molecule_data import Channel, Coupling
+from utils import Utils, C_hartree
 # from numba import njit, guvectorize, int64, float64
 
 try:
@@ -18,10 +19,10 @@ __all__ = ['Fitting']
 
 class Fitting:
 
-    def __init__(self, ml, progress=False):
+    def __init__(self, ml, progress_full=False):
 
         self.ml = ml
-        self.progress = progress
+        self.progress = progress_full
 
         try:
             Utils.createBackup(Coupling.cpl_file)
@@ -52,7 +53,7 @@ class Fitting:
         stats = self.ml.calculate_eigenvalues(ypar=ypar)
 
         # Uncomment this if intermediate results are needed for debugging
-        print(f'Chi Square = {stats[0]:<18.8f} |RMS = {stats[1]:<15.8f}cm-1')
+        # print(f'Chi Square = {stats[0]:<18.8f} |RMS = {stats[1]:<15.8f}cm-1')
 
         return self.ml.out_data, stats
 
@@ -148,7 +149,6 @@ class Fitting:
 
     def run_svd(self, niter=1, deriv='n', tol=0.1, lapack_driver='gelsd',
                 step_size=1.0e-4, is_weighted=False, regular=0.0):
-
         """SVD algorithm for nonliner least squares fitting.Solves Ax = b using
         Singular Value Decomposition (SVD). Starting from some trial set of
         parameters on each iteration the linear system Ax=b for the corrections
@@ -169,23 +169,20 @@ class Fitting:
             restart (bool, optional): Not yet implemented. Defaults to False.
         """
 
+        deriv = deriv.lower()
+        if deriv == 'a':
+            self.check_derivative()
+
         # (0) get the initial parameters
         ypar, yfixed, yreg, ylam = self._get_initial_parameters()
-        is_failed = False
+        eps = 1.0e-3
 
         for it in range(1, niter + 1):
 
-            self.progress_str = io.StringIO()
-            self.progress_str.write(
-                f'\n{18*"- "}Iteration {it} {18*"- "} \n'
-                f'\nTOL{"":>23}= {tol:.1e}'
-            )
-
-            # (1) get initially calculated energies on every new iteration
+            # (1) get the updated energies from the previous iteration
             out_data, stats = self._get_eigenvalues(
                 ypar, is_weighted=is_weighted
             )
-
             ycal = out_data[:, 7].astype(np.float64) / C_hartree
             ydel = -out_data[:, 9].astype(np.float64) / C_hartree
             yvar = out_data[:, 10].astype(np.float64) / C_hartree
@@ -200,15 +197,18 @@ class Fitting:
                 c = cmult * regular
                 chi2r = np.sum(np.square(c))
                 chi2_best = chi2_best + chi2r
-                rms_best = rms_best + math.sqrt(chi2r)
+                rms_best = rms_best + _sqrt(chi2r)
 
-            self.progress_str.write(
-                f'\nChi square initial{"":>8}= {chi2_best:.8f}'
-                f'\nRMS initial{"":>15}= {rms_best:.8f} cm-1\n'
+            info_init = (
+                f'{14*"- "}Iteration {it} {14*"- "}\nTOL = {tol:.1e}\n'
+                f'Chi square = {chi2_best:.6f} | RMS = {rms_best:.6f} cm-1\n'
             )
+            print(info_init)
+            self.progress_str = io.StringIO()
+            self.progress_str.write(info_init)
 
-            # (2) generate the matrix A - the matrix containing the
-            # derivatives of the energies with respect to the parameters
+            # (2) generate the matrix containing the derivatives of the
+            # energies with respect to the parameters
 
             if deriv == 'n':
                 dydp = self._generate_numerical_derivatives(
@@ -217,28 +217,27 @@ class Fitting:
                 )
                 # np.savetxt('dydp_numerical.dat', dydp, fmt='%.6e')
             else:
-                # the quantum numbers are aranged as follows:
                 # v, J, par, iso, state
                 qnums = np.column_stack((
                     out_data[:, 0], out_data[:, 1], out_data[:, 5],
                     (out_data[:, 6] % self.ml.nisotopes)+1, out_data[:, -1]
                 ))
                 dydp = self._generate_analytical_derivatives(
-                    ypar, yfixed, qnums, is_weighted=is_weighted
+                    ypar, yfixed, qnums
                 )
                 # np.savetxt('dydp_analytical.dat', dydp, fmt='%.6e')
 
+            # (3) calculate the data matrix A from derivatives matrix
+            # then calculate the rhs vector b
             A = (dydp.T / yvar).T
-
-            # (3) calculate the rhs vector b
             b = ydel / yvar
 
             # extend the system Ax=b with new one: Bx=c
             if regular != 0.0:
                 # B = (np.eye(ypar.shape[0], ypar.shape[0]) / ylam) * regular
-                idm = np.eye(ypar.shape[0], ypar.shape[0])
+                identm = np.eye(ypar.shape[0], ypar.shape[0])
                 bmult = np.divide(
-                    idm, ylam, out=np.zeros_like(idm), where=ylam != 0
+                    identm, ylam, out=np.zeros_like(identm), where=ylam != 0
                 )
                 B = bmult * regular
                 A = np.vstack((A, B))
@@ -256,38 +255,31 @@ class Fitting:
             _, stats_try = self._get_eigenvalues(
                 ypar+x, is_weighted=is_weighted
             )
-
             chi2_try, rms_try = stats_try[0], stats_try[1]
 
             if regular != 0.0:
                 chi2r = np.sum(np.square((c - np.dot(B, x))))
                 chi2_try = chi2_try + chi2r
-                rms_try = rms_try + math.sqrt(chi2r)
-
-            # eps = 1.0e-5
+                rms_try = rms_try + _sqrt(chi2r)
 
             # (5) Try to change the corrections
-            is_failed = False
-
-            if chi2_try < chi2_best:  # abs(chi2_try - chi2_best) < eps:
-                chi2_best = chi2_try
-                rms_best = rms_try
+            if chi2_try + eps < chi2_best:
+                chi2_best, rms_best = chi2_try, rms_try
                 ypar = ypar + x
+                is_failed = False
             else:  # chi2try >= chi2best
                 step = 10.0
                 ypar_try = np.copy(ypar)
                 x_try = np.copy(x)
                 x_try = x_try / step
+                is_failed = True
 
-                # try to improve the chi_square value
                 while True:
-                    # x_try = x_try / step
                     ypar_try = ypar_try + x_try
 
                     _, stats_new = self._get_eigenvalues(
                         ypar_try, is_weighted=is_weighted
                     )
-
                     chi2_new, rms_new = stats_new[0], stats_new[1]
 
                     if regular != 0.0:
@@ -295,29 +287,27 @@ class Fitting:
                             np.square(((yreg-ypar_try)) - np.dot(B, x_try))
                         )
                         chi2_new = chi2_new + chi2r
-                        rms_new = rms_new + math.sqrt(chi2r)
+                        rms_new = rms_new + _sqrt(chi2r)
 
-                    # if abs(chi2_new - chi2_best) < eps:
-                    if chi2_new < chi2_best:
-                        chi2_best = chi2_new
-                        rms_best = rms_new
+                    if chi2_new + eps < chi2_best:
+                        chi2_best, rms_best = chi2_new, rms_new
                         ypar = ypar_try
-
-                    else:  # chi2new >= chi2best:
-                        is_failed = True
-
-                        self.progress_str.write(
-                            f'\nCorrections changed =>\nChi square = '
-                            f'{chi2_best:.8f}\n'
-                            f'RMS = {rms_best:.8f}\n'
+                        info_corr = (
+                            f'Smaller step => Chi square = '
+                            f'{chi2_best:.6f} | RMS = {rms_best:.6f}'
                         )
-
+                        print(info_corr)
+                        self.progress_str.write(info_corr)
+                        is_failed = False
+                    else:  # chi2new >= chi2best:
                         break
 
-            # if it isn't got improved then change tol
-            if is_failed:
+            # on odd iteration try to change tol if nothing has been improved
+            if it > 1 and it % 2 == 1 and is_failed:
                 tol /= 5.0
-                self.progress_str.write(f'\nTOL CHANGED {"":>15}= {tol:.1e}')
+                info_tol = f'\nTol changed = {tol:.1e}'
+                print(info_tol)
+                self.progress_str.write(info_tol)
 
             # (6) Save the final parameters
             if self.progress:
@@ -328,13 +318,13 @@ class Fitting:
             if len(self.ml.couplings) > 0:
                 Coupling.edit_coupling_parameters(ypar, self.ml.couplings)
 
-            self.progress_str.write(
-                f'\nChi square final/best{"":>6}= {chi2_best:.8f} '
-                f'for iteration {it}'
-                f'\nRMS final{"":>18}= {rms_best:.8f} cm-1'
-            )
+            if self.progress:
+                print(self.progress_str.getvalue())
 
-            print(self.progress_str.getvalue())
+        print(
+            f'\nChi square final = {chi2_best:.6f} | '
+            f'RMS final = {rms_best:.6f} cm-1'
+        )
 
     def _generate_numerical_derivatives(self, ypar, yfixed, ycal_init,
                                         is_weighted, step_size):
@@ -359,64 +349,69 @@ class Fitting:
         dp[yfixed == 0] = 0.0
 
         for prm in range(0, ypar.shape[0]):
-            if yfixed[prm]:
-                dpar = np.copy(ypar)
-                dpar[prm] += dp[prm]
-                out_data, _ = \
-                    self._get_eigenvalues(dpar, is_weighted=is_weighted)
-                ycal = out_data[:, 7] / C_hartree
-                dydp[:, prm] = (ycal - ycal_init) / dp[prm]
+            if not yfixed[prm]:
+                continue
+            dpar = np.copy(ypar)
+            dpar[prm] += dp[prm]
+            out_data, _ = self._get_eigenvalues(dpar, is_weighted=is_weighted)
+            ycal = out_data[:, 7] / C_hartree
+            dydp[:, prm] = (ycal - ycal_init) / dp[prm]
 
         return dydp
 
-    def _generate_analytical_derivatives(self, ypar, yfixed,
-                                         qnums, is_weighted):
+    def _generate_analytical_derivatives(self, ypar, yfixed, qnums):
 
-        if not self.ml.sderiv:
-            raise SystemExit(
-                'Error: Spline derivatives should be calculated. '
-                'Change model to cspline.'
-            )
-
-        size = self.ml.nch*self.ml.ngrid
-        evec_selected = np.zeros((size, qnums.shape[0]))
+        msize = self.ml.nch*self.ml.ngrid
+        evecs_found = np.zeros((msize, qnums.shape[0]))
+        dydp = np.zeros((evecs_found.shape[1], ypar.shape[0]))
 
         for i in range(0, qnums.shape[0]):
-            evec_name = \
+            ename = \
                 f'evector_J{int(qnums[i, 1])}_' + \
                 f'p{int(qnums[i, 2])}_i{int(qnums[i, 3])}.npy'
+            evectors = np.load(_join('eigenvectors', ename))
+            vi = np.where(evectors[0, :].astype(int) == int(qnums[i, 0]))[0]
+            sti = np.where(evectors[1, :].astype(int) == int(qnums[i, 4]))[0]
+            evecs_found[:msize, i] = evectors[2:, np.intersect1d(vi, sti)[0]]
 
-            evectors = np.load(os.path.join('eigenvectors', evec_name))
-            vibnums = evectors[0, :].astype(np.int64)
-            states = evectors[1, :].astype(np.int64)
-            vi = np.where(vibnums == int(qnums[i, 0]))[0]
-            sti = np.where(states == int(qnums[i, 4]))[0]
-            evector = evectors[2:, np.intersect1d(vi, sti)[0]]
-            evec_selected[0:size, i] = evector
-
-        dydp = np.zeros((evec_selected.shape[1], ypar.shape[0]))
+        ejqnums, fjqnums = qnums[qnums[:, 2] == 1], qnums[qnums[:, 2] == 0]
+        fjqind = (fjqnums[:, 1] - np.min(fjqnums[:, 1])).astype(int)
+        ejqind = (ejqnums[:, 1] - np.min(ejqnums[:, 1])).astype(int)
+        ejqind += self.ml.jqnumbers.shape[0]
+        jqind = np.hstack((fjqind, ejqind))
 
         for prm in range(0, ypar.shape[0]):
-            if yfixed[prm]:
-                sk = np.zeros((size, size))
-                for ind in self.ml.block_index[prm]:
-                    r1, r2, c1, c2, count = ind
-                    if r1 == c1 and r2 == c2:
-                        # not working for non-diagonal block
-                        sk = sk + np.diag(self.ml.sk_grid[:, count])
-                    else:
-                        # i don't know why this is not working in both cases
-                        np.fill_diagonal(
-                            sk[r1:r2, c1:c2], self.ml.sk_grid[:, prm]
-                        )
-                        np.fill_diagonal(
-                            sk[c1:c2, r1:r2], self.ml.sk_grid[:, prm]
-                        )
-                        # sk = sk + sk.T  # <-- not working for diagonal block
-                enr_vec = np.diag(evec_selected.T @ sk @ evec_selected)
-                dydp[:, prm] = enr_vec
-
+            if not yfixed[prm]:
+                continue
+            sk = np.zeros((msize, msize))
+            for iprm in self.ml.block_index[prm]:
+                r1, r2, c1, c2, count, cp = iprm
+                sk_grid = self.ml.sk_grid[r1:r2, count]
+                if cp < 0:  # potential
+                    np.fill_diagonal(sk[r1:r2, c1:c2], sk_grid)
+                    dydp[:, prm] = np.diag(evecs_found.T @ sk @ evecs_found)
+                else:  # coupling
+                    sk_coef = self.ml.interact.cp_map[cp][r1:r2, :]
+                    memoize = set()
+                    for countj, j in enumerate(jqind):
+                        if j not in memoize:
+                            elem = self.get_dydp_elem(iprm[:4], sk, sk_grid,
+                                                      sk_coef, j, evecs_found)
+                        dydp[countj, prm] = elem[countj]
+                        memoize.add(j)
         return dydp
+
+    # @staticmethod
+    def get_dydp_elem(self, indices, sk, sk_grid, sk_coef, j, evecs_found):
+        r1, r2, c1, c2 = indices
+        np.fill_diagonal(sk[r1:r2, c1:c2], sk_grid)
+        sk[r1:r2, c1:c2] = sk[r1:r2, c1:c2] * sk_coef[:, j]
+        if r1 != c1 or r2 != c2:
+            np.fill_diagonal(sk[c1:c2, r1:r2], sk_grid)
+            sk[c1:c2, r1:r2] = sk[c1:c2, r1:r2] * sk_coef[:, j]
+        elem = np.diag(evecs_found.T @ sk @ evecs_found)
+
+        return elem
 
     @staticmethod
     def _find_corrections(A, b, tol, lapack_driver):
@@ -446,6 +441,31 @@ class Fitting:
 
         return x, rank, s
 
+    def check_derivative(self):
+
+        if not self.ml.is_cspline_pec and not self.ml.is_cspline_cpl:
+            _error(
+                'Change model parameter to cspline: analytical '
+                'derivatives can be calculated only for model=cspline'
+            )
+            raise SystemExit()
+
+        if not self.ml.is_cspline_pec:
+            _warning(
+                'The parameter model for the channel objects is not set '
+                'to cspline.\nThis will cause a failure (KeyError exception) '
+                'if you try to optimize the channel parameters.\n'
+                'Change model=cspline.\n'
+            )
+
+        if not self.ml.is_cspline_cpl:
+            _warning(
+                'The parameter model for the coupling objects is not set '
+                'to cspline.\nThis will cause a failure (KeyError exception) '
+                'if you try to optimize the coupling parameters.\n'
+                'Change model=cspline.\n'
+            )
+
     def _save_svd_parameters(self, rank, sv, tol, ypar, x, yfixed, it):
 
         # singular values are sorted from the largest to the smallest one
@@ -459,7 +479,7 @@ class Fitting:
         )
 
         self.progress_str.write(
-            ' '.join(['{:.1e}'.format(i) for i in sv[0:rank]])
+            ' '.join(['{:.1e}'.format(i) for i in sv[:rank]])
         )
 
         # the conditon number is the ratio of the largest to the
@@ -509,4 +529,4 @@ class Fitting:
             niter (int, optional): Number of iterations. Defaults to 1.
         """
 
-        pass
+        raise NotImplementedError()
