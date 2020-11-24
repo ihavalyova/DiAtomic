@@ -11,14 +11,12 @@ url = 'https://github.com/ihavalyova/DiAtomic'
 email = 'havaliova@gmail.com'
 author = 'Ilvie Havalyova'
 requires_python = '>=3.6.0'
-version = 'v0.0.1'
+version = 'v0.0.1-beta1'
 required_install = [
     'scipy>=1.5.0',
     'numpy>=1.16.0',
     'matplotlib>=3.2.0',
-    'more_itertools',
     'ruamel.yaml',
-    'numba'
 ]
 required_extras = {
     'iminuit': ['iminuit'],
@@ -53,12 +51,12 @@ def run_setup():
             'energy-levels', 'deperturbation',
         ],
         packages=find_packages(
-            exclude=['test', '*.tests', 'test*']
+            exclude=['tests', '*.tests', 'test*']
         ),
         install_requires=required_install,
         extras_require=required_extras,
         package_data={
-            'diatomic': []
+            '': []
         },
         include_package_data=True,
         license='BSD License',

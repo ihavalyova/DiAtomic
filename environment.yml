@@ -1,7 +1,11 @@
-name: example-environment
+name: diatomic
 channels:
   - conda-forge
+  - defaults
 dependencies:
-  - numpy
-  - matplotlib
-  - scipy
+  - numpy>=1.16.0
+  - matplotlib>=3.2.0
+  - scipy>=1.5.0
+  - ruamel.yaml
+  - iminuit
+  - py3nj
