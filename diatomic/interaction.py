@@ -14,7 +14,7 @@ class Interaction:
         self.rgrid2 = rgrid2
         self.countl = 0
         self.cp_map = {}
-        max_rotnj = 100
+        max_rotnj = 200
 
         # TODO: the upper limit is not correct
         for cp in range(0, ncp+6):

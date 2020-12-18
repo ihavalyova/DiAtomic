@@ -3,11 +3,19 @@ from os.path import join as _join
 from random import shuffle as _shuffle
 from scipy.interpolate import CubicSpline as _CubicSpline
 import numpy as np
-from .utils import Utils, C_hartree, C_bohr
+from utils import Utils, C_hartree, C_bohr
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 import matplotlib as mpl
+import scipy.stats as st
+
 mpl.use('TkAgg')
+
+try:
+    import seaborn as sns
+    sns.set_style("white")
+except ModuleNotFoundError:
+    pass
 
 __all__ = ['Plotting']
 
@@ -35,6 +43,8 @@ class Plotting:
         return {
             'residuals_level': cls.plot_residuals_level,
             'residuals': cls.full_residuals_plot,
+            'residuals2': cls.full_residuals_plot2,
+            'residuals_hist': cls.full_residuals_hist,
             'potentials_on_grid': cls.plot_potentials_on_grid,
             'couplings_on_grid': cls.plot_couplings_on_grid,
         }
@@ -60,32 +70,252 @@ class Plotting:
         )
 
     @classmethod
-    def full_residuals_plot(cls, ml, path=None, fformat='png', show=False):
+    def plot_residuals_hist(cls, ml, path=None, fformat='png', save=True,
+                            show=False, xlabel=None, ylabel=None,
+                            bins=30, fname=None, with_sns=False, size=None):
 
-        path = path or Utils.get_plot_dir('resid_path')
+        x = ml.out_data[:, 9]
+
+        fig, ax = plt.subplots()
+        if with_sns:
+            sns.histplot(x, kde=True)
+        else:
+            n, bins, patches = ax.hist(
+                x, density=True, bins=bins, label='Data'
+            )
+            mn, mx = plt.xlim()
+            ax.set_xlim(mn, mx)
+            kde_xs = np.linspace(mn, mx, 301)
+            kde = st.gaussian_kde(x)
+            ax.plot(kde_xs, kde.pdf(kde_xs), label='PDF')
+
+        xlabel = r'Energy' or xlabel
+        ylabel = 'Count' or ylabel
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        size = size or (6, 5)
+        fig.set_size_inches(size)
+
+        if save:
+            path = path or Utils.get_plot_dir('resid_path')
+            _makedirs(path, exist_ok=True)
+            fname = fname or 'histogram'
+            fig_path = _join(path, fname + f'.{fformat}')
+            fig.savefig(fig_path, format=fformat, dpi=400)
+            print(f'Created figure: {fig_path}', sep='')
+
+        if show:
+            plt.show()
+
+    @classmethod
+    def plot_residuals_by_isotopes(cls, ml, path=None, fformat='png',
+                                   fname=None, xlabel=None, ylabel=None,
+                                   show=False, msize=5, save=True, size=None):
 
         data = ml.out_data
-
-        gen_color = cls._get_color()
-        gen_marker = cls._get_marker(limit=True)
+        colors = [
+            '#CF3F3F', '#4163A8', '#3FA561', '#DC8A56', '#B65CE6',
+            '#D9CA5C', '#D165A9', '#99D469', '#171974'
+        ]
 
         fig, ax = plt.subplots()
 
-        # nisotopes = len(ml.nisotopes)
-        # for ni in range(1, nisotopes + 1):
+        for iso in ml.nisotopes:
+            data_iso = data[(np.divmod(data[:, 6], 10)[0] + 1) == iso]
 
+            ax.plot(
+                data_iso[:, 8],
+                data_iso[:, 9],
+                color=colors[iso],
+                marker='o',
+                markersize=msize,
+                markeredgewidth=0.8,
+                linewidth=0.0,
+                fillstyle='full',
+                alpha=0.8,
+                label=int(iso)
+            )
+
+        avrg_uncert = np.sum(data[:, 10]) / data.shape[0]
+        hcolor = '#8B8E93'
+        plt.axhline(
+            y=avrg_uncert, color=hcolor, linestyle='dashed', linewidth=0.9
+        )
+        plt.axhline(
+            y=-1.0*avrg_uncert, color=hcolor, linestyle='dashed', linewidth=0.9
+        )
+
+        xlabel = r'Energy' or xlabel
+        yld = r'$\mathrm{E}_{\mathrm{calc}}$ - $\mathrm{E}_{\mathrm{obs}}$'
+        ylabel = yld or ylabel
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.legend(loc=0)
+        ax.xaxis.set_minor_locator(tck.AutoMinorLocator())
+        ax.yaxis.set_minor_locator(tck.AutoMinorLocator())
+        ax.grid(which='major', alpha=0.4, linestyle='dashdot')
+        ax.grid(which='minor', alpha=0.2, linestyle='dotted')
+
+        size = size or (13, 7)
+        fig.set_size_inches(size)
+
+        if save:
+            path = path or Utils.get_plot_dir('resid_path')
+            _makedirs(path, exist_ok=True)
+            fname = fname or 'residuals_ilabels'
+            fig_path = _join(path, fname + f'.{fformat}')
+            fig.savefig(fig_path, format=fformat, dpi=400)
+            print(f'Created figure: {fig_path}', sep='')
+
+        if show:
+            plt.show()
+
+    @classmethod
+    def full_residuals_plot2(cls, ml, path=None, fformat='png', show=False):
+
+        data = ml.out_data
+        states = np.unique(data[:, -1])
+        isotopes = np.unique(data[:, 6])
+
+        colors = [
+            '#AC4A4A', '#559ACF', '#56AD73', '#DC8A56', '#B65CE6',
+            '#D9CA5C', '#D165A9', '#99D469', '#171974'
+        ]
+
+        for state in states:
+            fig, ax = plt.subplots()
+            count = 0
+            for iso in isotopes:
+                data_state = data[data[:, -1] == state]
+                data_iso = data_state[data_state[:, 6] == iso]
+
+                ax.plot(
+                    data_iso[:, 8],
+                    data_iso[:, 9],
+                    color=colors[count],
+                    marker='o',
+                    markersize=6,
+                    markeredgewidth=0.8,
+                    linewidth=0.0,
+                    fillstyle='full',
+                    alpha=0.75,
+                    label=int(iso)
+                )
+                count += 1
+
+            avrg_uncert = np.sum(data[:, 10]) / data.shape[0]
+            hcolor = '#8B8E93'
+            plt.axhline(
+                y=avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9
+            )
+            plt.axhline(
+                y=-1.0*avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9
+            )
+
+            ax.set_xlabel('Energy')
+            ax.set_ylabel('E_calc - E_obs')
+            ax.legend(loc=0)
+
+            ax.xaxis.set_minor_locator(tck.AutoMinorLocator())
+            ax.yaxis.set_minor_locator(tck.AutoMinorLocator())
+            ax.grid(which='major', alpha=0.4, linestyle='dashdot')
+            ax.grid(which='minor', alpha=0.2, linestyle='dotted')
+
+            path = path or Utils.get_plot_dir('resid_path')
+            _makedirs(path, exist_ok=True)
+            fig_title = 'residuals_slabels_' + str(int(state))
+            fig.set_size_inches(13, 7)
+            fig_path = _join(path, fig_title + f'.{fformat}')
+            fig.savefig(fig_path, format=fformat, dpi=400)
+            print(f'Created figure: {fig_path}', sep='')
+
+            if show:
+                plt.show()
+
+    @classmethod
+    def plot_residuals_by_states(cls, ml, path=None, fformat='png',
+                                 fname=None, xlabel=None, ylabel=None,
+                                 show=False, msize=5, save=True, size=None):
+
+        data = ml.out_data
+        states = np.unique(data[:, -1])
+
+        colors = [
+            '#AC4A4A', '#559ACF', '#56AD73', '#DC8A56', '#B65CE6',
+            '#D9CA5C', '#D165A9', '#99D469', '#171974'
+        ]
+
+        fig, ax = plt.subplots()
+        for state in states:
+            data_state = data[data[:, -1] == state]
+
+            ax.plot(
+                data_state[:, 8],
+                data_state[:, 9],
+                color=colors[int(state)],
+                marker='o',
+                markersize=msize,
+                markeredgewidth=0.8,
+                linewidth=0.0,
+                fillstyle='full',
+                alpha=0.75,
+                label=int(state)
+            )
+
+        avrg_uncert = np.sum(data[:, 10]) / data.shape[0]
+        hcolor = '#8B8E93'
+        plt.axhline(
+            y=avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9
+        )
+        plt.axhline(
+            y=-1.0*avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9
+        )
+
+        xlabel = r'Energy' or xlabel
+        yld = r'$\mathrm{E}_{\mathrm{calc}}$ - $\mathrm{E}_{\mathrm{obs}}$'
+        ylabel = yld or ylabel
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.legend(loc=0)
+        ax.xaxis.set_minor_locator(tck.AutoMinorLocator())
+        ax.yaxis.set_minor_locator(tck.AutoMinorLocator())
+        ax.grid(which='major', alpha=0.4, linestyle='dashdot')
+        ax.grid(which='minor', alpha=0.2, linestyle='dotted')
+
+        size = size or (13, 7)
+        fig.set_size_inches(size)
+
+        if save:
+            path = path or Utils.get_plot_dir('resid_path')
+            _makedirs(path, exist_ok=True)
+            fname = fname or 'residuals_slabels_'
+            fig_title = fname + str(int(state))
+            fig_path = _join(path, fig_title + f'.{fformat}')
+            fig.savefig(fig_path, format=fformat, dpi=400)
+            print(f'Created figure: {fig_path}', sep='')
+
+        if show:
+            plt.show()
+
+    @classmethod
+    def plot_residuals_by_parity_labels(cls, ml, path=None, fformat='png',
+                                        fname=None, xlabel=None, ylabel=None,
+                                        show=False, msize=5, save=True, size=None):
+
+        data = ml.out_data
         edata = data[data[:, 5] == 1]
         fdata = data[data[:, 5] == 0]
 
         line_styles = {
-            'color': (next(gen_color), next(gen_color)),
-            'marker': (next(gen_marker), next(gen_marker)),
-            'markersize': (6, 6),
-            'markeredgewidth': (0.8, 0.8),
+            'color': ('#B64A4A', '#4A73B5'),
+            'marker': ('o', 'o'),
+            'markersize': (msize, msize),
+            'markeredgewidth': (0.85, 0.85),
             'linewidth': (0.0, 0.0),
-            'fillstyle': ('none', 'none')
+            'fillstyle': ('full', 'full')
         }
 
+        fig, ax = plt.subplots()
         ax.plot(
             edata[:, 8],
             edata[:, 9],
@@ -94,7 +324,8 @@ class Plotting:
             markersize=line_styles['markersize'][0],
             markeredgewidth=line_styles['markeredgewidth'][0],
             linewidth=line_styles['linewidth'][0],
-            fillstyle=line_styles['fillstyle'][0]
+            fillstyle=line_styles['fillstyle'][0],
+            alpha=0.85
         )
 
         ax.plot(
@@ -105,35 +336,41 @@ class Plotting:
             markersize=line_styles['markersize'][1],
             markeredgewidth=line_styles['markeredgewidth'][1],
             linewidth=line_styles['linewidth'][1],
-            fillstyle=line_styles['fillstyle'][1]
+            fillstyle=line_styles['fillstyle'][1],
+            alpha=0.85
         )
 
         # annotate average uncertanty
-        average_uncert = np.sum(data[:, 10]) / data.shape[0]
-
+        avrg_uncert = np.sum(data[:, 10]) / data.shape[0]
+        hcolor = '#8B8E93'
         plt.axhline(
-            y=average_uncert, color='r', linestyle='-', linewidth=0.5
+            y=avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9
         )
         plt.axhline(
-            y=-1.0*average_uncert, color='r', linestyle='-', linewidth=0.5
+            y=-avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9
         )
 
-        _makedirs(path, exist_ok=True)
-
-        ax.set_xlabel('Energy')
-        ax.set_ylabel('E_calc - E_obs')
+        xlabel = r'Energy' or xlabel
+        yld = r'$\mathrm{E}_{\mathrm{calc}}$ - $\mathrm{E}_{\mathrm{obs}}$'
+        ylabel = yld or ylabel
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
         ax.legend(['e-parity levels', 'f-parity levels'], loc=0)
-
         ax.xaxis.set_minor_locator(tck.AutoMinorLocator())
         ax.yaxis.set_minor_locator(tck.AutoMinorLocator())
-        ax.grid(which='major', alpha=0.5, linestyle='dashdot')
-        ax.grid(which='minor', alpha=0.25, linestyle='dotted')
-        # fig.tight_layout()
+        ax.grid(which='major', alpha=0.4, linestyle='dashdot')
+        ax.grid(which='minor', alpha=0.2, linestyle='dotted')
 
-        fig.set_size_inches(13, 7)
-        fig_path = _join(path, 'residuals' + f'.{fformat}')
-        fig.savefig(fig_path, format=fformat, dpi=400)  # transparent=True
-        print(f'Created figure: {fig_path}', sep='')
+        size = size or (13, 7)
+        fig.set_size_inches(size)
+
+        if save:
+            path = path or Utils.get_plot_dir('resid_path')
+            _makedirs(path, exist_ok=True)
+            fname = fname or 'residuals_plabels'
+            fig_path = _join(path, fname + f'.{fformat}')
+            fig.savefig(fig_path, format=fformat, dpi=400)
+            print(f'Created figure: {fig_path}', sep='')
 
         if show:
             plt.show()
@@ -142,22 +379,12 @@ class Plotting:
     def plot_couplings_on_grid(cls, mlevels, path=None, fformat='png',
                                show=False, kwargs={}):
 
-        # xlim_so, ylim_so = kwargs.get('xlim_so'), kwargs.get('ylim_so')
-        # xlim_lj, ylim_lj = kwargs.get('xlim_lj'), kwargs.get('ylim_lj')
-        # xlim_sj, ylim_sj = kwargs.get('xlim_sj'), kwargs.get('ylim_sj')
-        # xlim_ld, ylim_ld = kwargs.get('xlim_ld'), kwargs.get('ylim_ld')
-        # xlim_sr, ylim_sr = kwargs.get('xlim_sr'), kwargs.get('ylim_sr')
-
         path = path or Utils.get_plot_dir('func_path')
 
         fig1, ax1 = plt.subplots()
         fig2, ax2 = plt.subplots()
         fig3, ax3 = plt.subplots()
         fig4, ax4 = plt.subplots()
-
-        # TODO: try in this way
-        # axs[0].hist(x, bins=n_bins)
-        # axs[1].hist(y, bins=n_bins)
 
         gen_color = cls._get_color()
         gen_marker = cls._get_marker()
@@ -306,225 +533,226 @@ class Plotting:
 
     @classmethod
     def plot_residuals_level(cls, mlevels, path=None, fformat='png',
-                             show=False, props=None):
+                             show=False, xlabel=None, ylabel=None,
+                             save=True, size=None):
 
-        plt.rcParams.update({'font.size': 8})
         res_path = Utils.get_plot_dir('res_path')
         _makedirs(res_path, exist_ok=True)
         path = path or res_path
 
-        props_def = {
-            'xlabel': 'J',
-            'ylabel': 'E_obs - E_calc, cm-1',
-            'title': 'v={}, state={}, isotop={}',
-        }
-
-        # will change props values
-        props = cls._combine_props(props, props_def)
-        data = mlevels.out_data
-
-        # split data by v, then split by state, then extract
-        # marker ranges and get the data for each isotope
-        vsplit = np.split(data, np.where(np.diff(data[:, 1]))[0]+1)
-
-        # TODO: find more clever way
+        plt.rcParams.update({'font.size': 8})
         plt.rcParams.update({'figure.max_open_warning': 0})
+        xlabel = xlabel or 'J'
+        ylabel = ylabel or 'E_obs - E_calc [cm-1]'
 
-        for v, _ in enumerate(vsplit):
+        data = mlevels.out_data
+        states = np.unique(data[:, -1])
+        vibns = np.unique(data[:, 0])
+        size = size or (6, 5)
 
-            vn = int(vsplit[v][:, 1][0])
+        for v in vibns:
+            datav = data[data[:, 0] == v]
+            for state in states:
+                fig, ax_data = plt.subplots()
 
-            vsplit[v] = vsplit[v][vsplit[v][:, -1].argsort()]
+                data_state = datav[datav[:, -1] == state]
+                fdata = data_state[data_state[:, 5] == 0]
+                edata = data_state[data_state[:, 5] == 1]
 
-            ssplit = np.split(
-                vsplit[v], np.where(np.diff(vsplit[v][:, -1]))[0]+1
-            )
+                ax_data.plot(
+                    edata[:, 1], -edata[:, 9], color='#355896', marker='o',
+                    markersize=6, markeredgecolor='#17376E', lw=0, alpha=0.8
+                )
 
-            for sti, _ in enumerate(ssplit):
+                ax_data.plot(
+                    fdata[:, 1], -fdata[:, 9], color='#C43D3D', marker='o',
+                    markersize=6, markeredgecolor='#903C3C', lw=0, alpha=0.8
+                )
 
-                stn = int(ssplit[sti][:, -1][0])
+                ax_data.set_xlabel(xlabel)
+                ax_data.set_ylabel(ylabel)
+                ax_data.legend(['e', 'f'], loc=0, prop={'size': 6})
+                ax_data.set_title(f'v={v} | state={state}')
+                ax_data.xaxis.set_minor_locator(tck.AutoMinorLocator())
+                ax_data.grid(which='major', alpha=0.5)
+                ax_data.grid(which='minor', alpha=0.2)
 
-                mrange = cls._map_marker(ssplit[sti][:, 7])
+                fig.set_size_inches(6, 5)
 
-                for i, m in enumerate(mrange):
-                    splitted_data = ssplit[sti][m, :]
-
-                    fdata = splitted_data[splitted_data[:, 6] == 0]
-                    edata = splitted_data[splitted_data[:, 6] == 1]
-
-                    fig, ax_data = plt.subplots()
-
-                    ax_data.plot(
-                        edata[:, 2],
-                        -edata[:, 10],
-                        color='darkblue',
-                        marker='o',
-                        markersize=6,
-                        markeredgewidth=0.7,
-                        fillstyle='none',
-                        linewidth=0,
-                    )
-
-                    ax_data.plot(
-                        fdata[:, 2],
-                        -fdata[:, 10],
-                        color='darkgreen',
-                        marker='X',
-                        markersize=6,
-                        markeredgewidth=0.7,
-                        fillstyle='none',
-                        linewidth=0,
-                    )
-
-                    ax_data.set_xlabel(props['xlabel'])
-                    ax_data.set_ylabel(props['ylabel'])
-                    ax_data.legend(['e', 'f'], loc=0, prop={'size': 6})
-                    ax_data.set_title(props['title'].format(vn, stn, i+1))
-
-                    # ax_data.xaxis.set_major_locator(tck.AutoMajorLocator())
-                    # ax_data.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-                    ax_data.xaxis.set_minor_locator(tck.AutoMinorLocator())
-                    ax_data.grid(which='major', alpha=0.5)
-                    ax_data.grid(which='minor', alpha=0.2)
-
-                    fig.set_size_inches(7, 5)
-
-                    figname = f'residual_{vn}_{stn}_{i}.{fformat}'
+                if save:
+                    # figname = f'residual_{v}_{state}_{i}.{fformat}'
+                    figname = f'residual_{int(v)}_{int(state)}.{fformat}'
                     figpath = _join(path, figname)
-                    fig.savefig(
-                        figpath, format=fformat, dpi=400, transparent=False
-                    )
+                    fig.set_size_inches(size)
+                    fig.savefig(figpath, format=fformat, dpi=400)
                     fig.tight_layout()
 
                     print(f'Created figure: {figpath}', sep='')
 
-                    if show:
-                        plt.show()
-
-                    # plt.cla()
-                    # plt.gcf().clear()
-        # plt.close(fig)
+                if show:
+                    plt.show()
 
     @classmethod
-    def plot_potentials_on_grid(cls, mlevels, path=None, fformat='png',
-                                show=False, props=None):
+    def plot_residuals_level_subplots(cls, mlevels, path=None, fformat='png',
+                                      show=False, save=True, size=None,
+                                      nrows=1, ncols=2, isotope=None):
 
-        path = path or Utils.get_plot_dir('plot_path')
+        data = mlevels.out_data
+        states = np.unique(data[:, -1])
+        vibns = np.unique(data[:, 0])
 
-        # to add x lim and y lim
-        props_def = {
-            'xlabel': 'Internuclear Distance',
-            'ylabel': 'Potential energy',
-            'title': 'Potentials',
-        }
+        fig, ax = plt.subplots(nrows, ncols, sharex=True, squeeze=False)
 
-        # will change props values
-        props = cls._combine_props(props, props_def)
+        row, col, count = 0, 0, 0
 
-        _, ax = plt.subplots()
+        for v in vibns:
+            datav = data[data[:, 0] == v]
+            for state in states:
 
-        unique_pfiles = set()
-        for channel in mlevels.channels:
-            unique_pfiles.add(channel.filep)
+                if col > ncols - 1:
+                    col = 0
+                    row += 1
 
-        # need to keep the unique file names in ordered data structue
-        unique_pfiles = list(unique_pfiles)
+                data_state = datav[datav[:, -1] == state]
+                fdata = data_state[data_state[:, 5] == 0]
+                edata = data_state[data_state[:, 5] == 1]
 
-        gen_color = cls._get_color()
+                if fdata.shape[0] == 0 or edata.shape[0] == 0:
+                    continue
 
-        for i, _ in enumerate(unique_pfiles):
-            gridr = mlevels.rgrid * C_bohr
-            gridu_range = mlevels.ugrid[i*mlevels.ngrid:(i+1)*mlevels.ngrid]
-            gridu = gridu_range * C_hartree
+                ax[row, col].plot(
+                    edata[:, 1], -edata[:, 9], color='#355896', marker='o',
+                    markersize=5, lw=0, fillstyle='none', markeredgewidth=1.25
+                )
+                ax[row, col].plot(
+                    fdata[:, 1], -fdata[:, 9], color='#C43D3D', marker='o',
+                    markersize=5, lw=0, fillstyle='none', markeredgewidth=1.25
+                )
+                ax[row, col].grid(which='major', alpha=0.4)
+                ax[row, col].grid(which='minor', alpha=0.2)
+                ax[row, col].set_title(
+                    f'v={int(v)} | state={int(state)}', size=9
+                )
+                ax[row, col].tick_params(
+                    axis='both', which='major', labelsize=6.5
+                )
+                col += 1
+                count += 1
 
-            ax.plot(
-                gridr,
-                gridu,
-                color=next(gen_color),
-                markersize=0,
-                markeredgewidth=0.7,
-                linewidth=1.5,
-            )
+        for i in range((ncols*nrows)-count):
+            fig.delaxes(ax.flatten()[count+i])
 
-        ax.set_title(props['title'])
-        ax.set_xlabel(props['xlabel'])
-        ax.set_ylabel(props['ylabel'])
-        ax.legend(unique_pfiles, loc=0)
+        plt.rcParams.update({'font.size': 9})
+        plt.rcParams.update({'figure.max_open_warning': 0})
+        fig.legend(['e-level', 'f-level'])
+        size = size or (14, 11)
+        fig.set_size_inches(size)
 
-        figpath = _join(path, f'potentials.{fformat}')
-        plt.savefig(figpath, format=fformat, dpi=400)
+        res_path = Utils.get_plot_dir('res_path')
+        _makedirs(res_path, exist_ok=True)
+        path = path or res_path
 
-        print(f'Created figure: {figpath}', sep='')
+        if save:
+            figname = f'residuals_1subplot.{fformat}'
+            figpath = _join(path, figname)
+            fig.savefig(figpath, format=fformat, dpi=400)
+            fig.tight_layout()
+            print(f'Created figure: {figpath}', sep='')
 
         if show:
             plt.show()
 
     @classmethod
-    def plot_potentials_points(cls, files, path=None, fformat='png',
-                               show=False, ipoints=None, xlim=None, ylim=None):
-        # cannot not be called as option from plot()
-        # only for plotting pointwise potentials
+    def plot_potentials_on_grid(cls, mlevels, path=None, fformat='png',
+                                xlabel=None, ylabel=None, xlim=None, ylim=None,
+                                show=False, save=True, size=None):
 
-        _, ax = plt.subplots()
+        unique_pfiles = set()
+        for channel in mlevels.channels:
+            unique_pfiles.add(channel.filep)
+        unique_pfiles = list(unique_pfiles)
 
-        path = path or Utils.get_plot_dir('plot_path')
+        gen_color = cls._get_color()
+        fig, ax = plt.subplots()
+
+        for i in range(mlevels.nch):
+            gridr = mlevels.rgrid * C_bohr
+            gridu_range = mlevels.ugrid[i*mlevels.ngrid:(i+1)*mlevels.ngrid]
+            gridu = gridu_range * C_hartree
+            ax.plot(gridr, gridu, color=next(gen_color), markersize=0, lw=1)
+
+        xlim = xlim or ax.get_xlim()
+        ylim = ylim or ax.get_ylim()
+        ax.set_xlim(xlim[0], xlim[1])
+        ax.set_ylim(ylim[0], ylim[1])
+        xlabel = xlabel or 'Internuclear Distance'
+        ylabel = ylabel or 'Potential energy'
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.legend(unique_pfiles, loc=0)
+
+        size = size or (6, 5)
+        fig.set_size_inches(size)
+
+        if save:
+            path = path or Utils.get_plot_dir('plot_path')
+            figpath = _join(path, f'potentials.{fformat}')
+            plt.savefig(figpath, format=fformat, dpi=400)
+            print(f'Created figure: {figpath}', sep='')
+
+        if show:
+            plt.show()
+
+    @classmethod
+    def plot_potentials_points(cls, files, ninter=50, path=None, fformat='png',
+                               xlabel=None, ylabel=None, xlim=None, ylim=None,
+                               show=False, save=True, size=None):
 
         gen_color = cls._get_color()
         gen_marker = cls._get_marker()
-        xlim = xlim or (None, None)
-        ylim = ylim or (None, None)
-
-        is_failed = True
+        _, ax = plt.subplots()
 
         for pfile in files:
-            try:
-                pdata = np.loadtxt(pfile, skiprows=1)
-                x, y = pdata[:, 0], pdata[:, 1]
+            pdata = np.loadtxt(pfile, skiprows=1)
+            x, y = pdata[:, 0], pdata[:, 1]
+            x_interp = np.linspace(x[0], x[-1], ninter, endpoint=True)
 
-                ipoints = ipoints or x.shape[0]
-                x_interp = np.linspace(x[0], x[-1], ipoints, endpoint=True)
+            cs = _CubicSpline(x, y, bc_type='natural')
+            y_interp = cs(x_interp)
 
-                cs = _CubicSpline(x, y, bc_type='natural')
-                y_interp = cs(x_interp)
+            ax.plot(
+                x_interp,
+                y_interp,
+                color=next(gen_color),
+                marker=next(gen_marker),
+                markersize=5.5,
+                markeredgewidth=0.4,
+                linewidth=1.2,
+                fillstyle='none'
+            )
 
-                ax.plot(
-                    x_interp,
-                    y_interp,
-                    color=next(gen_color),
-                    marker=next(gen_marker),
-                    markersize=5.5,
-                    markeredgewidth=0.4,
-                    linewidth=1.5,
-                    fillstyle='none'
-                )
-                # should pass at least once
-                is_failed = False
-            except Exception as err:
-                print(
-                    f'Error: The file {pfile} does not exist or is not in '
-                    f'the correct format and cannot be poltted!\n{err}'
-                )
+        ax.set_title('Potentials')
+        ax.set_xlabel('Internuclear distance')
+        ax.set_ylabel('Potential energy')
+        xlim = xlim or ax.get_xlim()
+        ylim = ylim or ax.get_ylim()
+        ax.set_xlim(xlim[0], xlim[1])
+        ax.set_ylim(ylim[0], ylim[1])
+        ax.legend(files, loc=0)
 
-        if not is_failed:
-
-            ax.set_title('Potentials')
-            ax.set_xlabel('Internuclear distance')
-            ax.set_ylabel('Potential energy')
-            ax.set_xlim(xlim[0], xlim[1])
-            ax.set_ylim(ylim[0], ylim[1])
-            ax.legend(files, loc=0)
-
+        if save:
+            path = path or Utils.get_plot_dir('plot_path')
             figpath = _join(path, f'potential_points.{fformat}')
             plt.savefig(figpath, format=fformat, dpi=400)
 
             print(f'Created figure: {figpath}', sep='')
 
-            if show:
-                plt.show()
+        if show:
+            plt.show()
 
     @staticmethod
     def hcolormesh(mlevels, rows=None, cols=None, path=None,
-                   fformat='png', show=False):
+                   fformat='png', show=False, save=True, size=None):
 
         """create a colormesh of the Hamiltonian matrix
 
@@ -551,8 +779,8 @@ class Plotting:
 
         rows = rows or (0, hmat.shape[0])
         cols = cols or (0, hmat.shape[1])
-
-        fig, ax = plt.subplots()
+        size = size or (9, 9)
+        fig, ax = plt.subplots(figsize=size)
 
         # im = ax.pcolormesh(hmat[rows[0]:rows[1], cols[0]:cols[1]],
         #   vmin=1.0e-8, vmax=0.01, cmap='RdBu_r')
@@ -573,32 +801,15 @@ class Plotting:
             f'rows={rows[0]}:{rows[1]}, cols={cols[0]}:{cols[1]}'
         )
 
-        # fig.tight_layout()
-        path = path or Utils.get_plot_dir('plot_path')
-
-        figpath = _join(path, f'hcolormesh.{fformat}')
-        plt.savefig(figpath, format=fformat, dpi=400)
-
-        print(f'Created figure: {figpath}', sep='')
+        if save:
+            # fig.tight_layout()
+            path = path or Utils.get_plot_dir('plot_path')
+            figpath = _join(path, f'hcolormesh.{fformat}')
+            plt.savefig(figpath, format=fformat, dpi=400)
+            print(f'Created figure: {figpath}', sep='')
 
         if show:
             plt.show()
-
-    # @staticmethod
-    # def make_hist(mlevels):
-    #     x = mlevels.out_data[:, 9]
-    #     num_bins = 60
-    #     fig, ax = plt.subplots()
-
-    #     ax.hist(x, bins=num_bins)
-    #     print(x)
-    #     # n is the count in each bin
-
-    #     n, bins, patches = plt.hist(
-    #         x, num_bins, facecolor='green', alpha=0.5
-    #     )
-    #     # y = mlab.normpdf(bins, mu, sigma)
-    #     plt.show()
 
     @staticmethod
     def plot_wavefunctions(wffile, props=None, path=None,

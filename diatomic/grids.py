@@ -34,6 +34,10 @@ class Grid:
             fy_power = (np.power((1.0 - np.power(ygrid, 2)), 2))
             self.Fy = (1.0 - (1.0/(alpha**2))) / fy_power
 
+    def get_grid_points(self):
+
+        return self.rgrid * C_bohr
+
     def get_grid_bounding_values(self, rlimit, rbar, alpha):
 
         return ((rlimit/rbar)**alpha - 1.0) / ((rlimit/rbar)**alpha + 1.0)

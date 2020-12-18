@@ -356,7 +356,9 @@ class Channel:
         for ci, ch in enumerate(channels):
 
             if ch.model == cls.models[1] or ch.model == cls.models[2]:
-                ch.R, ch.U, ch.fixedU = cls._get_pointwise_data(ch.filep)
+                ch.yunits = 1.0 / C_hartree
+                ch.R, Uy, ch.fixedU = cls._get_pointwise_data(ch.filep)
+                ch.U = Uy * ch.yunits
                 ch.npnts = ch.U.shape[0]
 
             elif ch.model == cls.models[3]:
@@ -394,8 +396,12 @@ class Channel:
 
         cls.ppar = np.array([], dtype=np.float64)
         cls.pfixed = np.array([], dtype=np.int64)
+        cls.punits = np.array([], dtype=np.int64)
         for cv in Channel.unique_channels.values():
             cls.ppar = np.append(cls.ppar, cv[1].U)
+            # cls.punits = np.append(
+            #     cls.punits, np.full(cv[1].U.shape[0], cv[1].yunits)
+            # )
             cls.pfixed = np.append(cls.pfixed, cv[1].fixedU)
 
         # print(cls.unique_channels.keys()) # unique pfiles
@@ -407,7 +413,7 @@ class Channel:
         pot = np.loadtxt(filep, skiprows=1)
 
         R = pot[:, 0] / C_bohr
-        U = pot[:, 1] / C_hartree
+        U = pot[:, 1]
 
         fixedU = np.zeros_like(U)
         if pot.shape[1] == 3:
@@ -729,6 +735,7 @@ class Coupling:
         cls.cpl_file = cfile
         cls.couplings = couplings
         cls.cpar = np.array([], dtype=np.float64)
+        cls.cunits = np.array([], dtype=np.float64)
         cls.cfixed = np.array([], dtype=np.int64)
         cls.cregular = np.array([], dtype=np.float64)
         cls.clambda = np.array([], dtype=np.float64)
@@ -762,6 +769,7 @@ class Coupling:
                 cp.xc = params[:, 0] * cp.xunits
                 cp.yc = params[:, 1] * cp.yunits
                 cls.cpar = np.append(cls.cpar, cp.yc)
+                cls.cunits = np.append(cls.cunits, cp.yunits)
 
                 if params.shape[1] >= 3:
                     cp.fixedp = params[:, 2]

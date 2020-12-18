@@ -6,7 +6,7 @@ import scipy as sp
 from scipy.interpolate import CubicSpline as _CubicSpline
 from interaction import Interaction
 from molecule_data import Channel, Coupling
-from grids import CSpline
+from interpolate import CSpline
 from utils import Utils, C_hartree, C_bohr, C_massau
 # from numba import njit
 
@@ -38,10 +38,16 @@ class MoleculeLevels:
 
         # filter by state
         state_numbers = np.arange(1, len(self.channels)+1, dtype=np.int64)
-        state_mask = np.in1d(
-            self.exp_data[:, -1], np.fromiter(state_numbers, dtype=np.float64)
-        )
-        self.exp_data = self.exp_data[state_mask]
+
+        self.minxdim = 2000
+        self.xdim = 4 * self.nch
+        if self.exp_data is not None:
+            state_mask = np.in1d(
+                self.exp_data[:, -1],
+                np.fromiter(state_numbers, dtype=np.float64)
+            )
+            self.exp_data = self.exp_data[state_mask]
+            self.xdim *= self.exp_data.shape[0]
 
         self.exp_file = md.exp_file
         self.ngrid = grid.ngrid
@@ -257,13 +263,10 @@ class MoleculeLevels:
 
         return self.ugrid
 
-    def get_grid_points(self):
-
-        return self.rgrid
-
     def get_couplings_on_grid(self):
 
-        return self.fgrid
+        # return self.fgrid
+        return self.fgrid.reshape(self.ncp, self.ngrid).T  # * C_hartree
 
     def calculate_couplings_on_grid(self, ypar=None):
 
@@ -466,15 +469,17 @@ class MoleculeLevels:
         if len(self.couplings) > 0:
             ypar = np.hstack((Channel.ppar, Coupling.cpar))
 
-        chi2, rms, rmsd = self.calculate_eigenvalues(ypar)
+        stats = self.calculate_eigenvalues(ypar)
 
-        self._save_output_data(stats=(chi2, rms, rmsd))
+        if stats is not None:
+            self._save_output_data(stats=stats)
 
-        if self.store_predicted:
-            self.save_predicted()
+            if self.store_predicted:
+                self.save_predicted()
 
-        print(f'Chi Square = {chi2:<18.8f} | RMS = {rms:<15.8f}cm-1')
-        # f'\nRMSD = {rmsd:.8f}'
+            print(
+                f'Chi Square = {stats[0]:<11.5f} RMS = {stats[1]:<11.6f}cm-1'
+            )
 
     def calculate_eigenvalues(self, ypar=None):
 
@@ -490,11 +495,10 @@ class MoleculeLevels:
         count = 0
 
         for niso, iso in enumerate(self.nisotopes):
-            minxdim = 1000
-            xdim = 2 * self.nch * self.exp_data.shape[0]
-            if xdim < minxdim:
-                xdim = minxdim
-            self.evals_predicted = np.zeros((xdim, 6+self.nch))
+            if self.xdim < self.minxdim:
+                self.xdim = self.minxdim
+
+            self.evals_predicted = np.zeros((self.xdim, 6+self.nch))
 
             mass = self.masses[iso-1]
 
@@ -514,7 +518,6 @@ class MoleculeLevels:
                         jrotn, mass, par, self.channels, self.couplings,
                         self.fgrid, dd, self.Gy2
                     )
-                    # pmatrix = pmatrix*np.tile(self.Gy2,(pmatrix.shape[0],5))
 
                     self.hmatrix += pert_matrix
 
@@ -562,15 +565,15 @@ class MoleculeLevels:
             else:
                 self.save_predicted()
 
-        chi2, rms, rmsd = self.calculate_stats(
-            self.out_data[:, 8], self.out_data[:, 7],
-            self.out_data[:, 10], self.is_weighted
-        )
+            chi2, rms, rmsd = self.calculate_stats(
+                self.out_data[:, 8], self.out_data[:, 7],
+                self.out_data[:, 10], self.is_weighted
+            )
 
-        # the sorting is needed for the analytical derivative
-        self._sort_output(cols=[5, 1])
+            # the sorting is needed for the analytical derivative
+            self._sort_output(cols=[5, 1])
 
-        return chi2, rms, rmsd
+            return chi2, rms, rmsd
 
     def _get_lambda_values(self):
 
