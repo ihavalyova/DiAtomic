@@ -33,4 +33,4 @@ I. Havalyova and A. Pashov: Аn open-source library for calculating energy level
 
 **Acknowledgements**:
 
-I.H. acknowledges a partial support by the National program - Young scientists and Postdoctoral candidates 2020 of Ministry of Education and Science.
+I.H. acknowledges partial support by the National program - Young scientists and Postdoctoral candidates 2020 of Ministry of Education and Science.
