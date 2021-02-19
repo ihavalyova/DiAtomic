@@ -14,7 +14,7 @@ DiAtomic is an open-source library written in Python with useful routines for pe
   - single non-interacting electronic state
   - system of arbitrary number of coupled electronic states
 
-- compute the transition frequencies and line intensities when either PECs or term values are available
+- compute the transition frequencies when either PECs or term values are available
 - fit of the computed energy levels to the experimental data
 
 **To install**: call Python pip from the command line:
