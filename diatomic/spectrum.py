@@ -1,6 +1,8 @@
-import os
-import math
+import io
 import numpy as np
+from scipy.interpolate import CubicSpline
+from utils import C_bohr
+from scipy import constants
 
 try:
     import py3nj
@@ -10,622 +12,609 @@ except ModuleNotFoundError:
 
 
 class Spectrum:
-    def __init__(self):
 
-        self.calc_freq_file = 'calculated_frequencies.dat'
-        self.comp_freq_file = 'compared_frequencies.dat'
-        self.evals_file = 'eigenvalues_all.dat'
+    def __init__(self, mlevels, grid, spectrum='absorption'):
 
-    def calculate_frequencies(self, **kwargs):
+        # TODO: allow for setting an input file with computed energies and grid
+        self.mlevels = mlevels
+        self.grid = grid
 
-        """Will calculate the possible transition frequencies
-        for one of the two options:
-        (i) between two states
-        (ii) between arbitrary number of prevously computed term values
+        self.dfreq_range = (0, 1e5)
+        self.dusymm = (0, 1)
+        self.dlsymm = (0, 1)
+        self.is_hlf_computed = False
+        self.freq_calc = None
+        self.spectrum = spectrum
+        # TODO: set default constarints for J, par, El, Eu, freq
 
-        Raises:
-            SystemExit: if the channel does not match the required type
-            SystemExit: if the files with term values are not found
-            SystemExit: if the channels or terms are not provided in pairs
+        # default file names
+        self.fname_wavenumbers = 'wavenumbers.dat'
+        self.fname_hlf = 'hlf.dat'
+        self.fname_lifetimes = 'lifetimes.dat'
+        self.fname_rel_int = 'relative_intensities.dat'
+        self.fname_acoefs = 'Acoefs.dat'
+        self.fname_compare = 'compared_wavenumbers.dat'
 
-        Remarks:
-            0. by channels and by terms are two separate options and cannot
-            be used simultaneously
-            1. uch/lch should be integer numbers
-            2. uterms/lterms are names of an existing files in specific format
-            3. if channels and terms files are specified simultaneously,
-            the default channel option will be used
-            4. if uch is specified lch should also be specified;
-            the same applies for lterms and uterms
-        """
+        self.c_boltzmannk = constants.value(
+            'Boltzmann constant in inverse meter per kelvin'
+        ) * 0.01
 
+    def set_constraints(self, Elower=None, Eupper=None, lsymm=None, usymm=None,
+                        ujrange=None, ljrange=None, freq_range=None):
+
+        # set default constraints
+        self.freq_range = freq_range or (0, 1e5)
+        usymm = usymm or self.dusymm
+        lsymm = lsymm or self.dlsymm
+
+        # TODO: set default constarints for J, par, El, Eu, freq
+
+        evalues = self.mlevels.get_predicted_data()
+        eind, jind, pind = 1, 2, 3
+
+        # constraints by energy
+        self.lower_levels = evalues[
+            (evalues[:, eind] >= Elower[0]) & (evalues[:, eind] <= Elower[1])
+        ]
+        self.upper_levels = evalues[
+            (evalues[:, eind] >= Eupper[0]) & (evalues[:, eind] <= Eupper[1])
+        ]
+
+        # constraints by J
+        ujs, uje = ujrange[0], ujrange[1]
+
+        # upper_jrots = np.arange(ujs, uje+1)
+        self.upper_levels = self.upper_levels[
+            (self.upper_levels[:, jind] >= ujs) &
+            (self.upper_levels[:, jind] <= uje)
+        ]
+
+        ljs, lje = ljrange[0], ljrange[1]
+        # lower_jrots = np.arange(ljs, lje+1)
+        self.lower_levels = self.lower_levels[
+            (self.lower_levels[:, jind] >= ljs) &
+            (self.lower_levels[:, jind] <= lje)
+        ]
+
+        # constarints by symmetry
+        self.lower_levels = self.lower_levels[
+            (np.in1d(self.lower_levels[:, pind], lsymm[0])) |
+            (np.in1d(self.lower_levels[:, pind], lsymm[1]))
+        ]
+        self.upper_levels = self.upper_levels[
+            (np.in1d(self.upper_levels[:, pind], usymm[0])) |
+            (np.in1d(self.upper_levels[:, pind], usymm[1]))
+        ]
+
+    def calculate_wavenumbers(self, apply_rules=False, array_size=10000,
+                              save=False, filename=None):
+
+        jind, pind = 2, 3
+        # TODO: remove self parameters from the function call
+
+        # create a list of wavenumbers based on the strict selection rules
+        # for J and symmetry
+        self.freq_calc = self._create_wavenumbers_list(
+            self.upper_levels, self.lower_levels, jind,
+            pind, self.freq_range, array_size
+        )
+
+        # apply additional selection rules by computing Honl-London factors
+        if apply_rules:
+            self._apply_rules_by_HLF()
+
+        cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -1]
+        if save:
+            filename = filename or self.fname_wavenumbers
+            self._save_wavenumbers(self.freq_calc[:, cols], filename)
+
+        return self.freq_calc[:, cols]
+
+    def _apply_rules_by_HLF(self):
+
+        self.hlf = np.ones(self.freq_calc.shape[0])
+
+        # extract the quantum numbers from the computed wavenumbers list
+        usymm, lsymm = self.freq_calc[:, 3], self.freq_calc[:, 12]
+        uj, lj = self.freq_calc[:, 2], self.freq_calc[:, 11]
+        ulambda, llambda = self.freq_calc[:, 7], self.freq_calc[:, -3]
+        uomega, lomega = self.freq_calc[:, 8], self.freq_calc[:, -2]
+
+        self.hlf = self._compute_Honl_London_factors(
+            usymm, lsymm, uj, lj, uomega, lomega, ulambda, llambda
+        )
+
+        self.is_hlf_computed = True
+
+    def save_HLF(self, filename=None):
+
+        calc_hlf = np.c_[self.freq_calc, self.hlf]
+        # calc_hlf = calc_hlf[np.where(hlf != 0.0)[0], :]
+        cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -2, -1]
+        filename = filename or self.fname_hlf
+        self._save_Honl_London_factor(calc_hlf[:, cols], filename)
+
+    def calculate_Einstein_coefficients(self, ninter=1000, dmf=None,
+                                        save=False, filename=None):
+
+        # TODO: check if HLF has already been computed or not
+        # TODO: check if freq_calc has already been computed or not
+
+        initial_levels = self.freq_calc[:, :9]
+        final_levels = self.freq_calc[:, 9:-1]
+
+        self.edipole_element = self._compute_electric_dipole_elements(
+            initial_levels, final_levels, dmf, ninter=ninter
+        )
+
+        line_strength = self.edipole_element[:, -1] * self.hlf
+
+        jinitial = self.edipole_element[:, 1]
+        wavenumber = self.edipole_element[:, -2]
+
+        # statistical weight of the initial level
+        self.gji = (2 * jinitial + 1)
+        self.acoef = self._calculate_Einstein_coeffcients(
+            wavenumber, line_strength, self.gji
+        )
+        acoef_result = np.c_[self.edipole_element[:, :-1], self.acoef]
+        self.nonzero_ainds = np.where(self.acoef != 0.0)[0]
+        self.acoef_final = acoef_result[self.nonzero_ainds, :]
+
+        if save:
+            filename = filename or self.fname_acoefs
+            self._save_Einstein_coeffcients(self.acoef_final, filename)
+
+        return self.acoef_final
+
+    def calculate_relative_intensities(self, T=296, save=False, filename=None):
+
+        if self.spectrum == 'absorption' or self.spectrum == 'a':
+
+            # TODO: check if Einstein coefs have already been calculated
+
+            kt = self.c_boltzmannk * T
+            print(self.freq_calc[:, 10])
+            print(self.freq_calc[:, -1])
+            # TODO check this
+            intensity = self.acoef * self.gji * self.freq_calc[:, -1] * np.exp(-self.freq_calc[:, 10]/kt)
+            # (1 - np.exp(-freq_calc[:, -1]/kt))
+            # np.square(np.square(freq_calc[:, -1]))
+            intensity_result = np.c_[self.edipole_element[:, :-1], intensity]
+            intensity_final = intensity_result[self.nonzero_ainds, :]
+
+            # cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -2, -1]
+            if save:
+                filename = filename or self.fname_rel_int
+                self._save_rel_intensity(intensity_final, filename)
+        else:
+            pass
+
+        return intensity_final
+
+    def calculate_lifetimes(self, save=False, filename=None):
+
+        # t = 1 / sum_{j} A_ij
+
+        # get the indices of the unique upper levels
+        _, unq_uinds, unq_uinv = np.unique(
+            self.acoef_final[:, :6], return_index=True,
+            return_inverse=True, axis=0,
+        )
+
+        # sum the Einstein coefficients for each group of unique upper levels
+        # sum_acoefs = np.zeros(unq_uinv.shape[0])
+        sum_acoefs = np.zeros(np.unique(unq_uinv).shape)
+
+        for i, ii in enumerate(unq_uinv):
+            sum_acoefs[ii] += self.acoef_final[i, -1]
+
+        # the lifetimes are the inverse of the acumulated sums
+        lifetimes = 1.0 / sum_acoefs
+
+        # conncatenate the upper levels and the calculated lifetimes
+        lifetimes_final = np.column_stack(
+            (self.acoef_final[unq_uinds, :6], lifetimes[:unq_uinds.shape[0]])
+        )
+
+        if save:
+            filename = filename or self.fname_lifetimes
+            self._save_lifetimes(lifetimes_final, filename)
+
+        return lifetimes_final
+
+    def calculate_partition_functions(self, Ia=0, Ib=0, T=296,
+                                      save=False, filename=None):
+        # for calculating the partition functions the total degeneracy factor
+        # for the molecule is needed which includes also the nuclear degeneracy
+
+        # Q(T) = g_ns sum_{i} (2J_{i}+1) * exp(-E_{i}/kT)
+        # for heteronuclear diatomics: g_ns = (2I_{a} + 1)(2I_{b} + 1)
+        # for homonuclear diatomics: depends on the nuclear symmetry
+
+        gns = 1
+        # Ia = Ib => the molecule is homonuclear
+        if Ia == Ib:
+            # if Ia.is_integer():
+            raise NotImplementedError(
+                'Homonuclear diatomics are currently not supported')
+        else:
+            gns = (2*Ia+1)*(2*Ib+1)
+
+        kt = self.c_boltzmannk * T
+        # qpart = gns *
+
+    def calculate_absolute_intensity(self):
+        # the formula for the absolute line intensity is diffrent for
+        # absorption and emission
+        if self.spectrum == 'absorption' or self.spectrum == 'a':
+            self._calculate_absorption_line_intensity()
+        else:
+            self._calculate_emission_line_intensity()
+
+    def _calculate_absorption_line_intensity(self):
         pass
 
-    def check_channels_type(self, ch):
+    def _calculate_emission_line_intensity(self):
+        pass
 
-        if not isinstance(ch, (int)):
-            raise TypeError(
-                f'Invalid type in spectrum: {ch} should be an integer number'
-            )
+    def calculate_oscilator_strength(self):
+        raise NotImplementedError()
 
-    def check_terms_file_type(self, terms):
-
-        if not os.path.isfile(terms):
-            raise FileNotFoundError(
-                f'Terms={terms} should be a name of an existing file.'
-            )
-
-    def define_keywords(self):
+    def _define_optional_keywords(self):
 
         return {
-            0: 'evalues_file',
-            1: 'output_freq_file',
-            2: 'obs_freq_file',
-            3: 'compared_freq_file',
-            4: 'Jrange',
-            5: 'vrange',
-            6: 'uparity',
-            7: 'lparity',
-            8: 'upper_state',
-            9: 'lower_state',
-            10: 'freq_range',
-            11: 'HLF',
-            12: 'extract_nonzero',
-            13: 'grid',
-            14: 'isotopes',
-            15: 'FCF',
-            16: 'bands',
+            1: 'spectrum_type',
+            2: 'apply_rules',
+            3: 'compute_A',
+            4: 'compute_rel_intensity',
+            6: 'temperature',
+            7: 'save_hlf',
+            8: 'filename_rel_int',
+            9: 'filename_Acoefs',
+            10: 'filename_hlf',
+            11: 'compare_obs',
+            12: 'ninter',
+            13: 'wavenumber_only',
+            14: 'size',
+            15: 'filename_wavenumber'
         }
 
-    def calculate_frequencies_by_states(self, upper=None, lower=None,
-                                        mlevels=None, kwargs={}):
+    def compute_linelist(self, Elower=None, Eupper=None,
+                         ujrange=None, ljrange=None, lsymm=None, usymm=None,
+                         freq_range=None, dmf=None, **kwargs):
 
-        """ will compute all allowed transitions between two channels
-        for which the eigenvalues and eigenvectors have been calculated
+        # get optional keywords
+        opt_keys = self._define_optional_keywords()
 
-        Args:
-            uch (int): the number of the upper channel/state
-            lch (int): the number of the lower channel/state
-            kwargs (dict): the provided options as keywords
+        # spectrum_type = kwargs.get(opt_keys[1]) or 'absorption'
+        apply_rules = kwargs.get(opt_keys[2]) or True
+        temperature = kwargs.get(opt_keys[6]) or 297
+        ninter = kwargs.get(opt_keys[12]) or 1000
+        compute_A = kwargs.get(opt_keys[3]) or False
+        compute_rel_intensity = kwargs.get(opt_keys[4]) or False
+        wavenumber_only = kwargs.get(opt_keys[13]) or False
+        save_hlf = kwargs.get(opt_keys[7]) or False
+        filename_hlf = kwargs.get(opt_keys[10]) or 'hlf.dat'
+        filename_rel_int = kwargs.get(opt_keys[8]) or 'result_hlf.dat'
+        filename_Acoefs = kwargs.get(opt_keys[9]) or 'result_A.dat'
+        size = kwargs.get(opt_keys[14]) or 10000
+        wavenumbers_file = kwargs.get(opt_keys[15]) or 'wavenumbers.dat'
 
-        Remarks:
-            1. The keywords 'upper_state' and 'lower_state' are
-            not relevant in this case. They are used in the computation
-            by term values when more then two states can be invloved
-            2. The keyword 'obs_freq_file' should be a name of an existing file
-            3. When FCF should be computed grid option is required
-            4. When keyword 'HLF'/'FCF' is not set or set to False,
-            the Honl-London/Frank-Condon factors will not be computed
-            and written in the output files
-            5. The type of bands is tuple of tuples or list of lists
-        """
+        # TODO: check if dmf is None
+        freq_range = freq_range or (0, 1e5)
+        usymm = usymm or (0, 1)
+        lsymm = lsymm or (0, 1)
 
-        keys = self.define_keywords()
+        # js = min(np.amin(uterms[:, uj]), np.amin(lterms[:, lj]))
+        # je = max(np.amax(uterms[:, uj]), np.amax(lterms[:, lj]))
 
-        # evalues_file = kwargs.get(keys[0]) or self.evals_file
-        # evalues = np.loadtxt(evalues_file)
+        evalues = self.mlevels.get_predicted_data()
 
-        evalues = mlevels.get_predicted_eigenvalues()
-        evalues = np.c_[np.arange(1.0, evalues.shape[0]+1), evalues]
+        # TODO: set default constarints for J, par, El, Eu, freq
 
-        uterms = evalues[evalues[:, -4] == upper]
-        # uterms = uterms[:, [0, 1, 2, 3, 4, -3, -2, -1]]
-        uterms = uterms[:, [0, -3, 1, 2, 3, -4, -2, -1]]
-        lterms = evalues[evalues[:, -4] == lower]
-        # lterms = lterms[:, [0, 1, 2, 3, 4, -3, -2, -1]]
-        lterms = lterms[:, [0, -3, 1, 2, 3, -4, -2, -1]]
+        eind, jind, pind = 1, 2, 3
 
-        predicted_freq_file = kwargs.get(keys[1]) or self.calc_freq_file
-        obs_freq_file = kwargs.get(keys[2])
-        compared_freq_file = kwargs.get(keys[3]) or self.comp_freq_file
-
-        vns = np.unique(uterms[:, 1])
-        vrange_def = min(vns), max(vns)
-        jns = np.unique(uterms[:, 3])
-        jrange_def = min(jns), max(jns)
-
-        jrange = kwargs.get(keys[4]) or jrange_def
-        vrange = kwargs.get(keys[5]) or vrange_def
-        upar = kwargs.get(keys[6]) or (0, 1)
-        lpar = kwargs.get(keys[7]) or (0, 1)
-        frange = kwargs.get(keys[10]) or (-np.inf, np.inf)
-        compute_hlf = kwargs.get(keys[11]) or False
-        extract = kwargs.get(keys[12]) or False
-
-        # TODO: check if grid is provided when computing FCF
-        grid = kwargs.get(keys[13])
-
-        isotopes = kwargs.get(keys[14]) or [1]
-        compute_fcf = kwargs.get(keys[15]) or False
-        bands = kwargs.get(keys[16]) or ((0, 0),)
-
-        js, je = self.get_jrange_values(jrange, uterms, lterms)
-        vs, ve = self.get_vrange_values(vrange, uterms, lterms)
-        fs, fe = frange[0], frange[1]
-
-        freq_calc = np.array([])
-
-        for row in range(0, uterms.shape[0]):
-
-            uterm = np.tile(uterms[row, :], lterms.shape[0]). \
-                reshape(lterms.shape[0], uterms.shape[1])
-
-            d = np.hstack((uterm, lterms))
-
-            vcond = \
-                (d[:, 1] >= vs) & (d[:, 1] <= ve) & \
-                (d[:, 9] >= vs) & (d[:, 9] <= ve)
-            d = d[vcond]
-
-            jcond = \
-                (d[:, 3] >= js) & (d[:, 3] <= je) & \
-                (d[:, 11] >= js) & (d[:, 11] <= je)
-            d = d[jcond]
-
-            pcond = (np.in1d(d[:, 4], upar)) & (np.in1d(d[:, 12], lpar))
-            d = d[pcond]
-
-            enr_cond = (d[:, 2] >= d[:, 10])
-            jp = d[:, 3] == d[:, 11] - 1.0
-            jq = d[:, 3] == d[:, 11]
-            jr = d[:, 3] == d[:, 11] + 1.0
-
-            cond_pee = jp & (d[:, 4] == 1) & (d[:, 12] == 1) & enr_cond
-            cond_pff = jp & (d[:, 4] == 0) & (d[:, 12] == 0) & enr_cond
-            cond_qef = jq & (d[:, 4] == 1) & (d[:, 12] == 0) & enr_cond
-            cond_qfe = jq & (d[:, 4] == 0) & (d[:, 12] == 1) & enr_cond
-            cond_ree = jr & (d[:, 4] == 1) & (d[:, 12] == 1) & enr_cond
-            cond_rff = jr & (d[:, 4] == 0) & (d[:, 12] == 0) & enr_cond
-
-            data_pee = d[cond_pee]
-            data_pff = d[cond_pff]
-            data_qef = d[cond_qef]
-            data_qfe = d[cond_qfe]
-            data_ree = d[cond_ree]
-            data_rff = d[cond_rff]
-
-            shapes = np.array([
-                data_pee.shape[0], data_pff.shape[0],
-                data_qef.shape[0], data_qfe.shape[0],
-                data_ree.shape[0], data_rff.shape[0]
-            ])
-
-            # allowed frequencies
-
-            fq_pee = (data_pee[:, 2] - data_pee[:, 10])[:, np.newaxis]
-            fq_pff = (data_pff[:, 2] - data_pff[:, 10])[:, np.newaxis]
-            fq_qef = (data_qef[:, 2] - data_qef[:, 10])[:, np.newaxis]
-            fq_qfe = (data_qfe[:, 2] - data_qfe[:, 10])[:, np.newaxis]
-            fq_ree = (data_ree[:, 2] - data_ree[:, 10])[:, np.newaxis]
-            fq_rff = (data_rff[:, 2] - data_rff[:, 10])[:, np.newaxis]
-
-            # branches
-
-            brnach_pee = np.repeat(np.array([1]), shapes[0])[:, np.newaxis]
-            brnach_pff = np.repeat(np.array([2]), shapes[1])[:, np.newaxis]
-            brnach_qef = np.repeat(np.array([3]), shapes[2])[:, np.newaxis]
-            brnach_qfe = np.repeat(np.array([4]), shapes[3])[:, np.newaxis]
-            brnach_ree = np.repeat(np.array([5]), shapes[4])[:, np.newaxis]
-            brnach_rff = np.repeat(np.array([6]), shapes[5])[:, np.newaxis]
-
-            data_pee = np.hstack((data_pee, np.hstack((fq_pee, brnach_pee))))
-            data_pff = np.hstack((data_pff, np.hstack((fq_pff, brnach_pff))))
-            data_qef = np.hstack((data_qef, np.hstack((fq_qef, brnach_qef))))
-            data_qfe = np.hstack((data_qfe, np.hstack((fq_qfe, brnach_qfe))))
-            data_ree = np.hstack((data_ree, np.hstack((fq_ree, brnach_ree))))
-            data_rff = np.hstack((data_rff, np.hstack((fq_rff, brnach_rff))))
-
-            freq_calc = np.append(freq_calc, np.vstack((
-                data_pee, data_pff, data_qef,
-                data_qfe, data_ree, data_rff
-            )))
-
-        freq_calc = freq_calc.reshape(
-            -1, uterms.shape[1] + lterms.shape[1] + 2
-        )
-
-        s = freq_calc.shape[1]
-        freq_calc = freq_calc[
-            :, [1, 9, 3, 11, 6, 14, 7, 15, 5, 13, 4, 12, 2, 10, s-2, s-1]
+        # constraints by energy
+        lower_levels = evalues[
+            (evalues[:, eind] >= Elower[0]) & (evalues[:, eind] <= Elower[1])
+        ]
+        upper_levels = evalues[
+            (evalues[:, eind] >= Eupper[0]) & (evalues[:, eind] <= Eupper[1])
         ]
 
-        fcond = (freq_calc[:, 14] >= fs) & (freq_calc[:, 14] <= fe)
+        # constraints by J
+        ujs, uje = ujrange[0], ujrange[1]
+        # upper_jrots = np.arange(ujs, uje+1)
+        upper_levels = upper_levels[
+            (upper_levels[:, jind] >= ujs) & (upper_levels[:, jind] <= uje)
+        ]
+
+        ljs, lje = ljrange[0], ljrange[1]
+        # lower_jrots = np.arange(ljs, lje+1)
+        lower_levels = lower_levels[
+            (lower_levels[:, jind] >= ljs) & (lower_levels[:, jind] <= lje)
+        ]
+
+        # constarints by symmetry
+        lower_levels = lower_levels[
+            (np.in1d(lower_levels[:, pind], lsymm[0])) |
+            (np.in1d(lower_levels[:, pind], lsymm[1]))
+        ]
+        upper_levels = upper_levels[
+            (np.in1d(upper_levels[:, pind], usymm[0])) |
+            (np.in1d(upper_levels[:, pind], usymm[1]))
+        ]
+
+        freq_calc = self._create_wavenumbers_list(
+            upper_levels, lower_levels, jind, pind, freq_range, size
+        )
+
+        # extract initial and final levels from the wavenumbers list
+        # by filtering the unique inidicies of the levels
+        _, ilinds = np.unique(freq_calc[:, 0], return_index=True)
+        _, flinds = np.unique(freq_calc[:, 9], return_index=True)
+        initial_levels = freq_calc[:, :9]
+        final_levels = freq_calc[:, 9:-1]
+        print(compute_A, compute_rel_intensity)
+        compute_A = compute_A or compute_rel_intensity
+        print(compute_A, compute_rel_intensity)
+        apply_rules = apply_rules or (compute_A or compute_rel_intensity)
+
+        if wavenumber_only:
+            compute_A, compute_rel_intensity, save_hlf = False, False, False
+            cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -1]
+            self._save_wavenumbers(freq_calc[:, cols], wavenumbers_file)
+
+        hlf = np.ones(freq_calc.shape[0])
+        if apply_rules:
+            usymm, lsymm = freq_calc[:, 3], freq_calc[:, 12]
+            uj, lj = freq_calc[:, 2], freq_calc[:, 11]
+            ulambda, llambda = freq_calc[:, 7], freq_calc[:, -3]
+            uomega, lomega = freq_calc[:, 8], freq_calc[:, -2]
+
+            hlf = self._compute_Honl_London_factors(
+                usymm, lsymm, uj, lj, uomega, lomega, ulambda, llambda
+            )
+
+        if save_hlf:
+            calc_hlf = np.c_[freq_calc, hlf]
+            # calc_hlf = calc_hlf[np.where(hlf != 0.0)[0], :]
+            cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -2, -1]
+            self._save_Honl_London_factor(calc_hlf[:, cols], filename_hlf)
+
+        if compute_A or compute_rel_intensity:
+
+            # calculate Einstein coeffcients
+            result = self._compute_electric_dipole_elements(
+                initial_levels, final_levels, dmf, ninter=ninter
+            )
+
+            line_strength = result[:, -1] * hlf
+
+            jinitial, wavenumber = result[:, 1], result[:, -2]
+            gji = (2 * jinitial + 1)  # statistical weight of the initial level
+            acoef = self._calculate_Einstein_coeffcients(
+                wavenumber, line_strength, gji
+            )
+            acoef_result = np.c_[result[:, :-1], acoef]
+            nonzero_inds = np.where(acoef != 0.0)[0]
+            nonzero_result = acoef_result[nonzero_inds, :]
+
+            self._save_Einstein_coeffcients(nonzero_result, filename_Acoefs)
+
+            if compute_rel_intensity:
+                kt = self.c_boltzmannk * temperature
+                # TODO: check if the exponent should be calculated with
+                # the energy value or the term value
+
+                intensity = acoef * gji * np.exp(-freq_calc[:, 10] / kt)
+                # (1 - np.exp(-freq_calc[:, -1]/kt))
+                # np.square(np.square(freq_calc[:, -1]))
+                intensity_result = np.c_[result[:, :-1], intensity]
+                nonzero_result = intensity_result[nonzero_inds, :]
+                cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -2, -1]
+
+                self._save_rel_intensity(nonzero_result, filename_rel_int)
+
+    def _create_wavenumbers_list(self, upper_levels, lower_levels, jind, pind,
+                                 freq_range, size):
+
+        lshape, ushape = lower_levels.shape, upper_levels.shape
+        freq_calc = np.zeros((size, 19))
+        countf = 0
+
+        # select which columns from the levels to use
+        # n' E' J' p' iso' st' v' l' o' n E J p iso st v l o freq
+        select = [0, 1, 2, 3, 4, -4, -3, -2, -1]
+        jcol, pcol = jind + len(select), pind + len(select)
+
+        for ulevel in range(ushape[0]):
+            level = np.tile(
+                upper_levels[ulevel, select], lshape[0]
+            ).reshape(lshape[0], len(select))
+
+            levels = np.hstack((level, lower_levels[:, select]))
+
+            # apply selection rules by J and symmetry - the remaining
+            # approximate selection rules will be applied by computing HLF
+            jp = levels[:, jind] == levels[:, jcol] - 1.0
+            jq = levels[:, jind] == levels[:, jcol]
+            jr = levels[:, jind] == levels[:, jcol] + 1.0
+
+            cond_pee = jp & (levels[:, pind] == 1) & (levels[:, pcol] == 1)
+            cond_pff = jp & (levels[:, pind] == 0) & (levels[:, pcol] == 0)
+            cond_qef = jq & (levels[:, pind] == 1) & (levels[:, pcol] == 0)
+            cond_qfe = jq & (levels[:, pind] == 0) & (levels[:, pcol] == 1)
+            cond_ree = jr & (levels[:, pind] == 1) & (levels[:, pcol] == 1)
+            cond_rff = jr & (levels[:, pind] == 0) & (levels[:, pcol] == 0)
+
+            levels_selected = np.vstack((
+                levels[cond_pee], levels[cond_pff], levels[cond_qef],
+                levels[cond_qfe], levels[cond_ree], levels[cond_rff]
+            ))
+
+            freq = levels_selected[:, 1] - levels_selected[:, 10]
+            fq_calc = np.column_stack((levels_selected, freq))
+
+            freq_calc[countf:countf+fq_calc.shape[0]] = fq_calc
+            countf += fq_calc.shape[0]
+
+        freq_calc = freq_calc[:countf]
+
+        # apply constraints by frequency
+        fs, fe = freq_range[0], freq_range[1]
+        fcond = (freq_calc[:, -1] >= fs) & (freq_calc[:, -1] <= fe)
+        fcond = fcond & (freq_calc[:, -1] >= 0.0)
         freq_calc = freq_calc[fcond]
 
-        branch_freq = self.find_branch_frequencies(freq_calc, compute_hlf)
+        if freq_calc.shape[0] == 0:
+            raise SystemExit(
+                'Error: Allowed transition frequencies were not found.\n'
+            )
 
-        self.save_computed_frequencies(
-            predicted_freq_file, branch_freq, compute_hlf
+        return freq_calc
+
+    def _calculate_Einstein_coeffcients(self, wavenumber, line_strength, gji):
+
+        # e0 = constants.value('vacuum electric permittivity')
+        # planck = constants.value('Planck constant')
+        # consts = (16 * np.pi**3) / 3 * e0 * planck
+        # acoef = (consts * wavenumber**3 * line_strength) / gi
+        acoef = (3.1361891e-7 * line_strength * wavenumber**3) / gji
+
+        return acoef
+
+    def _compute_electric_dipole_elements(self, init_levels, final_levels,
+                                          dmf, ninter=1000):
+
+        ivec_inds = init_levels[:, 0].astype(np.int)
+        fvec_inds = final_levels[:, 0].astype(np.int)
+        # print('inds', ivec_inds, fvec_inds)
+
+        select = [-3, 2, 1, 3, 4, -4]
+        result = np.zeros((ivec_inds.shape[0], 2*len(select)+2))
+
+        rgrid, rstep = self.grid.rgrid * C_bohr, self.grid.rstep * C_bohr
+        ngrid = rgrid.shape[0]
+        igrid, istep = np.linspace(
+            self.grid.rmin, self.grid.rmax, num=ninter,
+            endpoint=True, retstep=True
         )
-
-        if extract and compute_hlf:
-            hlf = branch_freq[:, -1].astype(float)
-
-            # find the indices of the elements with nonzero Honl-London factors
-            inonzero = np.where(hlf != 0.0)[0]
-
-            extract_file = 'extract_' + predicted_freq_file
-
-            self.save_computed_frequencies(
-                extract_file, branch_freq[inonzero], compute_hlf
-            )
-
-        if obs_freq_file is not None:
-            self.compare_frequency_lists(
-                obs_freq_file, compared_freq_file, freq_calc
-            )
-
-        if compute_fcf:
-            fcfs = self.compute_Frank_Condon_factors(
-                upper, lower, grid, (js, je), isotopes, bands
-            )
-
-            fcf_file = 'FCF_' + predicted_freq_file
-
-            self.save_computed_FCFs(fcf_file, fcfs)
-
-    def find_branch_frequencies(self, freq_calc, compute_hlf):
-
-        branches = \
-            np.vectorize(self.map_number_to_branch().get)(freq_calc[:, -1])
-        branch_freq = np.column_stack((freq_calc[:, :-1], branches))
-
-        hlf = None
-        if compute_hlf:
-            hlf = self.compute_Honl_London_factors(freq_calc)
-            branch_freq = np.column_stack((branch_freq, hlf))
-
-        return branch_freq
-
-    def compare_frequency_lists(self, obs_freq_file, compared_freq_file,
-                                freq_calc):
-
-        freqs = self.compare_frequencies(obs_freq_file, freq_calc)
-
-        if freqs.shape[0] != 0:
-            branches = \
-                np.vectorize(self.map_number_to_branch().get)(freqs[:, -1])
-
-            branch_freqs = np.column_stack((freqs[:, :-1], branches))
-
-            self.save_compared_frequencies(compared_freq_file, branch_freqs)
-        else:
-            print(
-                f'No calculated frequencies corresponding to the '
-                f'observed frequencies in file - {obs_freq_file} found.'
-            )
-
-    def get_jrange_values(self, jrange, uterms, lterms):
-
-        if jrange is None:
-            js = min(np.amin(uterms[:, 2]), np.amin(lterms[:, 2]))
-            je = max(np.amax(uterms[:, 2]), np.amax(lterms[:, 2]))
-            return js, je
-
-        return jrange[0], jrange[1]
-
-    def get_vrange_values(self, vrange, uterms, lterms):
-
-        if vrange is None:
-            vs = min(np.amin(uterms[:, 1]), np.amin(lterms[:, 1]))
-            ve = max(np.amax(uterms[:, 1]), np.amax(lterms[:, 1]))
-            return vs, ve
-
-        return vrange[0], vrange[1]
-
-    def get_frange_values(self, frange):
-        # TODO: rewrite this
-        return 0, 1
-
-    # TODO: change the indices in this function since the
-    # format of eigenvalues_all.dat file was changed
-    def calculate_frequencies_by_term_values(self, uterms, lterms, kwargs):
-
-        keys = self.define_keywords()
-
-        terms = np.loadtxt(uterms)  # upper terms
-        evalues = np.loadtxt(lterms)  # lower terms
-
-        predicted_freq_file = kwargs.get(keys[1]) or self.calc_freq_file
-
-        # 'obs_freq_file' should be a name of an existing file
-        obs_freq_file = kwargs.get(keys[2])
-        compared_freq_file = kwargs.get(keys[3]) or self.comp_freq_file
-
-        jrange = kwargs.get(keys[4])
-        vrange = kwargs.get(keys[5])
-        upar = kwargs.get(keys[6])
-        lpar = kwargs.get(keys[7])
-        su = np.array(kwargs.get(keys[8]))
-        sl = np.array(kwargs.get(keys[9]))
-        frange = kwargs.get(keys[10])
-        compute_hlf = kwargs.get(keys[11]) or False
-        extract = kwargs.get(keys[12]) or False
-
-        js, je = self.get_jrange_values(jrange, terms, evalues)
-        vs, ve = self.get_vrange_values(vrange, terms, evalues)
-        fs, fe = self.get_frange_values(frange)
-
-        freq_calc = np.array([])
-
-        for row in range(0, terms.shape[0]):
-            term = np.tile(terms[row, :], evalues.shape[0]). \
-                reshape(evalues.shape[0], terms.shape[1])
-
-            d = np.hstack((term, evalues))
-
-            vcond = \
-                (d[:, 1] >= vs) & (d[:, 1] <= ve) & \
-                (d[:, 9] >= vs) & (d[:, 9] <= ve)
-            jcond = \
-                (d[:, 2] >= js) & (d[:, 2] <= je) & \
-                (d[:, 10] >= js) & (d[:, 10] <= je)
-            scond = (np.in1d(d[:, 7], su)) & (np.in1d(d[:, 15], sl))
-            pcond = (np.in1d(d[:, 6], upar)) & (np.in1d(d[:, 14], lpar))
-
-            d = d[vcond]
-            d = d[jcond]
-            d = d[scond]
-            d = d[pcond]
-
-            enr_cond = (d[:, 5] >= d[:, 13])
-            jp = d[:, 2] == d[:, 10] - 1.0
-            jq = d[:, 2] == d[:, 10]
-            jr = d[:, 2] == d[:, 10] + 1.0
-
-            cond_pee = jp & (d[:, 6] == 1) & (d[:, 14] == 1) & enr_cond
-            cond_pff = jp & (d[:, 6] == 0) & (d[:, 14] == 0) & enr_cond
-            cond_qef = jq & (d[:, 6] == 1) & (d[:, 14] == 0) & enr_cond
-            cond_qfe = jq & (d[:, 6] == 0) & (d[:, 14] == 1) & enr_cond
-            cond_ree = jr & (d[:, 6] == 1) & (d[:, 14] == 1) & enr_cond
-            cond_rff = jr & (d[:, 6] == 0) & (d[:, 14] == 0) & enr_cond
-
-            data_pee = d[cond_pee]
-            data_pff = d[cond_pff]
-            data_qef = d[cond_qef]
-            data_qfe = d[cond_qfe]
-            data_ree = d[cond_ree]
-            data_rff = d[cond_rff]
-
-            shapes = np.array([
-                data_pee.shape[0], data_pff.shape[0],
-                data_qef.shape[0], data_qfe.shape[0],
-                data_ree.shape[0], data_rff.shape[0]
-            ])
-
-            # allowed frequencies
-
-            fq_pee = (data_pee[:, 5] - data_pee[:, 13])[:, np.newaxis]
-            fq_pff = (data_pff[:, 5] - data_pff[:, 13])[:, np.newaxis]
-            fq_qef = (data_qef[:, 5] - data_qef[:, 13])[:, np.newaxis]
-            fq_qfe = (data_qfe[:, 5] - data_qfe[:, 13])[:, np.newaxis]
-            fq_ree = (data_ree[:, 5] - data_ree[:, 13])[:, np.newaxis]
-            fq_rff = (data_rff[:, 5] - data_rff[:, 13])[:, np.newaxis]
-
-            # branches
-
-            brnach_pee = np.repeat(np.array([1]), shapes[0])[:, np.newaxis]
-            brnach_pff = np.repeat(np.array([2]), shapes[1])[:, np.newaxis]
-            brnach_qef = np.repeat(np.array([3]), shapes[2])[:, np.newaxis]
-            brnach_qfe = np.repeat(np.array([4]), shapes[3])[:, np.newaxis]
-            brnach_ree = np.repeat(np.array([5]), shapes[4])[:, np.newaxis]
-            brnach_rff = np.repeat(np.array([6]), shapes[5])[:, np.newaxis]
-
-            data_pee = np.hstack((data_pee, np.hstack((fq_pee, brnach_pee))))
-            data_pff = np.hstack((data_pff, np.hstack((fq_pff, brnach_pff))))
-            data_qef = np.hstack((data_qef, np.hstack((fq_qef, brnach_qef))))
-            data_qfe = np.hstack((data_qfe, np.hstack((fq_qfe, brnach_qfe))))
-            data_ree = np.hstack((data_ree, np.hstack((fq_ree, brnach_ree))))
-            data_rff = np.hstack((data_rff, np.hstack((fq_rff, brnach_rff))))
-
-            freq_calc = np.append(freq_calc, np.vstack((
-                data_pee, data_pff, data_qef,
-                data_qfe, data_ree, data_rff
-            )))
-
-        freq_calc = freq_calc.reshape(
-            -1, terms.shape[1] + evalues.shape[1] + 2
-        )
-        s = freq_calc.shape[1]
-        freq_calc = freq_calc[
-            :, [1, 9, 2, 10, 3, 11, 4, 12, 7, 15, 6, 14, 5, 13, s-2, s-1]
-        ]
-
-        fcond = (freq_calc[:, 14] >= fs) & (freq_calc[:, 14] <= fe)
-        freq_calc = freq_calc[fcond]
-
-        branch_freq = self.find_branch_frequencies(freq_calc, compute_hlf)
-
-        self.save_computed_frequencies(
-            predicted_freq_file, branch_freq, compute_hlf
-        )
-
-        if extract and compute_hlf:
-            hlf = branch_freq[:, -1].astype(float)
-
-            # find the indices of the elements with nonzero Honl-London factors
-            inonzero = np.where(hlf != 0.0)[0]
-
-            extract_file = 'extract_' + predicted_freq_file
-
-            self.save_computed_frequencies(
-                extract_file, branch_freq[inonzero], compute_hlf
-            )
-
-        if obs_freq_file is not None:
-            self.compare_frequency_lists(
-                obs_freq_file, compared_freq_file, freq_calc
-            )
-
-    def save_computed_frequencies(self, fname, branch_freq, compute_hlf):
-
-        names = [
-            "v'", "v", "J'", "J", "Lambda'", "Lambda",
-            "Omega'", "Omega", "state'", "state", "p'",
-            "p", "FJ'", "FJ", "freq", "branch"
-        ]
-
-        fmt = [
-            '%3.1s', '%6.1s', '%7.5s', '%7.5s', '%7.1s', '%7.1s',
-            '%7.3s', '%7.3s', '%7.1s', '%7.1s', '%7.1s', '%7.1s',
-            '%13.10s', '%13.10s', '%13.10s', '%6s'
-        ]
-
-        if compute_hlf:
-            names.append('HLF')
-            fmt.append('%11.8s')
-
-        header = \
-            ''.join(['{:>3}'.format(k) for k in names[:1]]) + \
-            ''.join(['{:>6}'.format(k) for k in names[1:2]]) + \
-            ''.join(['{:>8}'.format(k) for k in names[2:4]]) + \
-            ''.join(['{:>9}'.format(k) for k in names[4:8]]) + \
-            ''.join(['{:>7}'.format(k) for k in names[8:12]]) + \
-            ''.join(['{:>12}'.format(k) for k in names[12:15]]) + \
-            ''.join(['{:>14}'.format(k) for k in names[15:16]]) + \
-            ''.join(['{:>8}'.format(k) for k in names[16:]])
-
-        np.savetxt(fname, branch_freq, header=header, comments='#', fmt=fmt)
-
-    def save_compared_frequencies(self, fname, branch_freqs):
-
-        names = \
-            "v'", "v", "J'", "J", "Lam'", "Lam", \
-            "Omega'", "Omega", "state'", "state", \
-            "p'", "p", "FJ'", "FJ", " freq_calc", \
-            "freq_obs", "freq_delta", "unc", "branch"
-
-        header = \
-            ''.join(['{:>6}'.format(k) for k in names[:2]]) + \
-            ''.join(['{:>8}'.format(k) for k in names[2:7]]) + \
-            ''.join(['{:>8}'.format(k) for k in names[7:12]]) + \
-            ''.join(['{:>12}'.format(k) for k in names[12:14]]) + \
-            ''.join(['{:>15}'.format(k) for k in names[14:17]]) + \
-            ''.join(['{:>9}'.format(k) for k in names[17:]])
-
-        fmt = [
-            '%7.1s', '%6.1s', '%7.3s', '%7.3s', '%7.1s', '%7.1s',
-            '%7.3s', '%7.3s', '%7.1s', '%7.1s', '%6.1s',
-            '%7.1s', '%13.10s', '%13.10s', '%13.10s',
-            '%13.10s', '%13.10s', '%10.7s', '%6s'
-        ]
-
-        np.savetxt(
-            fname,
-            branch_freqs,
-            header=header,
-            comments='#',
-            fmt=fmt
-        )
-
-    def map_number_to_branch(self):
-
-        return {
-            1: 'Pee',
-            2: 'Pff',
-            3: 'Qef',
-            4: 'Qfe',
-            5: 'Ree',
-            6: 'Rff'
-        }
-
-    def map_branch_to_number(self):
-
-        return {
-            'Pee': 1,
-            'Pff': 2,
-            'Qef': 3,
-            'Qfe': 4,
-            'Ree': 5,
-            'Rff': 6
-        }
-
-    def compare_frequencies(self, freq_exp_file, freq_calc):
-
-        assigned_freq = np.loadtxt(freq_exp_file)
-
-        assigned_freq = assigned_freq[np.lexsort((
-            assigned_freq[:, 12], assigned_freq[:, 11],
-            assigned_freq[:, 10], assigned_freq[:, 9],
-            assigned_freq[:, 8], assigned_freq[:, 7],
-            assigned_freq[:, 6], assigned_freq[:, 5],
-            assigned_freq[:, 4], assigned_freq[:, 3],
-            assigned_freq[:, 2], assigned_freq[:, 1],
-            assigned_freq[:, 0]
-        ))]
-
-        freq_calc = freq_calc[np.lexsort((
-            freq_calc[:, 14], freq_calc[:, 11], freq_calc[:, 10],
-            freq_calc[:, 9], freq_calc[:, 8], freq_calc[:, 7],
-            freq_calc[:, 6], freq_calc[:, 5], freq_calc[:, 4],
-            freq_calc[:, 3], freq_calc[:, 2], freq_calc[:, 1],
-            freq_calc[:, 0]
-        ))]
-
-        if freq_calc.shape[0] > assigned_freq.shape[0]:
-            merged_freq = np.hstack(
-                (freq_calc[0:assigned_freq.shape[0], :], assigned_freq)
+        igrid, istep = igrid * C_bohr, istep * C_bohr
+
+        sinc_matrix = self._calculate_sinc_matrix(rgrid, igrid, ngrid, rstep)
+        if dmf is None:
+            dipole_matrix = np.ones(
+                (self.mlevels.nch, self.mlevels.nch, igrid.shape[0])
             )
         else:
-            merged_freq = np.hstack(
-                (freq_calc, assigned_freq[0:freq_calc.shape[0], :])
-            )
+            dipole_matrix = self._interpolate_dipole_moment(rgrid, igrid, dmf)
 
-        scond = (merged_freq[:, 8] == merged_freq[:, 24]) & \
-                (merged_freq[:, 9] == merged_freq[:, 25])
-        rcond = (merged_freq[:, 2] == merged_freq[:, 18]) & \
-                (merged_freq[:, 3] == merged_freq[:, 19])
-        pcond = (merged_freq[:, 10] == merged_freq[:, 26]) & \
-                (merged_freq[:, 11] == merged_freq[:, 27])
-        vcond = (merged_freq[:, 0] == merged_freq[:, 16]) & \
-                (merged_freq[:, 1] == merged_freq[:, 17])
-        lcond = (merged_freq[:, 4] == merged_freq[:, 20]) & \
-                (merged_freq[:, 5] == merged_freq[:, 21])
-        ocond = (merged_freq[:, 6] == merged_freq[:, 22]) & \
-                (merged_freq[:, 7] == merged_freq[:, 23])
+        # np.savetxt('sinc_matrix.dat', sinc_matrix, fmt='%14.11e')
+        # np.savetxt('evecs_all.dat', mlevels.evecs_matrix, fmt='%12.11e')
+        # np.savetxt('dipole_matrix.dat', dipole_matrix[0, 0, :], fmt='%14.8e')
 
-        conditions = scond & rcond & pcond & vcond & lcond & ocond
+        # arrays with the initial and final levels are guaranteed to have the
+        # same size since they are extracted from the list of wavenumbers so
+        # we can loop over them with only one cycle (no need of 2 nested loops)
 
-        merged_freq = merged_freq[conditions]
+        ii = 0
+        for (i, j) in zip(ivec_inds, fvec_inds):
+            dme = 0.0
+            for n in range(self.mlevels.nch):
+                for m in range(self.mlevels.nch):
+                    ncoefs = self.mlevels.evecs_matrix[n*ngrid:(n+1)*ngrid, i-1]
+                    kcoefs = self.mlevels.evecs_matrix[m*ngrid:(m+1)*ngrid, j-1]
 
-        merged_freq = np.column_stack((
-            merged_freq[:, 0:15],
-            merged_freq[:, 28],
-            merged_freq[:, 14] - merged_freq[:, 28],
-            merged_freq[:, 29],
-            merged_freq[:, 15]
-        ))
+                    # for l in range(ngrid):
+                    #     for p in range(ngrid):
+                    #         sincl = sinc_matrix[l, :]
+                    #         sincp = sinc_matrix[p, :]
+                    #         sumq = np.sum(sincl*dipole_matrix[n, m, :]*sincp)
+                    #         dme += kcoefs[l] * ncoefs[p] * sumq * istep
+                    # res = dme / rstep
+                    # print(n, m, res**2)
+                    # to get the fianl result this should be outside n, m loops
+                    # res = dme / rstep
 
-        return merged_freq
+                    sumq = np.dot(
+                        sinc_matrix, (dipole_matrix[n, m, :]*sinc_matrix).T
+                    )
+                    dme += np.dot(kcoefs, ncoefs * sumq) * istep
+            res = np.sum(dme) / rstep
 
-    def compute_Honl_London_factors(self, freqc):
+            freq = init_levels[ii, 1] - final_levels[ii, 1]
+            result[ii, :] = np.hstack((
+                init_levels[ii, select], final_levels[ii, select], freq, res**2
+            ))
+            ii += 1
 
-        ueps = self.map_parity_to_epsilon(freqc[:, 10])
-        leps = self.map_parity_to_epsilon(freqc[:, 11])
+            # print(i, j, freq, res**2)
 
-        uj, lj = freqc[:, 2], freqc[:, 3]
-        uomega, lomega = freqc[:, 6], freqc[:, 7]
-        ulambda, llambda = freqc[:, 4], freqc[:, 5]
+        return result
 
+    def _interpolate_dipole_moment(self, rgrid, igrid, dmf):
+
+        # TODO: initilize with ones and remove try/except?
+        # TODO: check if getvalue works when dmf is string
+        # print(io.StringIO(dmf[(n, k)]))
+        # print(io.StringIO(dmf[(n, k)]).getvalue())
+        dipole_moment = np.zeros(
+            (self.mlevels.nch, self.mlevels.nch, igrid.shape[0])
+        )
+
+        for n in range(1, self.mlevels.nch+1):
+            for k in range(1, self.mlevels.nch+1):
+                try:
+                    dip_moment = np.loadtxt(io.StringIO(dmf[(n, k)]).getvalue())
+                    dmx, dmy = dip_moment[:, 0], dip_moment[:, 1]
+                    # dmx /= C_bohr
+                except KeyError:
+                    dmx = rgrid
+                    dmy = np.ones_like(dmx)
+
+                cs = CubicSpline(dmx, dmy, bc_type='natural')
+                dipole_moment[n-1, k-1, :] = cs(igrid)
+
+        return dipole_moment
+
+    def _calculate_sinc_matrix(self, rgrid, igrid, ngrid, rstep):
+
+        sinc_matrix = np.zeros((ngrid, igrid.shape[0]))
+
+        for i in range(ngrid):
+            argi = (igrid - rgrid[i]) / rstep
+            sinc = np.sinc(argi)
+            sinc_matrix[i, :] = sinc
+
+        return sinc_matrix
+
+    def _compute_Honl_London_factors(self, usymm, lsymm, uj, lj, uomega,
+                                     lomega, ulambda, llambda):
+
+        # n' E' J' p' iso' st' v' l' o' n E J p iso st v l o freq
+
+        ueps = self._map_parity_to_epsilon(usymm)
+        leps = self._map_parity_to_epsilon(lsymm)
         eps_expr = 1.0 + (ueps * leps * np.power(-1, 1.0 + uj - lj))
 
-        udelta = self.map_quantum_number_to_delta(ulambda)
-        udelta *= self.map_quantum_number_to_delta(uomega)
-
-        ldelta = self.map_quantum_number_to_delta(llambda)
-        ldelta *= self.map_quantum_number_to_delta(lomega)
-
+        udelta = self._map_quantum_number_to_delta(ulambda)
+        udelta *= self._map_quantum_number_to_delta(uomega)
+        ldelta = self._map_quantum_number_to_delta(llambda)
+        ldelta *= self._map_quantum_number_to_delta(lomega)
         delta_expr = 1.0 + udelta + ldelta - 2.0 * udelta * ldelta
+
         j_expr = ((2.0 * uj) + 1.0) * ((2.0 * lj + 1.0))
 
         two_l1 = np.int64(2*uj)
-        two_l2 = 2*np.ones(freqc.shape[0], dtype=np.int64)
+        two_l2 = 2*np.ones(uj.shape[0], dtype=np.int64)
         two_l3 = np.int64(2*lj)
         two_m1 = np.int64(-2*uomega)
         two_m2 = np.int64(2*(ulambda-llambda))
         two_m3 = np.int64(2*lomega)
 
-        # allows for the ambiguous sign in the 3j symbol when one of the Lambda
+        # allows the ambiguous sign in the 3j symbol when one of the Lambda
         # quantum numbers is zero (Ref: J.K.G. Watson, JMS 252 (2008))
 
         if (ulambda.any() == 0 and llambda.any() != 0) or \
@@ -633,8 +622,8 @@ class Spectrum:
             two_m2 = np.int64(2*(ulambda+llambda))
             two_m3 = np.int64(-2*lomega)
 
-        # set to zero the qunatum numbers that
-        # do not satisfy the following conditions
+        # qunatum numbers that do not satisfy the following
+        # conditions should be set to zero
 
         if (two_l1 < np.abs(two_m1)).any():
             valid = 1*~(two_l1 < np.abs(two_m1))
@@ -657,324 +646,216 @@ class Spectrum:
 
         return hlf
 
-    def map_parity_to_epsilon(self, pars):
+    def _map_parity_to_epsilon(self, pars):
 
-        return np.array(list(map(lambda z: -1 if z == 0 else z, pars)))
+        return np.array(list(map(lambda x: -1 if x == 0 else x, pars)))
 
-    def map_quantum_number_to_delta(self, qlist):
+    def _map_quantum_number_to_delta(self, qlist):
 
-        return np.array(list(map(lambda z: 1 if z == 0 else 0, qlist)))
+        return np.array(list(map(lambda x: 1 if x == 0 else 0, qlist)))
 
-    def compute_Frank_Condon_factors(self, uch, lch, grid,
-                                     jrange, isotopes, bands):
+    def _save_wavenumbers(self, freq_calc, filename):
 
-        """Will calculate the Frank-Condon factors for P, Q and
-        R branches for one or several bands if the eigenvectors
-        are previously computed and stored in files. Inside these
-        files the eigenvectors for all calculated channels are written.
-        They are arranged in columns and each column is associated
-        and labeled with given vibrational quantum number and state
-        determined by the mixing coefficints
+        labels = (
+            "v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
+            'J', 'E', 'symm', 'iso', 'state', 'freq'
+        )
+        header = (
+            f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
+            f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
+            f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}{labels[11]:<10}'
+            f'{labels[12]}'
+        )
+        fmt = (
+            '%6.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%7.1d',
+            '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%15.5f'
+        )
+        np.savetxt(filename, freq_calc, header=header, fmt=fmt)
 
-        Args:
-            uch (int): upper channel's number
-            lch (int): lower channel's number
-            grid (obj): grid object
-            jrange (iterable): the range of J values to be computed
-            isotopes (int): the isotope's number
-            bands (iterable): the list with bands to be computed
+    def _save_Honl_London_factor(self, hlf, filename):
 
-        Raises:
-            SystemExit: when no eigenvector files are found
+        labels = (
+            "v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
+            'J', 'E', 'symm', 'iso', 'state', 'freq', 'hlf'
+        )
+        header = (
+            f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
+            f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
+            f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}{labels[11]:<10}'
+            f'{labels[12]:<14}{labels[13]}'
+        )
+        fmt = (
+            '%6.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%7.1d',
+            '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%15.5f', '%12.5f'
+        )
+        np.savetxt(filename, hlf, header=header, fmt=fmt)
 
-        Returns:
-            numpy ndarray: the computed Frank-Condon factors for
-            each branch and band
+    def _save_rel_intensity(self, result, out_file):
 
-        Remarks:
-            1. always will calculate for both parities of upper and lower state
-            2. default band is (0, 0)
-            3. default number of interp. points for the wavefunctions is 200
-        """
+        labels = (
+            "v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
+            'J', 'E', 'symm', 'iso', 'state', 'freq', 'intensity'
+        )
+        header = (
+            f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
+            f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
+            f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}{labels[11]:<10}'
+            f'{labels[12]:<15}{labels[13]}'
+        )
+        fmt = (
+            '%5.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%7.1d',
+            '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%15.5f', '%16.5e',
+        )
+        np.savetxt(out_file, result, comments='#', header=header, fmt=fmt)
 
-        pars = (0, 1)
-        js = math.floor(jrange[0])
-        je = math.floor(jrange[1])
+    def _save_Einstein_coeffcients(self, acoefs, filename):
 
-        rgrid = grid.rgrid
-        shape = rgrid.shape[0]
+        labels = (
+            "v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
+            'J', 'E', 'symm', 'iso', 'state', 'freq', 'A'
+        )
+        header = (
+            f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
+            f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
+            f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}{labels[11]:<10}'
+            f'{labels[12]:<17}{labels[13]}'
+        )
+        fmt = (
+            '%5.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%7.1d',
+            '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%15.5f', '%15.5e'
+        )
+        np.savetxt(filename, acoefs, comments='#', header=header, fmt=fmt)
 
-        ninter = 200
-        igrid, istep = np.linspace(
-            rgrid[0],
-            rgrid[shape-1],
-            num=ninter,
-            endpoint=True,
-            retstep=True
+    def _save_lifetimes(self, lifetimes, filename):
+
+        labels = (
+            "v'", "J'", "E'", "symm'", "iso'", "state'", 'life_time'
+        )
+        header = (
+            f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<8}'
+            f'{labels[4]:<7}{labels[5]:<10}{labels[6]}'
+        )
+        fmt = (
+            '%5.1d', '%7.1f', '%14.5f', '%6.1d', '%6.1d', '%6.1d', '%17.5e'
+        )
+        np.savetxt(filename, lifetimes, comments='#', header=header, fmt=fmt)
+
+    def _get_default_jrange(self, uterms, uj, lterms, lj):
+
+        js = min(np.amin(uterms[:, uj]), np.amin(lterms[:, lj]))
+        je = max(np.amax(uterms[:, uj]), np.amax(lterms[:, lj]))
+        return js, je
+
+    def _save_compared_frequencies(self, fname, final_freqs, fmode):
+
+        labels = (
+            "v'", "v", "J'", "J", "st'", "st", "p'", "p", "FJ'",
+            "FJ", "calc_freq", "obs_freq", "calc-obs", "unc",
         )
 
-        evec_dir = 'eigenvectors'
-
-        # the names of all eigenvector files
-        evec_files_all = os.listdir(evec_dir)
-
-        for iso in isotopes:
-            # the names of eigenvector files to be used in the computation
-            evec_files = [
-                f'evector_J{str(j)}_p{str(par)}_i{str(iso)}.dat'
-                for par in pars for j in range(js, je)
-            ]
-
-            if len(list(set(evec_files).intersection(evec_files_all))) == 0:
-                raise SystemExit(
-                    f'Cannot find the required eigenvector files in {evec_dir}'
-                )
-
-            fcfs = np.array([])
-            counter = 0
-
-            for band in bands:
-                uv, lv = band
-
-                for evec_file in evec_files:
-
-                    path1 = os.path.join(evec_dir, evec_file)
-
-                    ''' Qef/Qfe branch '''
-
-                    j1 = int(evec_file.rsplit('_')[1][1:])
-                    j2 = j1
-
-                    p1 = int(evec_file.rsplit('_')[2][1:])
-                    p2 = 1 - p1
-
-                    # lower state
-                    evec_file2 = evec_file.replace('p'+str(p1), 'p'+str(p2))
-                    path2 = os.path.join(evec_dir, evec_file2)
-                    # fcfq = -1
-
-                    if os.path.isfile(path1) and os.path.isfile(path2):
-                        fcfq = self.compute_single_FCF(
-                            path1, path2, uch, lch, uv, lv,
-                            shape, rgrid, igrid, istep
-                        )
-
-                        branch = self.map_parity_to_branch('Q', p1, p2)
-                        qbranch12 = np.array([
-                            uv, lv, j1, j2, uch, lch, p1, p2, iso, fcfq, branch
-                        ])
-                        fcfs = np.hstack((fcfs, qbranch12))
-                        counter += 1
-
-                    ''' Rff/Ree branch '''
-
-                    j1 = int(evec_file.rsplit('_')[1][1:])
-                    j2 = j1 - 1
-
-                    p1 = int(evec_file.rsplit('_')[2][1:])
-                    p2 = p1
-
-                    # lower wavefunction
-                    evec_file2 = evec_file. \
-                        replace('J'+str(j1), 'J'+str(j2)). \
-                        replace('p'+str(p1), 'p'+str(p2))
-
-                    path2 = os.path.join(evec_dir, evec_file2)
-                    # fcfr = -1
-
-                    if os.path.isfile(path1) and os.path.isfile(path2):
-                        fcfr = self.compute_single_FCF(
-                            path1, path2, uch, lch, uv, lv,
-                            shape, rgrid, igrid, istep
-                        )
-
-                        branch = self.map_parity_to_branch('R', p1, p2)
-                        rbranch12 = np.array([
-                            uv, lv, j1, j2, uch, lch, p1, p2, iso, fcfr, branch
-                        ])
-
-                        fcfs = np.hstack((fcfs, rbranch12))
-                        counter += 1
-
-                    ''' Pff/Pee branch '''
-
-                    j2 = j1 + 1
-                    p1 = int(evec_file.rsplit('_')[2][1:])
-                    p2 = p1
-
-                    # lower wavefunction
-                    evec_file2 = evec_file. \
-                        replace('J'+str(j1), 'J'+str(j2)). \
-                        replace('p'+str(p1), 'p'+str(p2))
-
-                    path2 = os.path.join(evec_dir, evec_file2)
-                    # fcfp = -1
-
-                    if os.path.isfile(path1) and os.path.isfile(path2):
-                        fcfp = self.compute_single_FCF(
-                            path1, path2, uch, lch, uv, lv,
-                            shape, rgrid, igrid, istep
-                        )
-
-                        branch = self.map_parity_to_branch('P', p1, p2)
-                        pbranch12 = np.array([
-                            uv, lv, j1, j2, uch, lch, p1, p2, iso, fcfp, branch
-                        ])
-
-                        fcfs = np.hstack((fcfs, pbranch12))
-                        counter += 1
-
-        return fcfs.reshape(counter, 11)
-
-    def map_parity_to_branch(self, main_branch, p1, p2):
-
-        qmap = {(1, 0): 'Qef', (0, 1): 'Qfe'}
-        pmap = {(1, 1): 'Pee', (0, 0): 'Pff'}
-        rmap = {(1, 1): 'Ree', (0, 0): 'Rff'}
-
-        if main_branch == 'Q':
-            return qmap[(p1, p2)]
-        if main_branch == 'P':
-            return pmap[(p1, p2)]
-        if main_branch == 'R':
-            return rmap[p1, p2]
-
-    def compute_single_FCF(self, path1, path2, uch, lch, uv, lv,
-                           shape, rgrid, igrid, istep):
-
-        evectors1 = np.loadtxt(path1)
-        evectors2 = np.loadtxt(path2)
-
-        vibnums1 = evectors1[0, :].astype(np.int64)
-        states1 = evectors1[1, :].astype(np.int64)
-
-        vibnums2 = evectors2[0, :].astype(np.int64)
-        states2 = evectors2[1, :].astype(np.int64)
-
-        # find indices of upper and lower v's and states
-        uvi, lvi = np.where(vibnums1 == uv)[0], np.where(vibnums2 == lv)[0]
-        uchi, lchi = np.where(states1 == uch)[0], np.where(states2 == lch)[0]
-
-        uevector = evectors1[2:, np.intersect1d(uvi, uchi)[0]]
-        levector = evectors2[2:, np.intersect1d(lvi, lchi)[0]]
-
-        # should be equal to the number of channels
-        unch = int(uevector.shape[0] / shape)
-        lnch = int(levector.shape[0] / shape)
-
-        # start = time.time()
-
-        # interpolate the eigenvector for the upper state
-        upsi = self.interpolate_wavefunction(
-            uevector, unch, rgrid, igrid, istep
+        header = (
+            f'{labels[0]:^10}{labels[1]:<7}{labels[2]:<8}{labels[3]:<6}'
+            f'{labels[4]:<6}{labels[5]:<7}{labels[6]:<6}{labels[7]:<10}'
+            f'{labels[8]:<12}{labels[9]:<10}{labels[10]:<12}{labels[11]:<13}'
+            f'{labels[12]:<11}{labels[13]}'
         )
-        upsi_norm = self.normilize_wavefunction(upsi, istep)
 
-        # interpolate the eigenvector for the lower state
-        lpsi = self.interpolate_wavefunction(
-            levector, lnch, rgrid, igrid, istep
-        )
-        lpsi_norm = self.normilize_wavefunction(lpsi, istep)
-
-        # print(f'wavefunc = {time.time()-start} s')
-
-        overlap = np.dot(upsi_norm, lpsi_norm) * istep
-
-        fcf = overlap * overlap  # * 1000.0
-
-        return fcf
-
-    def interpolate_wavefunction(self, evec, nch, rgrid, igrid, istep):
-        # TODO: numpy implementation
-        arr = []
-        ngrid = rgrid.shape[0]
-        ninter = igrid.shape[0]
-
-        for row in range(0, ninter):
-            index = 0
-            sum_arg = 0.0
-            for j in range(0, nch*ngrid):
-                if j % ngrid == 0:
-                    index += 1
-
-                if abs(igrid[row] - rgrid[j-index*ngrid]) < 1e-15:
-                    sinc = 1.0
-                else:
-                    arg = \
-                        (math.pi / istep) * (igrid[row] - rgrid[j-index*ngrid])
-                    sinc = math.sin(arg) / arg
-
-                sum_arg += evec[j] * sinc
-
-            arr.append(sum_arg)
-
-        return np.array(arr)
-
-        # # numpy implementation:
-        # rotj = np.float64(os.path.splitext(efile)[0].split('_')[1])
-        # evec = np.loadtxt(os.path.join(self.evec_dir, efile))
-        # dif_shapes = abs(inter_grid.shape[0] - self.rgrid.shape[0])
-        # rgrid = np.append(self.rgrid, self.rgrid[0:dif_shapes])
-        # (np.pi / inter_step) * (inter_grid - rgrid)
-        # arg = (1.0 / inter_step) * (inter_grid - rgrid)
-        # sinc = np.sinc(arg) #np.sin(arg) / arg # np.sinc(x) -> sin(pi*x)/pi*x
-        # sinc = np.tile(sinc[:,np.newaxis], (1, 30))
-        # wavefunc = sinc * eig_vec #np.sum(eig_vec, axis=0)[:,np.newaxis].T
-        # # normalized wavefunction
-        # norm_wavefunc = wavefunc / wavefunc.sum(axis=0,keepdims=1)
-
-    def normilize_wavefunction(self, psi, istep):
-
-        # store the sign of psi
-        psi_sign = np.sign(psi)
-
-        # psi square
-        psi_square = psi ** 2
-
-        # the norm of psi square
-        psi2_norm = psi_square / (psi_square.sum(axis=0, keepdims=1) * istep)
-
-        psi_norm = psi_sign * np.sqrt(psi2_norm)
-
-        return psi_norm
-
-    def save_computed_FCFs(self, fname, fcfs):
-
-        names = [
-            "v'", "v", "J'", "J", "state'", "state",
-            "p'", "p", "isotope", "FCF", "branch"
-        ]
+        if fmode == 'ab':
+            header = ''
 
         fmt = [
-            '%3.1s', '%6.1s', '%7.5s', '%7.5s', '%7.1s', '%7.1s',
-            '%7.1s', '%7.1s', '%7.1s', '%13.10s', '%6s'
+            '%6d', '%5d', '%7.1f', '%7.1f', '%5d', '%5d', '%5d', '%5d',
+            '%13.4f', '%12.4f', '%12.4f', '%12.4f', '%9.4f', '%8.3f'
         ]
 
-        header = \
-            ''.join(['{:>3}'.format(k) for k in names[:1]]) + \
-            ''.join(['{:>6}'.format(k) for k in names[1:2]]) + \
-            ''.join(['{:>9}'.format(k) for k in names[2:3]]) + \
-            ''.join(['{:>8}'.format(k) for k in names[3:8]]) + \
-            ''.join(['{:>10}'.format(k) for k in names[8:]])
+        with open(fname, fmode) as f:
+            np.savetxt(f, final_freqs, header=header, comments='#', fmt=fmt)
 
-        np.savetxt(fname, fcfs, header=header, comments='#', fmt=fmt)
+    def _map_number_to_branch(self):
 
-    # Cubic spline interpolation -> might not work correctly
-    # for i in range(0, nch):
-    #     interpolate the first eigenvector for the upper/lower state
-    #     ynorm1 = self.interpolate_and_norm_evector(
-    #       evector1, rgrid, shape, igrid, i)
-    #     interpolate the second eigenvector for the lower/upper state
-    #     ynorm2 = self.interpolate_and_norm_evector(
-    #       evector2, rgrid, shape, igrid, i)
+        return {
+            1: 'Pee',
+            2: 'Pff',
+            3: 'Qef',
+            4: 'Qfe',
+            5: 'Ree',
+            6: 'Rff'
+        }
 
-    # def interpolate_and_norm_evector(self, evector, rgrid, shape, igrid, i):
-    #     cs = CubicSpline(
-    #         rgrid,
-    #        evector[i*shape:(i+1)*shape], bc_type='natural', extrapolate=True
-    #     )
-    #     y = cs(igrid)
-    #     ynorm = np.zeros_like(y)
-    #     if np.all((y != 0.0)):
-    #         ynorm = y / y.sum(axis=0, keepdims=1)
-    #     return ynorm
+    def _map_branch_to_number(self):
+
+        return {
+            'Pee': 1,
+            'Pff': 2,
+            'Qef': 3,
+            'Qfe': 4,
+            'Ree': 5,
+            'Rff': 6
+        }
+
+    def _compare_frequencies(self, freq_exp_file, fcomp_file, freq_calc):
+
+        assigned_freq = np.loadtxt(freq_exp_file)
+        fmode = 'w'
+
+        for row in range(0, freq_calc.shape[0]):
+            ln = assigned_freq.shape[0]
+            term = np.tile(
+                freq_calc[row, :], ln
+            ).reshape(ln, freq_calc.shape[1])
+            merged_freq = np.hstack((term, assigned_freq))
+
+            # if freq_calc.shape[0] > assigned_freq.shape[0]:
+            #     merged_freq = np.hstack(
+            #         (freq_calc[0:assigned_freq.shape[0], :], assigned_freq)
+            #     )
+            # else:
+            #     merged_freq = np.hstack(
+            #         (freq_calc, assigned_freq[0:freq_calc.shape[0], :])
+            #     )
+
+            vcond = (merged_freq[:, 0] == merged_freq[:, 16]) & \
+                    (merged_freq[:, 1] == merged_freq[:, 17])
+            merged_freq = merged_freq[vcond]
+
+            scond = (merged_freq[:, 8] == merged_freq[:, 24]) & \
+                    (merged_freq[:, 9] == merged_freq[:, 25])
+            merged_freq = merged_freq[scond]
+
+            rcond = (merged_freq[:, 2] == merged_freq[:, 18]) & \
+                    (merged_freq[:, 3] == merged_freq[:, 19])
+            merged_freq = merged_freq[rcond]
+
+            pcond = (merged_freq[:, 10] == merged_freq[:, 26]) & \
+                    (merged_freq[:, 11] == merged_freq[:, 27])
+            merged_freq = merged_freq[pcond]
+
+            # lcond = (merged_freq[:, 4] == merged_freq[:, 20]) & \
+            #         (merged_freq[:, 5] == merged_freq[:, 21])
+            # merged_freq = merged_freq[lcond]
+
+            # ocond = (merged_freq[:, 6] == merged_freq[:, 22]) & \
+            #         (merged_freq[:, 7] == merged_freq[:, 23])
+            # merged_freq = merged_freq[ocond]
+
+            # will work only for the if case above
+            merged_freq_final = np.column_stack((
+                merged_freq[:, 0:4], merged_freq[:, 8:12],
+                merged_freq[:, 12:15], merged_freq[:, 28],
+                merged_freq[:, 14] - merged_freq[:, 28],
+                merged_freq[:, 29]
+            ))
+
+            if merged_freq_final.shape[0] != 0:
+                #     branches = \
+                #         np.vectorize(self._map_number_to_branch().get)(freqs[:, -1])
+                #     branch_freqs = np.column_stack((freqs[:, :-1], branches))
+                # TODO: add branch inside this function
+                # self._save_compared_frequencies(fcomp_file, branch_freqs)
+                self._save_compared_frequencies(fcomp_file, merged_freq_final, fmode)
+                fmode = 'ab'
+            # else:
+            #     print(
+            #         f'No calculated frequencies corresponding to the '
+            #         f'observed frequencies in file - {freq_exp_file} found.'
+            #     )

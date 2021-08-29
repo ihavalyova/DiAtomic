@@ -1,4 +1,5 @@
 import io
+import math
 from os.path import join as _join
 from math import sqrt as _sqrt
 from logging import error as _error, warning as _warning
@@ -33,6 +34,7 @@ class Fitting:
 
         if len(self.ml.couplings) > 0:
             ypar = np.hstack((Channel.ppar, Coupling.cpar))
+            yunits = np.hstack((Channel.punits, Coupling.cunits))
             yfixed = np.hstack((Channel.pfixed, Coupling.cfixed))
             preg = np.zeros(Channel.ppar.shape[0])
             plambda = np.zeros(Channel.ppar.shape[0])
@@ -43,7 +45,8 @@ class Fitting:
             yfixed = np.copy(Channel.pfixed)
             yreg = np.zeros(Channel.ppar.shape[0])
             ylam = np.zeros(Channel.ppar.shape[0])
-
+        # print(yunits)
+        # print(ypar.shape, yunits.shape)
         return ypar, yfixed, yreg, ylam
 
     def _get_eigenvalues(self, ypar, is_weighted=False):
@@ -176,6 +179,13 @@ class Fitting:
         # (0) get the initial parameters
         ypar, yfixed, yreg, ylam = self._get_initial_parameters()
         eps = 1.0e-3
+        chi2_best, rms_best = 0.0, 0.0
+
+        print(f'Total number of parameters = {ypar.shape[0]}')
+        print(
+            f'Total number of optimized parameters = '
+            f'{yfixed[yfixed == 1].shape[0]}\n'
+        )
 
         for it in range(1, niter + 1):
 
@@ -248,7 +258,32 @@ class Fitting:
                 c = cmult * regular
                 b = np.hstack((b, c))
 
-            # the proposed corrections to the parameters is the solution
+            # find covariance matrix
+            # U, s, V = sp.linalg.svd(A, full_matrices=False)
+            # si = np.zeros(s.shape[0])
+            # print(s)
+            # for j in range(s.shape[0]):
+            #     if s[j] < max(s)*tol:
+            #         si[j] = 0
+            #     else:
+            #         si[j] = 1.0/(s[j]*s[j])
+            # # V = Vt.T
+            # cvm = np.zeros((V.shape[0], V.shape[0]))
+            # for i in range(V.shape[0]):
+            #     for j in range(i+1):  # range(V.shape[0]):
+            #         summ = 0.0
+            #         for k in range(V.shape[0]):
+            #             summ += (V[i, k] * V[j, k]) * si[k]
+            #         cvm[j][i] = cvm[i][j] = summ
+            # np.savetxt('cov.dat', cvm, fmt='%12.4e')
+
+            # crm = np.zeros((V.shape[0], V.shape[0]))
+            # for i in range(s.shape[0]):
+            #     for j in range(s.shape[0]):
+            #         crm[i, j] = cvm[i, j] / (math.sqrt(cvm[i, i]) * math.sqrt(cvm[j, j]))
+
+            # np.savetxt('crm.dat', crm, fmt='%12.4e')
+            # the propossed corrections to the parameters is the solution
             x, rank, sv = Fitting._find_corrections(A, b, tol, lapack_driver)
 
             # (4) calculate new energies using the proposed corrections
@@ -321,10 +356,16 @@ class Fitting:
             if self.progress:
                 print(self.progress_str.getvalue())
 
+        self.singular_values = sv
+
         print(
             f'\nChi square final = {chi2_best:.6f} | '
             f'RMS final = {rms_best:.6f} cm-1'
         )
+
+    def get_singular_values(self):
+
+        return self.singular_values
 
     def _generate_numerical_derivatives(self, ypar, yfixed, ycal_init,
                                         is_weighted, step_size):
@@ -372,6 +413,10 @@ class Fitting:
             evectors = np.load(_join('eigenvectors', ename))
             vi = np.where(evectors[0, :].astype(int) == int(qnums[i, 0]))[0]
             sti = np.where(evectors[1, :].astype(int) == int(qnums[i, 4]))[0]
+            # print(qnums[i])
+            # print(vi)
+            # print(sti)
+            # print(evectors[2:, np.intersect1d(vi, sti)])
             evecs_found[:msize, i] = evectors[2:, np.intersect1d(vi, sti)[0]]
 
         ejqnums, fjqnums = qnums[qnums[:, 2] == 1], qnums[qnums[:, 2] == 0]
@@ -473,8 +518,7 @@ class Fitting:
 
         self.progress_str.write(
             f'\nTOL * max singular value{"":>2}= {tol*sv[0]:.3f}\n'
-            f'\nSVD matrix rank = the number significant singular values '
-            f'= {rank}'
+            f'\nEffective rank = {rank}'
             f'\nThe first {rank} significant singular values:\n'
         )
 
@@ -485,22 +529,18 @@ class Fitting:
         # the conditon number is the ratio of the largest to the
         # smallest singular value; the larger the condition number
         # the closer to singular is the matrix
-        # if cond. number = inf => the matrix is singular
 
         with np.errstate(divide='ignore', invalid='ignore'):
             cond_number = abs(sv[0] / sv[-1])
 
         self.progress_str.write(
-            f'\nCondition number{"":>10}= {cond_number:.1e}'
-        )
-        self.progress_str.write(
-            f'\n\n{21*"- "}Parameters after iteration {it} {20*"- "}'
+            f'\nCondition number = {cond_number:.1e}'
         )
 
         header = (
-            f'\n{111*"-"}\n|{"":>9}|{"":>5}Initial value{"":>4}|'
-            f'{"":>5}Correction{"":>7}|{"":>5}Final value{"":>6}|'
-            f'{"":>5}Percent change{"":>3}|{"":>1}Fixed{"":>1}|\n{111*"-"}\n'
+            f'\n{111*"-"}\n|{"":>8}|{"":>3}Initial value{"":>5}|'
+            f'{"":>4}Correction{"":>6}|{"":>4}Final value{"":>6}|'
+            f'{"":>1}Percent change{"":>1}|{"":>1}Fixed{"":>1}|\n{111*"-"}\n'
         )
         self.progress_str.write(header)
 
@@ -510,13 +550,13 @@ class Fitting:
         change = np.absolute(x/ypar) * 100
 
         params_str = ''
-        for i in range(0, nn.shape[0]):
+        for i in range(1, nn.shape[0]):
             params_str = (
-                f'|{"":>1}{i:4d}{"":>4}|{"":>3}{ypar[i]:>16.12f}{"":>3}|'
-                f'{"":>3}{x[i]:>16.12f}{"":>3}|{"":>3}'
-                f'{xypar[i]:>16.12f}{"":>3}|'
-                f'{"":>3}{change[i]:>16.12f}{"":>3}|'
-                f'{"":>1}{yfixed[i]:>3d}{"":>3}|\n'
+                f'|{"":>1}{i:4d}{"":>3}|{"":>2}{ypar[i]:>16.8f}{"":>3}|'
+                f'{"":>2}{x[i]:>16.8f}{"":>2}|{"":>3}'
+                f'{xypar[i]:>16.8f}{"":>2}|'
+                f'{"":>2}{change[i]:>12.8f}{"":>2}|'
+                f'{"":>1}{int(yfixed[i]):>3d}{"":>3}|\n'
             )
 
             self.progress_str.write(params_str)

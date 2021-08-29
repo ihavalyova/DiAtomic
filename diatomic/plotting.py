@@ -376,8 +376,8 @@ class Plotting:
             plt.show()
 
     @classmethod
-    def plot_couplings_on_grid(cls, mlevels, path=None, fformat='png',
-                               show=False, kwargs={}):
+    def plot_couplings_on_grid(cls, mlevels, which=None, path=None,
+                               show=False, save=False, fformat='png'):
 
         path = path or Utils.get_plot_dir('func_path')
 
@@ -511,17 +511,18 @@ class Plotting:
         ax3.legend(leg3, loc=0)
         ax4.legend(leg4, loc=0)
 
-        _makedirs(path, exist_ok=True)
+        if save:
+            _makedirs(path, exist_ok=True)
 
-        fig1_path = _join(path, f'SO.{fformat}')
-        fig2_path = _join(path, f'LJ.{fformat}')
-        fig3_path = _join(path, f'SJ.{fformat}')
-        fig4_path = _join(path, f'LD.{fformat}')
+            fig1_path = _join(path, f'SO.{fformat}')
+            fig2_path = _join(path, f'LJ.{fformat}')
+            fig3_path = _join(path, f'SJ.{fformat}')
+            fig4_path = _join(path, f'LD.{fformat}')
 
-        cls.save_figure(fig1, fig1_path, fformat, "tight")
-        cls.save_figure(fig2, fig2_path, fformat, "tight")
-        cls.save_figure(fig3, fig3_path, fformat, "tight")
-        cls.save_figure(fig4, fig4_path, fformat, "tight")
+            cls.save_figure(fig1, fig1_path, fformat, "tight")
+            cls.save_figure(fig2, fig2_path, fformat, "tight")
+            cls.save_figure(fig3, fig3_path, fformat, "tight")
+            cls.save_figure(fig4, fig4_path, fformat, "tight")
 
         if show:
             plt.show()
@@ -540,7 +541,7 @@ class Plotting:
         _makedirs(res_path, exist_ok=True)
         path = path or res_path
 
-        plt.rcParams.update({'font.size': 8})
+        plt.rcParams.update({'font.size': 7})
         plt.rcParams.update({'figure.max_open_warning': 0})
         xlabel = xlabel or 'J'
         ylabel = ylabel or 'E_obs - E_calc [cm-1]'
@@ -561,26 +562,28 @@ class Plotting:
 
                 ax_data.plot(
                     edata[:, 1], -edata[:, 9], color='#355896', marker='o',
-                    markersize=6, markeredgecolor='#17376E', lw=0, alpha=0.8
+                    markersize=4.0, markeredgecolor='#17376E', lw=0, alpha=0.8
                 )
 
                 ax_data.plot(
-                    fdata[:, 1], -fdata[:, 9], color='#C43D3D', marker='o',
-                    markersize=6, markeredgecolor='#903C3C', lw=0, alpha=0.8
+                    fdata[:, 1], -fdata[:, 9], color='#C43D3D', marker='X',
+                    markersize=3.5, markeredgecolor='#903C3C', lw=0, alpha=0.8
                 )
 
                 ax_data.set_xlabel(xlabel)
                 ax_data.set_ylabel(ylabel)
-                ax_data.legend(['e', 'f'], loc=0, prop={'size': 6})
-                ax_data.set_title(f'v={v} | state={state}')
+                ax_data.legend(
+                    ['e', 'f'], loc=0, prop={'size': 6},
+                    bbox_to_anchor=(1.1, 1.05)
+                )
+                ax_data.set_title(f'v={int(v)} | state={int(state)}', size=7)
                 ax_data.xaxis.set_minor_locator(tck.AutoMinorLocator())
-                ax_data.grid(which='major', alpha=0.5)
-                ax_data.grid(which='minor', alpha=0.2)
+                ax_data.grid(which='major', alpha=1, linewidth=0.6)
+                ax_data.grid(which='minor', alpha=1, linewidth=0.0)
 
                 fig.set_size_inches(6, 5)
 
                 if save:
-                    # figname = f'residual_{v}_{state}_{i}.{fformat}'
                     figname = f'residual_{int(v)}_{int(state)}.{fformat}'
                     figpath = _join(path, figname)
                     fig.set_size_inches(size)
@@ -631,10 +634,10 @@ class Plotting:
                 ax[row, col].grid(which='major', alpha=0.4)
                 ax[row, col].grid(which='minor', alpha=0.2)
                 ax[row, col].set_title(
-                    f'v={int(v)} | state={int(state)}', size=9
+                    f'v={int(v)} | state={int(state)}', size=10
                 )
                 ax[row, col].tick_params(
-                    axis='both', which='major', labelsize=6.5
+                    axis='both', which='major', labelsize=9
                 )
                 col += 1
                 count += 1
@@ -642,10 +645,11 @@ class Plotting:
         for i in range((ncols*nrows)-count):
             fig.delaxes(ax.flatten()[count+i])
 
-        plt.rcParams.update({'font.size': 9})
+        plt.rcParams.update({'font.size': 10})
         plt.rcParams.update({'figure.max_open_warning': 0})
         fig.legend(['e-level', 'f-level'])
-        size = size or (14, 11)
+        print(size)
+        size = size or (14, 12)
         fig.set_size_inches(size)
 
         res_path = Utils.get_plot_dir('res_path')
@@ -710,7 +714,8 @@ class Plotting:
 
         gen_color = cls._get_color()
         gen_marker = cls._get_marker()
-        _, ax = plt.subplots()
+        size = size or (7, 5)
+        _, ax = plt.subplots(figsize=size)
 
         for pfile in files:
             pdata = np.loadtxt(pfile, skiprows=1)

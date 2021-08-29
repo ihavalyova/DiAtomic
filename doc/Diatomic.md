@@ -1,6 +1,6 @@
 
 - [**DiAtomic** module: what is it used for?](#diatomic-module-what-is-it-used-for)
-- [**DiAtomic**  module: how to install and setup?](#diatomic-module-how-to-install-and-setup)
+- [**DiAtomic**  module: how to install and setup?](#diatomic--module-how-to-install-and-setup)
 - [Diatomic molecule: basic theoretical concepts](#diatomic-molecule-basic-theoretical-concepts)
   - [The total Hamiltonian and basis functions](#the-total-hamiltonian-and-basis-functions)
   - [The Scrodinger equation for a single state and coupled system of states](#the-scrodinger-equation-for-a-single-state-and-coupled-system-of-states)
@@ -48,12 +48,12 @@ Plotting.plot_potentials_points(glob.glob('./*.pot'), show=True, ipoints=120, xl
 
 # **DiAtomic**  module: how to install and setup?
 
-**```DiAtomic```**  module can be installed from the Python software repository PyPI (Python Package Index) via pip. To install using ```IPython``` (```Jupyter```) or the Linux command line write
+**```DiAtomic```**  module can be installed from the Python software repository PyPI (Python Package Index) via pip. To install using ```IPython``` / ```Jupyter``` or the Linux command line write
 
 ````python
 In [1]: pip install diatomic-compuations
 ````
-Import and call the module to quickly check whether the installation has been successful:
+After the instalation completed import and call the module to quickly check whether the it has been successful:
 ```python
 In [2]: import diatomic
 In [3]: diatomic
@@ -62,7 +62,7 @@ which will show the path to the ```__init__.py``` file in the install location.
 
 > **_NOTE:_** The package and the module (actual import) names are different.
 
-For writing the code after the instalation either use a ```Jupyter``` notebook or create a new python file (for example called run.py) and then import the diatomic module
+For writing a code after the instalation either use ```Jupyter``` notebook or create a new python file (for example called run.py) and then import the diatomic module
 
 ```python
 #!/usr/bin/env python
@@ -86,12 +86,13 @@ or to run it from ```IPython``` shell enter
 ```python
 In [1]: run run.py
 ```
-> **_NOTE:_** It is recommended to use ```IPython``` (or ```Jupyter```) for running the code because this will significantly reduce the startup (import) time after the initial run which means less total execution time.
+
+> **_NOTE:_** It is recommended to use ```IPython``` (or ```Jupyter```) for running the code because this will reduce the startup (import) times after the initial run which means less total execution time.
 
 The **```DiAtomic```** module is tested on Linux platform but works under Windows and MacOS as well.
 
-> **_NOTE:_** It is highly recommended to install/build ```NumPy``` with the optimized  <a href="https://software.intel.com/content/www/us/en/develop/tools/math-kernel-library.html" target="_blank">Intel MKL</a> versions of BLAS and Lapack libraries.
-If ```NumPy``` is installed by ```conda``` package manager from its default channel it will already be built against Intel MKL and no further steps are needed. To check which linear algebra library is used on Linux see the second part of <a href="https://stackoverflow.com/questions/37184618/find-out-if-which-blas-library-is-used-by-numpy#37190672" target="_blank">this answer</a> (note that numpy.show_config() does not always show what numpy actually uses).
+> **_NOTE:_** It is recommended to install/build ```NumPy``` with the optimized  <a href="https://software.intel.com/content/www/us/en/develop/tools/math-kernel-library.html" target="_blank">Intel MKL</a> versions of BLAS and Lapack libraries.
+If ```NumPy``` is installed by ```conda``` package manager from its default channel it will already be built against MKL and no further steps are needed. To check which linear algebra library is used on Linux see the second part of <a href="https://stackoverflow.com/questions/37184618/find-out-if-which-blas-library-is-used-by-numpy#37190672" target="_blank">this answer</a> (note that numpy.show_config() does not always show what numpy actually uses).
 
 # Diatomic molecule: basic theoretical concepts
 
@@ -99,13 +100,16 @@ If ```NumPy``` is installed by ```conda``` package manager from its default chan
 
 The total Hamiltonian of a diatomic molecule in the rotating molecule-fixed coordinate system with origin at the center of mass of the molecule can be written as a sum of several terms:
 
-![](https://latex.codecogs.com/svg.latex?\mathbf{H}&space;=&space;\mathbf{T}_{\mathrm{N}}(R)&space;&plus;&space;\mathbf{H}_{\mathrm{rot}}(R,&space;\theta,&space;\phi)&space;&plus;&space;\mathbf{T}_{\mathrm{e}}(r)&space;&plus;&space;\mathbf{V}(R,&space;r)&space;&plus;&space;\mathbf{H}_{\mathrm{rel}})
+![\mathbf{H} = \mathbf{T}_{\mathrm{e}}(r) + \mathbf{V}(R, r) + \mathbf{T}_{\mathrm{N}}(R) + \mathbf{H}_{\mathrm{rot}}(R, \theta, \phi) + \mathbf{H}_{\mathrm{rel}}](https://render.githubusercontent.com/render/math?math=%5Ctextstyle+%5Cmathbf%7BH%7D+%3D+%5Cmathbf%7BT%7D_%7B%5Cmathrm%7Be%7D%7D%28r%29+%2B+%5Cmathbf%7BV%7D%28R%2C+r%29+%2B+%5Cmathbf%7BT%7D_%7B%5Cmathrm%7BN%7D%7D%28R%29+%2B+%5Cmathbf%7BH%7D_%7B%5Cmathrm%7Brot%7D%7D%28R%2C+%5Ctheta%2C+%5Cphi%29+%2B+%5Cmathbf%7BH%7D_%7B%5Cmathrm%7Brel%7D%7D)
 
-where ![](https://latex.codecogs.com/svg.latex?\inline&space;\mathbf{T}_{\mathrm{N}}(R)) and ![](https://latex.codecogs.com/svg.latex?\inline&space;\mathbf{H}_{\mathrm{rot}}(R,&space;\theta,&space;\phi)) are the vibrational and rotational part of the total nuclear kinetic energy operator in spherical polar coordinates, ![](https://latex.codecogs.com/svg.latex?\inline&space;\mathbf{T}_{\mathrm{e}}(r)) is the kinetic energy of the electrons, ![](https://latex.codecogs.com/svg.latex?\inline&space;\mathbf{V}(R,&space;r)) is the operator for the total potential energy of the system and ![](https://latex.codecogs.com/svg.latex?\inline&space;\mathbf{H}_{\mathrm{rel}}) is the relativistic Hamiltonian.
 
-Usually the most convinient set of basis functions for computing the matrix elements of the Hamiltonian are the Hund's case (a) basis functions represented as:
+where the first two terms reperesent the electronic Hamiltonian i.e. the electronic kinetic energy plus the total potential energy of the system. The second two terms are the vibrational and rotational part of the total nuclear kinetic energy operator and the last term is the relativistic Hamiltonian.
 
-![](https://latex.codecogs.com/svg.latex?\vert&space;\Lambda&space;S&space;\Sigma&space;J&space;\Omega&space;M;&space;e/f&space;\rangle&space;=&space;2^{-1/2}&space;\left[&space;\vert&space;\Lambda&space;S&space;\Sigma&space;J&space;\Omega&space;M&space;\rangle&space;\pm&space;\vert&space;-\Lambda&space;S&space;-\Sigma&space;J&space;-\Omega&space;M&space;\rangle&space;\right])
+Usually the most convinient set of basis for computing the matrix elements of the Hamiltonian is the symmetrized Hund's case (a) basis functions represented as:
+
+![\vert \Lambda \: S \: \Sigma \: J \: \Omega \: M; e/f \rangle =
+2^{-1/2} \left[ \vert \Lambda \: S \: \Sigma \: J \: \Omega \: M 
+\rangle \pm \vert -\Lambda \: S \: -\Sigma \: J \: -\Omega \: M \rangle  \right]](https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+%5Cvert+%5CLambda+%5C%3A+S+%5C%3A+%5CSigma+%5C%3A+J+%5C%3A+%5COmega+%5C%3A+M%3B+e%2Ff+%5Crangle+%3D%0A2%5E%7B-1%2F2%7D+%5Cleft%5B+%5Cvert+%5CLambda+%5C%3A+S+%5C%3A+%5CSigma+%5C%3A+J+%5C%3A+%5COmega+%5C%3A+M+%0A%5Crangle+%5Cpm+%5Cvert+-%5CLambda+%5C%3A+S+%5C%3A+-%5CSigma+%5C%3A+J+%5C%3A+-%5COmega+%5C%3A+M+%5Crangle++%5Cright%5D)
 
 ## The Scrodinger equation for a single state and coupled system of states
 
@@ -121,16 +125,15 @@ where ![$R$](https://latex.codecogs.com/svg.latex?\inline&space;R), is the inter
 <!-- omit in toc -->
 ### The coupled channels problem
 
-For a system of coupled electronic states a more general set of coupled equations is solved:
+When coupled electronic states are considered a system of coupled equations is solved which in most general form can be written as:
 
-![](https://latex.codecogs.com/svg.latex?\sum_{i=1}^{N}&space;H_{ki}\phi_{i}(R)&space;=&space;E\phi_{k}(R))
+![\sum_{i=1}^{N} H_{ki}\phi_{i}(R) = E\phi_{k}(R)](https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+%5Csum_%7Bi%3D1%7D%5E%7BN%7D+H_%7Bki%7D%5Cphi_%7Bi%7D%28R%29+%3D+E%5Cphi_%7Bk%7D%28R%29)
 
-
-where ![](https://latex.codecogs.com/svg.latex?\inline&space;H_{ki}) are the matrix elements of the total Hmiltonian between the Hund's case (a) basis functions
+where ![](https://latex.codecogs.com/svg.latex?\inline&space;H_{ki}) are the matrix elements of the total Hamiltonian between the Hund's case (a) basis functions
 
 ## The interaction terms and their matrix elements
 
-The most important operators and their matrix elements are:
+The most important coupling operators (or corrections) and their matrix elements are:
 
 - Spin-Orbit
 
@@ -175,7 +178,7 @@ The second derivative of the wavefunction with respect to the internuclear dista
 
 The kinetic energy matrix elements are then computed:
 
-<a href="https://www.codecogs.com/eqnedit.php?latex=T_{ij}&space;=&space;\frac{\hbar^2}{2\mu&space;\Delta&space;R^2}&space;\times&space;\begin{cases}&space;\frac{5}{2},&space;&&space;j&space;=&space;i\\&space;-\frac{4}{3},&space;&&space;j&space;=&space;i\pm&space;1\\&space;\frac{1}{12},&space;&&space;j&space;=&space;i\pm&space;2&space;\end{cases}" target="_blank"><img src="https://latex.codecogs.com/svg.latex?T_{ij}&space;=&space;\frac{\hbar^2}{2\mu&space;\Delta&space;R^2}&space;\times&space;\begin{cases}&space;\frac{5}{2},&space;&&space;j&space;=&space;i\\&space;-\frac{4}{3},&space;&&space;j&space;=&space;i\pm&space;1\\&space;\frac{1}{12},&space;&&space;j&space;=&space;i\pm&space;2&space;\end{cases}" title="T_{ij} = \frac{\hbar^2}{2\mu \Delta R^2} \times \begin{cases} \frac{5}{2}, & j = i\\ -\frac{4}{3}, & j = i\pm 1\\ \frac{1}{12}, & j = i\pm 2 \end{cases}" /></a>
+![T_{ij} = \frac{\hbar^2}{2\mu \Delta R^2} \times \begin{cases} \frac{5}{2}, & j = i\\ -\frac{4}{3}, & j = i\pm 1\\ \frac{1}{12}, & j = i\pm 2 \end{cases}](https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+T_%7Bij%7D+%3D+%5Cfrac%7B%5Chbar%5E2%7D%7B2%5Cmu+%5CDelta+R%5E2%7D+%5Ctimes+%5Cbegin%7Bcases%7D+%5Cfrac%7B5%7D%7B2%7D%2C+%26+j+%3D+i%5C%5C+-%5Cfrac%7B4%7D%7B3%7D%2C+%26+j+%3D+i%5Cpm+1%5C%5C+%5Cfrac%7B1%7D%7B12%7D%2C+%26+j+%3D+i%5Cpm+2+%5Cend%7Bcases%7D)
 
 This is a banded symmetric matrix. The potential energy matrix is diagonal:
 

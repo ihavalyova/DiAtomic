@@ -20,10 +20,13 @@ class Interaction:
         for cp in range(0, ncp+6):
             self.cp_map[cp] = np.zeros((self.nch * self.ngrid, max_rotnj))
 
-    def get_interactions_matrix(self, jrotn, mass, par, channels, couplings,
-                                fgrid, dd, Gy2):
+    def get_interactions_matrix(self, jrotn, masses, iso, par, channels,
+                                couplings, fgrid, dd, Gy2):
 
         self.jrotn = jrotn
+        self.masses = masses
+        self.iso = iso
+        mass = self.masses[self.iso-1]
         jjrotn = self.jrotn*(self.jrotn + 1.0)
 
         pert_matrix = np.zeros((self.nch*self.ngrid)**2).reshape(
@@ -338,7 +341,9 @@ class Interaction:
 
     def DBOBC(self, jjrotn, mass, m, par, args):
 
-        return (1.0 / C_hartree) * m
+        # return (1.0 / C_hartree) * m
+        # return m * ((mass - self.masses[0]) / mass)
+        return m * ((self.masses[0] - mass) / mass)
 
     def spin_rotation_interaction(self, jjrotn, mass, m, par, args):
 
@@ -353,7 +358,6 @@ class Interaction:
                 _sqrt(ss1 - args['sg1'] * args['sg2'])
 
         srcoef = m * qexpression
-
         sign = 1.0
 
         return sign * srcoef
@@ -381,7 +385,6 @@ class Interaction:
             qexpression = 1.0
 
         sscoef = m * qexpression
-
         sign = 1.0
 
         return sign * sscoef

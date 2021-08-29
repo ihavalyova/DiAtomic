@@ -13,8 +13,8 @@ author = 'Ilvie Havalyova'
 requires_python = '>=3.6.0'
 version = 'v0.0.1-beta1'
 required_install = [
-    'scipy>=1.5.0',
     'numpy>=1.16.0',
+    'scipy>=1.5.0',
     'matplotlib>=3.2.0',
     'ruamel.yaml',
 ]

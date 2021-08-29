@@ -16,7 +16,11 @@ class Grid:
 
         self.Gy = np.ones(self.ngrid)
         self.Fy = np.zeros(self.ngrid)
-        self.rgrid = self.generate_uniform_grid()
+
+        if self.solver == 'sinc':
+            self.rgrid, self.rstep = self.generate_sinc_uniform_grid()
+        else:
+            self.rgrid, self.rstep = self.generate_fourier_uniform_grid()
 
         if alpha > 0.0:
             # mapping is allowed with sinc method only
@@ -42,15 +46,27 @@ class Grid:
 
         return ((rlimit/rbar)**alpha - 1.0) / ((rlimit/rbar)**alpha + 1.0)
 
-    def generate_uniform_grid(self):
+    def generate_fourier_uniform_grid(self):
 
-        # FGH Fourier grid
-        if self.solver == 'fourier':
-            return np.linspace(self.rmin, self.rmax, num=self.ngrid,
-                               endpoint=False)
+        return np.linspace(
+            self.rmin, self.rmax, num=self.ngrid, endpoint=False, retstep=True
+        )
 
-        # FGH Sinc grid and FD5 grid
-        return np.linspace(self.rmin, self.rmax, num=self.ngrid, endpoint=True)
+    def generate_sinc_uniform_grid(self):
+
+        return np.linspace(
+            self.rmin, self.rmax, num=self.ngrid, endpoint=True, retstep=True
+        )
+
+    def calculate_sinc_basis_functions(self, r):
+
+        # numpy sinc function is defined as sin(pi*x)/(pi*x) where pi is
+        # used for normalization. Thus I do not need to multiply by pi
+        # for j in range(0, self.nch*self.ngrid):
+        for j in range(0, self.ngrid):
+            arg = (r - self.rgrid[j]) / self.rstep
+            # return one column from a matrix
+        return np.sinc(arg)
 
     def generate_nonuniform_grid(self, alpha, rbar):
 

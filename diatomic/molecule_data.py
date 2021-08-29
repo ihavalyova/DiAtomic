@@ -99,11 +99,11 @@ class MoleculeData:
         self._arange_jqnumbers()
 
     @property
-    def parities(self):
+    def symmetries(self):
         return self.pars
 
-    @parities.setter
-    def parities(self, pars):
+    @symmetries.setter
+    def symmetries(self, pars):
         if isinstance(pars, int):
             pars = pars,
 
@@ -233,9 +233,9 @@ class MoleculeData:
         )
         self.exp_data = self.exp_data[parity_mask]
 
-        self.jqnumbers = np.intersect1d(
-            self.jqnumbers, np.unique(self.exp_data[:, 2])
-        )
+        # self.jqnumbers = np.intersect1d(
+        #     self.jqnumbers, np.unique(self.exp_data[:, 2])
+        # )
 
         if self.refj is not None:
             self._arange_jqnumbers()
@@ -346,7 +346,7 @@ class Channel:
         }
 
     @classmethod
-    def set_channel_parameters(cls, channels):
+    def set_channels(cls, channels):
 
         cls.models = cls._define_channel_models()
         cls.channels = channels
@@ -657,7 +657,7 @@ class Channel:
                     np.column_stack([xpnts, ypar[st:en] * C_hartree, fix]),
                     header=str(npnts),
                     comments='',
-                    fmt=['%20.12f', '%25.14f', '%6d']
+                    fmt=['%20.10f', '%25.12f', '%6d']
                 )
                 cls.tot_npts += npnts
                 onpnts = en
@@ -729,7 +729,7 @@ class Coupling:
         }
 
     @classmethod
-    def set_coupling_parameters(cls, couplings, cfile='couplings.yml'):
+    def set_couplings(cls, couplings, cfile='couplings.yml'):
 
         cls.models = cls._define_coupling_models()
         cls.cpl_file = cfile
@@ -758,7 +758,7 @@ class Coupling:
             cp.xunits = 1.0 / C_bohr
             cp.yunits = 1.0
 
-            if 'spin-orbit' in cp.coupling:
+            if 'spin-orbit' in cp.coupling or 'dbobc' in cp.coupling:
                 cp.yunits = 1.0 / C_hartree
 
             if all(item.startswith('lambdad') for item in cp.coupling):
@@ -821,7 +821,7 @@ class Coupling:
                     if len(sitem) >= 3:
                         new_item.append(
                             f'{float(sitem[0]):10.12f}'
-                            f'{float(ypar[cpar]/units):24.14f}'
+                            f'{float(ypar[cpar]/units):24.12f}'
                             f'{int(sitem[2]):7d}'
                             f'{float(sitem[3]):14.2e}'
                             f'{float(sitem[4]):14.1e}'.lstrip()
@@ -829,7 +829,7 @@ class Coupling:
                     else:
                         new_item.append(
                             f'{float(sitem[0]):10.12f}'
-                            f'{float(ypar[cpar]/units):24.14f}'
+                            f'{float(ypar[cpar]/units):24.12f}'
                             f'{int(sitem[2]):7d}'
                         )
                     cpar += 1
@@ -840,7 +840,7 @@ class Coupling:
                         new_item.append(
                             f'{float(ypar[cpar]):18.12f}'
                             f'{int(sitem[1]):3d}'
-                            f'{float(sitem[2]):10.1}'.lstrip()
+                            f'{float(sitem[2]):10.1f}'.lstrip()
                         )
                     else:
                         new_item.append(

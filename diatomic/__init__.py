@@ -4,3 +4,4 @@ from .grids import *
 from .fitting import *
 from .plotting import *
 from .spectrum import *
+from .validator import *

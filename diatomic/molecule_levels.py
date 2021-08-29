@@ -18,7 +18,7 @@ class MoleculeLevels:
     def __init__(self, md, grid):
 
         self.jqnumbers = md.jqnumbers
-        self.pars = sorted(md.parities)
+        self.pars = sorted(md.symmetries)
         self.masses = md.reduced_masses or md.masses
         self.nisotopes = md.nisotopes
         self.refj = md.referencej
@@ -40,7 +40,9 @@ class MoleculeLevels:
         state_numbers = np.arange(1, len(self.channels)+1, dtype=np.int64)
 
         self.minxdim = 2000
-        self.xdim = 4 * self.nch
+
+        # TODO: set an external variable for changing this size
+        self.xdim = 3000#2 * self.nch  # to check this
         if self.exp_data is not None:
             state_mask = np.in1d(
                 self.exp_data[:, -1],
@@ -474,11 +476,10 @@ class MoleculeLevels:
         if stats is not None:
             self._save_output_data(stats=stats)
 
-            if self.store_predicted:
-                self.save_predicted()
-
             print(
-                f'Chi Square = {stats[0]:<11.5f} RMS = {stats[1]:<11.6f}cm-1'
+                f'Chi Square = {stats[0]:<8.5f} | '
+                f' RMS = {stats[1]:<8.6f}cm-1 | '
+                f' RMSD = {stats[2]:<11.6f}'
             )
 
     def calculate_eigenvalues(self, ypar=None):
@@ -492,13 +493,17 @@ class MoleculeLevels:
             self.ngrid, self.nch, self.ncp, self.rgrid2
         )
         dd = np.diag_indices(self.ngrid)
-        count = 0
+        countl = 0
 
         for niso, iso in enumerate(self.nisotopes):
+
             if self.xdim < self.minxdim:
                 self.xdim = self.minxdim
 
             self.evals_predicted = np.zeros((self.xdim, 6+self.nch))
+
+            # TODO: change the column number
+            evecs_all = np.zeros((self.nch*self.ngrid, 3000))
 
             mass = self.masses[iso-1]
 
@@ -515,37 +520,36 @@ class MoleculeLevels:
                     self.hmatrix = self.kin_enr + self.pot_enr
 
                     pert_matrix = self.interact.get_interactions_matrix(
-                        jrotn, mass, par, self.channels, self.couplings,
-                        self.fgrid, dd, self.Gy2
+                        jrotn, self.masses, iso, par, self.channels,
+                        self.couplings, self.fgrid, dd, self.Gy2
                     )
 
                     self.hmatrix += pert_matrix
 
                     evalues, evecs = self.eig_decomp_keys[self.eig_decomp]()
-
+                    nevalues = evalues.shape[0]
                     ccoefs = self._get_coupling_coefficients(evecs)
                     states = np.argmax(ccoefs, axis=1) + 1
                     vibnums = self._assign_vibrational_number(states)
 
-                    if self.store_evecs:
-
-                        self._save_eigenvectors(
-                            jrotn, par, iso, evecs[:, :evalues.shape[0]],
-                            vibnums, states
-                        )
-
                     calc_data = self._arange_levels(
                         jrotn, par, iso, shiftE, evalues
                     )
+                    # TODO: put some constraints by energy
+                    if self.store_evecs:
+                        evecs_all[:, countl:countl+nevalues] = evecs
 
                     calc_data = np.column_stack(
                         (calc_data, ccoefs, states, vibnums)
-                    ).reshape(evalues.shape[0], -1)
+                    ).reshape(nevalues, -1)
 
                     nrow, ncol = calc_data.shape[0], calc_data.shape[1]
-                    self.evals_predicted[count:count+nrow, :ncol] = calc_data
 
-                    count += calc_data.shape[0]
+                    self.evals_predicted[countl:countl+nrow, :ncol] = calc_data
+
+                    countl += nevalues  # calc_data.shape[0]
+
+            self.evals_predicted = self.evals_predicted[:countl]
 
             nlambda = self._get_lambda_values()
             omega = self._get_omega_values()
@@ -553,27 +557,40 @@ class MoleculeLevels:
             self.evals_predicted = np.column_stack(
                 (self.evals_predicted, nlambda, omega)
             )
+            self.evecs_matrix = evecs_all[:, :countl]
+            # add numbering
+            self.evals_predicted = np.c_[
+                np.arange(1.0, self.evals_predicted.shape[0]+1),
+                self.evals_predicted
+            ]
+
+            if self.store_predicted:
+                if niso == 0:
+                    self.save_predicted()
+                else:
+                    self.save_predicted(mode='a')
 
             if self.exp_data is not None:
-
                 if niso == 0:
                     self.out_data = self._identify_levels()
                 else:
                     self.out_data = np.vstack(
                         (self.out_data, self._identify_levels())
                     )
+                chi2, rms, rmsd = self.calculate_stats(
+                    self.out_data[:, 8], self.out_data[:, 7],
+                    self.out_data[:, 10], self.is_weighted
+                )
+                # the sorting is needed for the analytical derivative
+                # self._sort_output(cols=[5, 1])
+                print(
+                    f'{niso+1}: '
+                    f'chi2={chi2:5.2f}, rms={rms:5.4f}, rmsd={rmsd:5.2f}'
+                )
+                # return chi2, rms, rmsd
             else:
                 self.save_predicted()
-
-            chi2, rms, rmsd = self.calculate_stats(
-                self.out_data[:, 8], self.out_data[:, 7],
-                self.out_data[:, 10], self.is_weighted
-            )
-
-            # the sorting is needed for the analytical derivative
-            self._sort_output(cols=[5, 1])
-
-            return chi2, rms, rmsd
+                # return None
 
     def _get_lambda_values(self):
 
@@ -621,6 +638,7 @@ class MoleculeLevels:
         h2 = h**2
 
         ij_grid = np.mgrid[:self.ngrid, :self.ngrid]
+        # TODO: check this
         ij_mtx = ij_grid[0] - ij_grid[1]
 
         di = np.diag_indices(self.ngrid)
@@ -810,27 +828,27 @@ class MoleculeLevels:
 
         emask = \
             np.in1d(self.exp_data[:, 1], self.evals_predicted[:, -3]) & \
-            np.in1d(self.exp_data[:, 2], self.evals_predicted[:, 1]) & \
-            np.in1d(self.exp_data[:, 4], self.evals_predicted[:, 2]) & \
+            np.in1d(self.exp_data[:, 2], self.evals_predicted[:, 2]) & \
+            np.in1d(self.exp_data[:, 4], self.evals_predicted[:, 3]) & \
             np.in1d(self.exp_data[:, -1], self.evals_predicted[:, -4]) & \
             np.in1d(
                 np.floor_divide(self.exp_data[:, -2], 10) + 1,
-                self.evals_predicted[:, 3]
+                self.evals_predicted[:, 4]
             )
 
-        self.exp_data = self.exp_data[emask]
+        exp_data_m = self.exp_data[emask]
 
         cmask = \
-            np.in1d(self.evals_predicted[:, -3], self.exp_data[:, 1]) & \
-            np.in1d(self.evals_predicted[:, 1], self.exp_data[:, 2]) & \
-            np.in1d(self.evals_predicted[:, 2], self.exp_data[:, 4]) & \
-            np.in1d(self.evals_predicted[:, -4], self.exp_data[:, -1]) & \
+            np.in1d(self.evals_predicted[:, -3], exp_data_m[:, 1]) & \
+            np.in1d(self.evals_predicted[:, 2], exp_data_m[:, 2]) & \
+            np.in1d(self.evals_predicted[:, 3], exp_data_m[:, 4]) & \
+            np.in1d(self.evals_predicted[:, -4], exp_data_m[:, -1]) & \
             np.in1d(
-                self.evals_predicted[:, 3],
-                np.floor_divide(self.exp_data[:, -2], 10) + 1
+                self.evals_predicted[:, 4],
+                np.floor_divide(exp_data_m[:, -2], 10) + 1
             )
 
-        self.evals_predicted = self.evals_predicted[cmask]
+        calc_data_m = self.evals_predicted[cmask]
 
         # sort data by v then by J then by parity then by state, then by energy
         # self.exp_data = self.exp_data[
@@ -844,36 +862,37 @@ class MoleculeLevels:
         # ))]
 
         i1, i2 = self._get_indices_of_matching_rows_simple(
-            self.exp_data[:, [1, 2, 4, -1]],
-            self.evals_predicted[:, [-3, 1, 2, -4]]
+            exp_data_m[:, [1, 2, 4, -1]],
+            calc_data_m[:, [-3, 1, 2, -4]]
         )
 
-        exp_data_ext = self.exp_data[i1]
-        calc_data_ext = self.evals_predicted[i2]
+        exp_data_ext = exp_data_m[i1]
+        calc_data_ext = calc_data_m[i2]
 
         return exp_data_ext, calc_data_ext
 
     def _filter_data_by_energy_diff(self):
 
         emask = \
-            np.in1d(self.exp_data[:, 2], self.evals_predicted[:, 1]) & \
-            np.in1d(self.exp_data[:, 4], self.evals_predicted[:, 2]) & \
+            np.in1d(self.exp_data[:, 2], self.evals_predicted[:, 2]) & \
+            np.in1d(self.exp_data[:, 4], self.evals_predicted[:, 3]) & \
             np.in1d(
                 np.floor_divide(self.exp_data[:, -2], 10) + 1,
-                self.evals_predicted[:, 3]
+                self.evals_predicted[:, 4]
             )
 
         exp_data_mask = self.exp_data[emask]
 
         cmask = \
-            np.in1d(self.evals_predicted[:, 1], exp_data_mask[:, 2]) & \
-            np.in1d(self.evals_predicted[:, 2], exp_data_mask[:, 4]) & \
+            np.in1d(self.evals_predicted[:, 2], exp_data_mask[:, 2]) & \
+            np.in1d(self.evals_predicted[:, 3], exp_data_mask[:, 4]) & \
             np.in1d(
-                self.evals_predicted[:, 3],
+                self.evals_predicted[:, 4],
                 np.floor_divide(exp_data_mask[:, -2], 10) + 1
             )
 
-        self.evals_predicted = self.evals_predicted[cmask]
+        #self.evals_predicted = self.evals_predicted[cmask]
+        calc_data_ext = self.evals_predicted[cmask]
 
         # sort data by v then by J then by parity then by state, then by energy
         # self.exp_data = self.exp_data[
@@ -885,20 +904,20 @@ class MoleculeLevels:
         #         self.evals_predicted[:, 2], self.evals_predicted[:, 1],
         #         self.evals_predicted[:, -1]
         # ))]
+
         i1, i2 = self._get_indices_of_matching_rows_simple(
-            exp_data_mask[:, [2, 4]],
-            self.evals_predicted[:, [1, 2]]
+            exp_data_mask[:, [2, 4]], calc_data_ext[:, [2, 3]]
         )
 
-        exp_data_ext = exp_data_mask[i1]
-        calc_data_ext = self.evals_predicted[i2]
+        # exp_data_ext = exp_data_mask[i1]
+        # calc_data_ext = calc_data_ext[i2]
 
-        return exp_data_ext, calc_data_ext
+        return exp_data_mask[i1], calc_data_ext[i2]
 
     def _get_output_identified_by_energy1(self):
 
         exp_data_ext, calc_data_ext = self._filter_data_by_energy_diff()
-        coupled_coeffs = calc_data_ext[:, 4:-4]
+        coupled_coeffs = calc_data_ext[:, 5:-4]
 
         nlambda = np.fromiter(map(
             lambda x: self.channels[x-1].nlambda,
@@ -924,9 +943,9 @@ class MoleculeLevels:
             omega, nsigma, nlambda,
             exp_data_ext[:, 4],
             exp_data_ext[:, 6],
-            calc_data_ext[:, 0],
+            calc_data_ext[:, 1],
             exp_data_ext[:, 3],
-            calc_data_ext[:, 0] - exp_data_ext[:, 3],
+            calc_data_ext[:, 1] - exp_data_ext[:, 3],
             exp_data_ext[:, 5],
             coupled_coeffs,
             exp_data_ext[:, -1],
@@ -943,9 +962,9 @@ class MoleculeLevels:
 
     def _get_output_identified_by_coupling_coeffs1(self):
 
-        # self.exp_data = self.exp_data[self.exp_data[:,3].argsort()]
+        # self.exp_data = self.exp_data[self.exp_data[:, 3].argsort()]
         # self.evals_predicted = \
-        # self.evals_predicted[self.evals_predicted[:,0].argsort()]
+        #     self.evals_predicted[self.evals_predicted[:, 0].argsort()]
 
         exp_data_ext, calc_data_ext = self._filter_data_by_coupling_coeffs()
 
@@ -1090,6 +1109,14 @@ class MoleculeLevels:
         efile = _join(self.evec_dir, fname)
         np.save(efile, evec_ext)
 
+    # TODO: implement this
+    # if self.write_evecs_on_disk:
+        # TODO: change to store the whole array at once
+        # self._save_eigenvectors(
+        #     jrotn, par, iso, evecs[:, :evalues.shape[0]],
+        #     vibnums, states
+        # )
+
     def interpolate_wavefunction(self, ninter=200, jrange=(0, 1),
                                  pars=(1,), binary=True):
         """Interpolate the stored eigenvectors using sinc basis functions
@@ -1207,55 +1234,106 @@ class MoleculeLevels:
 
     def _save_output_data(self, stats=None):
 
-        cc = 'CC'
-        cc_names = ''.join(map(
-            lambda x: f'{cc+str(x):>9}', range(1, self.nch+1))
+        # add numbering
+        num_outdata = np.c_[
+            np.arange(1, self.out_data.shape[0]+1), self.out_data
+        ]
+
+        coef = 'coef'
+        coef_labels = ''.join(
+            map(lambda x: f'{coef+str(x):^8}', range(1, self.nch+1))
+        )
+        labels = (
+            'n', 'v', 'J', 'omega', 'sigma', 'lambda', 'symmetry', 'marker',
+            'Ecalc', 'Eexp', 'delta', 'unc', coef_labels, 'state'
         )
 
-        names = [
-            'No', 'v', 'J', 'omega', 'sigma',
-            'lambda', 'parity', 'marker',
-            'Ecalc', 'Eexp', 'delta',
-            'unc', cc_names, 'state'
-        ]
-
-        header = '{:>6}'.format(names[0]) + \
-            ''.join(map(lambda x: '{:>8}'.format(x), names[1:9])) + \
-            ''.join(map(lambda x: '{:>15}'.format(x), names[9:11])) + \
-            ''.join(map(lambda x: '{:>11}'.format(x), names[11:]))
-
-        outd = np.c_[
-            np.arange(1, self.out_data.shape[0]+1),
-            self.out_data
-        ]
+        header = (
+            f'{labels[0]:^11}{labels[1]:<7}{labels[2]:<6}{labels[3]:<8}'
+            f'{labels[4]:<6}{labels[5]:<7}{labels[6]:<9}{labels[7]:<10}'
+            f'{labels[8]:<14}{labels[9]:<15}{labels[10]:<12}{labels[11]:<7}'
+            f'{labels[12]:>15}{labels[13]}'
+        )
 
         fmt = [
-            '%7d', '%7d', '%7.1f', '%7.1f', '%7.1f', '%6d', '%6d',
-            '%6d', '%15.6f', '%14.6f', '%12.6f', '%10.4f'
-        ] + self.nch*['%8.3f'] + ['%5d']
+            '%7d', '%5d', '%7.1f', '%7.1f', '%7.1f', '%5d', '%6d',
+            '%6d', '%15.6f', '%14.6f', '%12.6f', '%9.4f'
+        ]
+        fmt += self.nch*['%7.3f'] + ['%5d']
 
         footer = ''
         if stats is not None:
-            footer = \
-                f'Chi Square = {stats[0]:.8f}\n' \
-                f'RMS = {stats[1]:.8f} cm-1\n' \
+            footer = (
+                f'Chi Square = {stats[0]:.8f}\n'
+                f'RMS = {stats[1]:.8f} cm-1\n'
                 f'RMSD = {stats[2]:.8f}'
-
-        with open(self.file_evals, 'w') as outs:
-            np.savetxt(
-                outs,
-                outd,
-                comments='#',
-                header=header,
-                footer=footer,
-                fmt=fmt
             )
 
+        # with open(self.file_evals, 'w') as outs:
+        np.savetxt(
+            self.file_evals, num_outdata, comments='#',
+            header=header, footer=footer, fmt=fmt
+        )
+
+    def save_predicted(self, mode='w'):
+
+        # rearange columns
+        nrows = self.evals_predicted.shape[1]
+        cols = [0, -3] + list(range(1, nrows-3)) + [-2, -1]
+        predicted_eigv = self.evals_predicted[:, cols]
+
+        coef = 'coef'
+        coef_labels = ''.join(
+            map(lambda x: f'{coef+str(x):^10}', range(1, self.nch+1))
+        )
+
+        labels = (
+            'n', 'v', 'Ecalc', 'J', 'symmetry', ' marker',
+            coef_labels, 'state', 'lambda', 'omega'
+        )
+
+        header = ''
+        if mode == 'w':
+            header = (
+                f'{labels[0]:^12}{labels[1]:<9}{labels[2]:<15}{labels[3]:<4}'
+                f'{labels[4]:<7}{labels[5]:<7}{labels[6]}{labels[7]:<7}'
+                f'{labels[8]:<9}{labels[9]}'
+            )
+
+        fmt = ['%7.1d', '%6.1d', '%16.6f', '%7.1f', '%5.1d', '%7.1d']
+        fmt += self.nch*['%9.3f'] + 2*['%6.1d'] + ['%8.1f']
+
+        with open(self.file_predicted, mode) as outs:
+            np.savetxt(
+                outs, predicted_eigv, comments='#', header=header, fmt=fmt
+            )
+
+    def _sort_predicted(self, cols=[]):
+
+        out = [self.evals_predicted[:, col] for col in reversed(cols)]
+        self.evals_predicted = self.evals_predicted[np.lexsort(tuple(out))]
+
+    def sort_predicted(self, cols=[]):
+
+        self._sort_predicted(cols)
+        self.save_predicted()
+
+    def _sort_output(self, cols=[]):
+
+        cols = [i-2 for i in cols]
+        out = [self.out_data[:, col] for col in reversed(cols)]
+        self.out_data = self.out_data[np.lexsort(tuple(out))]
+
+    def sort_output(self, cols=[]):
+
+        self._sort_output(cols)
+        self._save_output_data()
+
     def get_predicted_data(self):
-        """Get all predicted eigenvalues as array
+        """Get all predicted eigenvalues as numpy array
 
         Returns:
-            numpy.ndarray: the computed eigenvalues
+            numpy array: the computed eigenvalues
         """
 
         return self.evals_predicted
@@ -1268,66 +1346,6 @@ class MoleculeLevels:
 
         # will return the matrix for the last comupted J, e/f level and isotope
         return self.hmatrix
-
-    def save_predicted(self):
-
-        cols = [-3] + list(
-            range(0, self.evals_predicted.shape[1]-3)
-        ) + [-2, -1]
-
-        eigv_data = self.evals_predicted[:, cols]
-        eigv_data = np.c_[
-            np.arange(1.0, self.evals_predicted.shape[0]+1), eigv_data
-        ]
-
-        cc = 'CC'
-        cc_names = ''.join(map(
-            lambda x: f'{cc+str(x):>9}', range(1, self.nch+1))
-        )
-
-        names = [
-            'No', 'v', 'Ecalc', 'J', 'parity', ' marker',
-            cc_names, 'state', 'lambda', 'omega'
-        ]
-
-        header = \
-            '{:>7}'.format(names[0]) + \
-            ''.join(map(lambda x: '{:>4}'.format(x), names[1])) + \
-            ''.join(map(lambda x: '{:>11}'.format(x), names[2:4])) + \
-            ''.join(map(lambda x: '{:>8}'.format(x), names[4:]))
-
-        fm = ['%7.1d', '%3.1d', '%14.6f', '%7.1f', '%5.1d', '%6.1d'] + \
-            self.nch*['%9.3f'] + 2*['%6.1d'] + ['%8.2f']
-
-        np.savetxt(
-            self.file_predicted, eigv_data, comments='#', header=header, fmt=fm
-        )
-
-    def _sort_predicted(self, cols=[]):
-
-        out = []
-        for col in cols:
-            out.append(self.out_data[:, col])
-
-        self.evals_predicted = self.evals_predicted[np.lexsort(tuple(out))]
-        # self.save_predicted()
-
-    def _sort_output(self, cols=[]):
-
-        out = []
-        for col in reversed(cols):
-            out.append(self.out_data[:, col])
-
-        self.out_data = self.out_data[np.lexsort(tuple(out))]
-        # self._save_output_data()
-
-    def _group_increasing_sequences(self, iseq):
-
-        return [
-            list(arr) for arr in np.split(
-                iseq, np.where(np.diff(iseq) != 1)[0] + 1
-            ) if arr.size > 0
-        ]
 
     def _find_divisors(self, numb):
 
