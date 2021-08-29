@@ -1,8 +1,9 @@
+import datetime
+import os
+import numpy as np
 from scipy.constants import atomic_mass as _atomic_mass, angstrom as _angstrom
 from scipy.constants import physical_constants as _physical_constants
 from shutil import copy2 as _copy2
-import datetime
-import os
 
 __all__ = ['Utils']
 
@@ -19,11 +20,10 @@ C_massau = _atomic_mass / _physical_constants['electron mass'][0]
 class Utils:
 
     @classmethod
-    def createBackup(cls, ref_file):
+    def create_backup_file(cls, ref_file):
 
         backup_folder = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), '.backup'
-        )
+            os.path.dirname(os.path.realpath(__file__)), '.backup')
 
         os.makedirs(backup_folder, exist_ok=True)
 
@@ -34,25 +34,23 @@ class Utils:
         _copy2(ref_file, os.path.join(backup_folder, name_bkp))
 
     @classmethod
-    def getDatetime(cls):
+    def get_date_time(cls):
 
         now = datetime.datetime.now()
         # milli = str(int(round(now.microsecond / 1.0e3)))  # us to ms
 
-        timelist = [
-            now.year, now.month, now.day, now.hour,
-            now.minute, now.second, now.microsecond
-        ]
+        timelist = [now.year, now.month, now.day, now.hour,
+                    now.minute, now.second, now.microseconds]
 
         return '_'.join(str(t) for t in timelist)
 
     @classmethod
-    def get_current_dir(cls):
+    def get_current_directory(cls):
 
         # will not work if the program is used as a module
-        # return os.path.abspath(os.path.dirname(__file__))
+        return os.path.abspath(os.path.dirname(__file__))
 
-        return os.getcwd()
+        # return os.getcwd()
 
     @classmethod
     def get_plot_dir(cls, key):
@@ -81,5 +79,148 @@ class Utils:
         return paths[key]
 
     @classmethod
-    def get_level_output_dir(cls, key):
-        pass
+    def print_detailed_output(cls, H, file_name=None):
+
+        file_name = file_name or 'data_info.dat'
+        nsymb = 50
+        s = ' '
+
+        mass_str = ''
+        for n, nisotope in enumerate(H.niso):
+            mass = H.masses[n]
+            mass_str += (
+                f'{s:>4}Isotopologue {nisotope}: '
+                f'Reduced Mass = {mass:>15.9} au = '
+                f'{mass / C_massau:>15.9} amu\n')
+
+        jqnum_str = ' '.join(map(str, H.jqnumbers))
+        pars_str = ', '.join(map(lambda x: 'e' if x else 'f', H.pars))
+        shift_enr = True if H.refj is not None else False
+        iso_str = ' '.join(map(str, H.molecule))
+
+        output_mol_data = (
+            f'{nsymb*"#"} Molecule Data {nsymb*"#"}\n\n'
+            f'{s:>4}Chemical Symbol of the Molecule: {H.mol_name}\n\n'
+            f'{s:>4}Number of Defined Isotopologues = '
+            f'{len(H.masses):>4d}\n\n'
+            f'{s:>4}Isotopologues = {iso_str}\n\n'
+            f'{s:>4}Number of Used Isotopologues = {len(H.niso):>7d}\n\n'
+            f'{mass_str}\n\n'
+            f'{s:>4}Number of Rotational Quantum Numbers = '
+            f'{H.jqnumbers.shape[0]}\n\n'
+            f'{s:>4}Rotational Quantum Numbers:\n'
+            f'{s:>4}{jqnum_str}\n\n'
+            f'{s:>4}Symmetry Levels = '
+            f'{pars_str}\n\n'
+            f'{s:>4}Shift Energies = {shift_enr}\n'
+            f'{s:>4}Shift Energies by Level J = {H.refj}\n\n')
+
+        grid_points_str = ''
+        for point in H.rgrid:
+            grid_points_str += (
+                f'{s:<4}{point*C_bohr:>20.8f};'
+                f'{point:>20.8f}\n')
+
+        output_grid = (
+            f'{nsymb*"#"} Grid {nsymb*"#"}\n\n'
+            f'{s:>4}Method of Solution: {H.solver}\n\n'
+            f'{s:>4}Number of Grid Points = {H.ngrid:<5d}\n\n'
+            f'{s:>4}Rmin = {H.rmin*C_bohr:>12.10f} '
+            f'Angstrom = {H.rmin:>12.10f} Bohr\n'
+            f'{s:>4}Rmax = {H.rmax*C_bohr:>12.10f} '
+            f'Angstrom = {H.rmax:>12.10f} Bohr\n\n'
+            f'{s:>4}Hamiltonian Matrix Size = '
+            f'{s:>4}{H.nch*H.ngrid} x {H.nch*H.ngrid}\n'
+            f'{s:>4}Number of Computed Eigenvalues = '
+            f'{H.ecount:>8d}\n'
+            f'{s:>4}Number of Selected Eigenvalues = '
+            f'{H.out_data.shape[0]:>8d}\n\n'
+            f'{s:>4}Grid Points (Angstrom; Bohr):\n\n'
+            f'{grid_points_str}\n\n')
+
+        channels_str = ''
+        for ic, ch in enumerate(H.channels):
+            eq_pos = np.argmin(ch.upoints)
+            channels_str += (
+                f'\n{s:>9} {ic+1}.\n'
+                f'{s:<13}Model: {ch.model}\n'
+                f'{s:<13}File: {ch.filep}\n'
+                f'{s:<13}Lambda: {ch.nlambda}\n'
+                f'{s:<13}Sigma: {ch.nsigma}\n'
+                f'{s:<13}Multiplicity: {ch.mult}\n'
+                f'{s:<13}Rot correction: {ch.rot_correction}\n'
+                f'{s:<13}Equilibrium distance point = {eq_pos+1}\n'
+                f'{s:<13}Equilibrium distance: '
+                f'Rmin = {ch.rpoints[eq_pos]*C_bohr}, '
+                f'Umin = {ch.upoints[eq_pos]*C_hartree}\n'
+                f'{s:<13}Number of parameters: {ch.npnts}\n'
+                f'{s:<13}Parameters (Angstrom/cm-1; Bohr/Hartree):\n\n')
+
+            if ch.model == 'pointwise':
+                for i in range(0, len(ch.rpoints)):
+                    channels_str += (
+                        f'{s:<4}{ch.rpoints[i]*C_bohr:>20.8f}'
+                        f'{ch.upoints[i]*C_hartree:>20.8f};'
+                        f'{ch.rpoints[i]:>20.8f}'
+                        f'{ch.upoints[i]:>20.8f}\n')
+
+        output_channels = (
+            f'{nsymb*"#"} Channels Data {nsymb*"#"}\n\n'
+            f'{s:>4}Number of Channels = {H.nch}\n'
+            f'{channels_str}')
+
+        ugrid_cols = np.hstack((
+            H.rgrid[:, np.newaxis] * C_bohr,
+            H.ugrid.reshape(H.nch, H.ngrid).T * C_hartree))
+
+        output_channels_funcs = (
+            f'\n{nsymb*"#"} Channel Functions on Grid {nsymb*"#"}\n\n'
+            f'{ugrid_cols}\n')
+
+        couplings_str = ''
+        for ic, cp in enumerate(H.couplings):
+            couplings_str += (
+                f'{s:>9} {ic+1}.\n'
+                f'{s:<13}Type: {cp.model}\n'
+                f'{s:<13}Channels: {cp.interact}\n'
+                f'{s:<13}Coupling: {cp.coupling}\n'
+                f'{s:<13}Label: {cp.label}\n'
+                f'{s:<13}Multiplier: {cp.multiplier}\n'
+                f'{s:<13}Parameters:\n')
+
+            if cp.model == 'pointwise':
+                for i in range(0, len(cp.xc)):
+                    couplings_str += (
+                        f'{cp.xc[i]:>29.14f}'
+                        f'{cp.yc[i]:>25.14f}\n')
+
+        output_couplings = (
+            f'{nsymb*"#"} Couplings Data {nsymb*"#"}\n\n'
+            f'{s:>4}Number of Couplings = {H.ncp}\n\n'
+            f'{couplings_str}')
+
+        fgrid_cols = np.hstack((
+            H.rgrid[:, np.newaxis] * C_bohr,
+            H.fgrid.reshape(H.ncp, H.ngrid).T))
+
+        output_couplings_funcs = (
+            f'{nsymb*"#"} Coupling Functions on Grid {nsymb*"#"}\n\n'
+            f'{fgrid_cols}\n')
+
+        output_exp_energies = ''
+        if H.exp_data is not None:
+            output_exp_energies = (
+                f'{nsymb*"#"} Experimental data {nsymb*"#"}\n\n'
+                f'{s:>4}File with Experimental Data = {H.exp_file}\n\n'
+                f'{s:>4}Markers: \n'
+                f'{s:>4}Number of used experimental data = '
+                f'{H.exp_data.shape[0]}\n\n')
+
+        with open(file_name, 'w') as outf:
+            outf.write(output_mol_data)
+            outf.write(output_grid)
+            outf.write(output_channels)
+            outf.write(output_channels_funcs)
+            outf.write(output_couplings)
+            outf.write(output_couplings_funcs)
+            outf.write(output_exp_energies)

@@ -26,53 +26,9 @@ class Plotting:
         pass
 
     @classmethod
-    def _define_main_keywords(cls):
-
-        return {
-            0: 'what',
-            1: 'mlevels',
-            2: 'fformat',
-            3: 'show',
-            4: 'path',
-            5: 'props',
-        }
-
-    @classmethod
-    def _define_what_keywords(cls):
-
-        return {
-            'residuals_level': cls.plot_residuals_level,
-            'residuals': cls.full_residuals_plot,
-            'residuals2': cls.full_residuals_plot2,
-            'residuals_hist': cls.full_residuals_hist,
-            'potentials_on_grid': cls.plot_potentials_on_grid,
-            'couplings_on_grid': cls.plot_couplings_on_grid,
-        }
-
-    @staticmethod
-    def plot(cls, **kwargs):
-
-        keys = cls._define_main_keywords()
-        what_keys = cls._define_what_keywords()
-
-        what = kwargs[keys[0]].lower()
-        mlevels = kwargs.get(keys[1])
-        frm = kwargs.get(keys[2]) or 'png'
-        show = kwargs.get(keys[3]) or False
-        path = kwargs.get(keys[4])
-        props = kwargs.get(keys[5])
-
-        if what not in what_keys.keys():
-            raise SystemExit(f'Error: Invalid plotting parameter {what}.')
-
-        what_keys[what](
-            mlevels=mlevels, path=path, fformat=frm, show=show, props=props
-        )
-
-    @classmethod
     def plot_residuals_hist(cls, ml, path=None, fformat='png', save=True,
-                            show=False, xlabel=None, ylabel=None,
-                            bins=30, fname=None, with_sns=False, size=None):
+                            show=False, xlabel=None, ylabel=None, bins=30,
+                            fname=None, with_sns=False, size=None):
 
         x = ml.out_data[:, 9]
 
@@ -81,15 +37,14 @@ class Plotting:
             sns.histplot(x, kde=True)
         else:
             n, bins, patches = ax.hist(
-                x, density=True, bins=bins, label='Data'
-            )
+                x, density=True, bins=bins, label='Data')
             mn, mx = plt.xlim()
             ax.set_xlim(mn, mx)
             kde_xs = np.linspace(mn, mx, 301)
             kde = st.gaussian_kde(x)
             ax.plot(kde_xs, kde.pdf(kde_xs), label='PDF')
 
-        xlabel = r'Energy' or xlabel
+        xlabel = 'Energy' or xlabel
         ylabel = 'Count' or ylabel
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
@@ -123,27 +78,23 @@ class Plotting:
         for iso in ml.nisotopes:
             data_iso = data[(np.divmod(data[:, 6], 10)[0] + 1) == iso]
 
-            ax.plot(
-                data_iso[:, 8],
-                data_iso[:, 9],
-                color=colors[iso],
-                marker='o',
-                markersize=msize,
-                markeredgewidth=0.8,
-                linewidth=0.0,
-                fillstyle='full',
-                alpha=0.8,
-                label=int(iso)
-            )
+            ax.plot(data_iso[:, 8],
+                    data_iso[:, 9],
+                    color=colors[iso],
+                    marker='o',
+                    markersize=msize,
+                    markeredgewidth=0.8,
+                    linewidth=0.0,
+                    fillstyle='full',
+                    alpha=0.8,
+                    label=int(iso))
 
-        avrg_uncert = np.sum(data[:, 10]) / data.shape[0]
+        avrg_unc = np.sum(data[:, 10]) / data.shape[0]
         hcolor = '#8B8E93'
         plt.axhline(
-            y=avrg_uncert, color=hcolor, linestyle='dashed', linewidth=0.9
-        )
+            y=avrg_unc, color=hcolor, linestyle='dashed', linewidth=0.9)
         plt.axhline(
-            y=-1.0*avrg_uncert, color=hcolor, linestyle='dashed', linewidth=0.9
-        )
+            y=-1.0*avrg_unc, color=hcolor, linestyle='dashed', linewidth=0.9)
 
         xlabel = r'Energy' or xlabel
         yld = r'$\mathrm{E}_{\mathrm{calc}}$ - $\mathrm{E}_{\mathrm{obs}}$'
@@ -189,28 +140,24 @@ class Plotting:
                 data_state = data[data[:, -1] == state]
                 data_iso = data_state[data_state[:, 6] == iso]
 
-                ax.plot(
-                    data_iso[:, 8],
-                    data_iso[:, 9],
-                    color=colors[count],
-                    marker='o',
-                    markersize=6,
-                    markeredgewidth=0.8,
-                    linewidth=0.0,
-                    fillstyle='full',
-                    alpha=0.75,
-                    label=int(iso)
-                )
+                ax.plot(data_iso[:, 8],
+                        data_iso[:, 9],
+                        color=colors[count],
+                        marker='o',
+                        markersize=6,
+                        markeredgewidth=0.8,
+                        linewidth=0.0,
+                        fillstyle='full',
+                        alpha=0.75,
+                        label=int(iso))
                 count += 1
 
-            avrg_uncert = np.sum(data[:, 10]) / data.shape[0]
+            avrg_unc = np.sum(data[:, 10]) / data.shape[0]
             hcolor = '#8B8E93'
             plt.axhline(
-                y=avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9
-            )
+                y=avrg_unc, color=hcolor, linestyle='dashed', lw=0.9)
             plt.axhline(
-                y=-1.0*avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9
-            )
+                y=-1.0*avrg_unc, color=hcolor, linestyle='dashed', lw=0.9)
 
             ax.set_xlabel('Energy')
             ax.set_ylabel('E_calc - E_obs')
@@ -249,27 +196,23 @@ class Plotting:
         for state in states:
             data_state = data[data[:, -1] == state]
 
-            ax.plot(
-                data_state[:, 8],
-                data_state[:, 9],
-                color=colors[int(state)],
-                marker='o',
-                markersize=msize,
-                markeredgewidth=0.8,
-                linewidth=0.0,
-                fillstyle='full',
-                alpha=0.75,
-                label=int(state)
-            )
+            ax.plot(data_state[:, 8],
+                    data_state[:, 9],
+                    color=colors[int(state)],
+                    marker='o',
+                    markersize=msize,
+                    markeredgewidth=0.8,
+                    linewidth=0.0,
+                    fillstyle='full',
+                    alpha=0.75,
+                    label=int(state))
 
-        avrg_uncert = np.sum(data[:, 10]) / data.shape[0]
+        avrg_unc = np.sum(data[:, 10]) / data.shape[0]
         hcolor = '#8B8E93'
         plt.axhline(
-            y=avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9
-        )
+            y=avrg_unc, color=hcolor, linestyle='dashed', lw=0.9)
         plt.axhline(
-            y=-1.0*avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9
-        )
+            y=-1.0*avrg_unc, color=hcolor, linestyle='dashed', lw=0.9)
 
         xlabel = r'Energy' or xlabel
         yld = r'$\mathrm{E}_{\mathrm{calc}}$ - $\mathrm{E}_{\mathrm{obs}}$'
@@ -300,55 +243,48 @@ class Plotting:
     @classmethod
     def plot_residuals_by_parity_labels(cls, ml, path=None, fformat='png',
                                         fname=None, xlabel=None, ylabel=None,
-                                        show=False, msize=5, save=True, size=None):
+                                        show=False, msize=5, save=True,
+                                        size=None):
 
         data = ml.out_data
         edata = data[data[:, 5] == 1]
         fdata = data[data[:, 5] == 0]
 
-        line_styles = {
-            'color': ('#B64A4A', '#4A73B5'),
-            'marker': ('o', 'o'),
-            'markersize': (msize, msize),
-            'markeredgewidth': (0.85, 0.85),
-            'linewidth': (0.0, 0.0),
-            'fillstyle': ('full', 'full')
-        }
+        line_styles = {'color': ('#B64A4A', '#4A73B5'),
+                       'marker': ('o', 'o'),
+                       'markersize': (msize, msize),
+                       'markeredgewidth': (0.85, 0.85),
+                       'linewidth': (0.0, 0.0),
+                       'fillstyle': ('full', 'full')}
 
         fig, ax = plt.subplots()
-        ax.plot(
-            edata[:, 8],
-            edata[:, 9],
-            color=line_styles['color'][0],
-            marker=line_styles['marker'][0],
-            markersize=line_styles['markersize'][0],
-            markeredgewidth=line_styles['markeredgewidth'][0],
-            linewidth=line_styles['linewidth'][0],
-            fillstyle=line_styles['fillstyle'][0],
-            alpha=0.85
-        )
+        ax.plot(edata[:, 8],
+                edata[:, 9],
+                color=line_styles['color'][0],
+                marker=line_styles['marker'][0],
+                markersize=line_styles['markersize'][0],
+                markeredgewidth=line_styles['markeredgewidth'][0],
+                linewidth=line_styles['linewidth'][0],
+                fillstyle=line_styles['fillstyle'][0],
+                alpha=0.85)
 
-        ax.plot(
-            fdata[:, 8],
-            fdata[:, 9],
-            color=line_styles['color'][1],
-            marker=line_styles['marker'][1],
-            markersize=line_styles['markersize'][1],
-            markeredgewidth=line_styles['markeredgewidth'][1],
-            linewidth=line_styles['linewidth'][1],
-            fillstyle=line_styles['fillstyle'][1],
-            alpha=0.85
-        )
+        ax.plot(fdata[:, 8],
+                fdata[:, 9],
+                color=line_styles['color'][1],
+                marker=line_styles['marker'][1],
+                markersize=line_styles['markersize'][1],
+                markeredgewidth=line_styles['markeredgewidth'][1],
+                linewidth=line_styles['linewidth'][1],
+                fillstyle=line_styles['fillstyle'][1],
+                alpha=0.85)
 
         # annotate average uncertanty
         avrg_uncert = np.sum(data[:, 10]) / data.shape[0]
         hcolor = '#8B8E93'
         plt.axhline(
-            y=avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9
-        )
+            y=avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9)
         plt.axhline(
-            y=-avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9
-        )
+            y=-avrg_uncert, color=hcolor, linestyle='dashed', lw=0.9)
 
         xlabel = r'Energy' or xlabel
         yld = r'$\mathrm{E}_{\mathrm{calc}}$ - $\mathrm{E}_{\mathrm{obs}}$'
@@ -391,8 +327,7 @@ class Plotting:
 
         fgrid_cols = np.hstack((
             mlevels.rgrid[:, np.newaxis] * C_bohr,
-            mlevels.fgrid.reshape(mlevels.ncp, mlevels.ngrid).T
-        ))
+            mlevels.fgrid.reshape(mlevels.ncp, mlevels.ngrid).T))
 
         n = fgrid_cols.shape[0]
 
@@ -403,17 +338,16 @@ class Plotting:
             markers_on = [0, int(n/4), int(n/2), int(n/1.6), int(n/1.2), -1]
 
             if 'spin-orbit' in mlevels.couplings[col-1].coupling:
-                ax1.plot(
-                    fgrid_cols[:, 0],
-                    fgrid_cols[:, col],
-                    color=next(gen_color),
-                    marker=next(gen_marker),
-                    markersize=6.5,
-                    markeredgewidth=0.7,
-                    fillstyle='none',
-                    linewidth=1.5,
-                    markevery=markers_on
-                )
+                ax1.plot(fgrid_cols[:, 0],
+                         fgrid_cols[:, col],
+                         color=next(gen_color),
+                         marker=next(gen_marker),
+                         markersize=6.5,
+                         markeredgewidth=0.7,
+                         fillstyle='none',
+                         linewidth=1.5,
+                         markevery=markers_on)
+
                 ax1.set_xlabel('Internuclear Distance')
                 ax1.set_ylabel('SO Interaction')
                 # ax1.set_ylim(-800, -200)  # for nih
@@ -429,17 +363,16 @@ class Plotting:
                 leg1.append(mlevels.couplings[col-1].interact)
 
             if 'LJ' in mlevels.couplings[col-1].coupling:
-                ax2.plot(
-                    fgrid_cols[:, 0],
-                    fgrid_cols[:, col],
-                    color=next(gen_color),
-                    marker=next(gen_marker),
-                    markersize=6.5,
-                    markeredgewidth=0.7,
-                    fillstyle='none',
-                    linewidth=1.5,
-                    markevery=markers_on
-                )
+                ax2.plot(fgrid_cols[:, 0],
+                         fgrid_cols[:, col],
+                         color=next(gen_color),
+                         marker=next(gen_marker),
+                         markersize=6.5,
+                         markeredgewidth=0.7,
+                         fillstyle='none',
+                         linewidth=1.5,
+                         markevery=markers_on)
+
                 ax2.set_xlabel('Internuclear Distance')
                 ax2.set_ylabel('LJ Interaction')
                 # ax2.set_ylim(0, 2) # for nih
@@ -455,17 +388,16 @@ class Plotting:
                 leg2.append(mlevels.couplings[col-1].interact)
 
             if 'SJ' in mlevels.couplings[col-1].coupling:
-                ax3.plot(
-                    fgrid_cols[:, 0],
-                    fgrid_cols[:, col],
-                    color=next(gen_color),
-                    marker=next(gen_marker),
-                    markersize=6.5,
-                    markeredgewidth=0.7,
-                    fillstyle='none',
-                    linewidth=1.5,
-                    markevery=markers_on
-                )
+                ax3.plot(fgrid_cols[:, 0],
+                         fgrid_cols[:, col],
+                         color=next(gen_color),
+                         marker=next(gen_marker),
+                         markersize=6.5,
+                         markeredgewidth=0.7,
+                         fillstyle='none',
+                         linewidth=1.5,
+                         markevery=markers_on)
+
                 ax3.set_xlabel('Internuclear Distance')
                 ax3.set_ylabel('SJ Interaction')
                 # ax3.set_ylim(0, 3.5) # for nih
@@ -481,17 +413,15 @@ class Plotting:
                 leg3.append(mlevels.couplings[col-1].interact)
 
             if 'LambdaD' in mlevels.couplings[col-1].coupling:
-                ax4.plot(
-                    fgrid_cols[:, 0],
-                    fgrid_cols[:, col],
-                    color=next(gen_color),
-                    marker=next(gen_marker),
-                    markersize=6.5,
-                    markeredgewidth=0.7,
-                    fillstyle='none',
-                    linewidth=1.5,
-                    markevery=markers_on
-                )
+                ax4.plot(fgrid_cols[:, 0],
+                         fgrid_cols[:, col],
+                         color=next(gen_color),
+                         marker=next(gen_marker),
+                         markersize=6.5,
+                         markeredgewidth=0.7,
+                         fillstyle='none',
+                         linewidth=1.5,
+                         markevery=markers_on)
                 ax4.set_xlabel('Internuclear Distance')
                 ax4.set_ylabel('2nd order Correction')
                 # ax4.set_ylim(-0.1, 0.1) # for nih
@@ -562,20 +492,16 @@ class Plotting:
 
                 ax_data.plot(
                     edata[:, 1], -edata[:, 9], color='#355896', marker='o',
-                    markersize=4.0, markeredgecolor='#17376E', lw=0, alpha=0.8
-                )
+                    markersize=4.0, markeredgecolor='#17376E', lw=0, alpha=0.8)
 
                 ax_data.plot(
                     fdata[:, 1], -fdata[:, 9], color='#C43D3D', marker='X',
-                    markersize=3.5, markeredgecolor='#903C3C', lw=0, alpha=0.8
-                )
+                    markersize=3.5, markeredgecolor='#903C3C', lw=0, alpha=0.8)
 
                 ax_data.set_xlabel(xlabel)
                 ax_data.set_ylabel(ylabel)
-                ax_data.legend(
-                    ['e', 'f'], loc=0, prop={'size': 6},
-                    bbox_to_anchor=(1.1, 1.05)
-                )
+                ax_data.legend(['e', 'f'], loc=0, prop={'size': 6},
+                               bbox_to_anchor=(1.1, 1.05))
                 ax_data.set_title(f'v={int(v)} | state={int(state)}', size=7)
                 ax_data.xaxis.set_minor_locator(tck.AutoMinorLocator())
                 ax_data.grid(which='major', alpha=1, linewidth=0.6)
@@ -625,20 +551,16 @@ class Plotting:
 
                 ax[row, col].plot(
                     edata[:, 1], -edata[:, 9], color='#355896', marker='o',
-                    markersize=5, lw=0, fillstyle='none', markeredgewidth=1.25
-                )
+                    markersize=5, lw=0, fillstyle='none', markeredgewidth=1.25)
                 ax[row, col].plot(
                     fdata[:, 1], -fdata[:, 9], color='#C43D3D', marker='o',
-                    markersize=5, lw=0, fillstyle='none', markeredgewidth=1.25
-                )
+                    markersize=5, lw=0, fillstyle='none', markeredgewidth=1.25)
                 ax[row, col].grid(which='major', alpha=0.4)
                 ax[row, col].grid(which='minor', alpha=0.2)
                 ax[row, col].set_title(
-                    f'v={int(v)} | state={int(state)}', size=10
-                )
+                    f'v={int(v)} | state={int(state)}', size=10)
                 ax[row, col].tick_params(
-                    axis='both', which='major', labelsize=9
-                )
+                    axis='both', which='major', labelsize=9)
                 col += 1
                 count += 1
 
@@ -725,16 +647,14 @@ class Plotting:
             cs = _CubicSpline(x, y, bc_type='natural')
             y_interp = cs(x_interp)
 
-            ax.plot(
-                x_interp,
-                y_interp,
-                color=next(gen_color),
-                marker=next(gen_marker),
-                markersize=5.5,
-                markeredgewidth=0.4,
-                linewidth=1.2,
-                fillstyle='none'
-            )
+            ax.plot(x_interp,
+                    y_interp,
+                    color=next(gen_color),
+                    marker=next(gen_marker),
+                    markersize=5.5,
+                    markeredgewidth=0.4,
+                    linewidth=1.2,
+                    fillstyle='none')
 
         ax.set_title('Potentials')
         ax.set_xlabel('Internuclear distance')
@@ -797,14 +717,12 @@ class Plotting:
 
         im = ax.matshow(
             hmat[rows[0]:rows[1], cols[0]:cols[1]], vmin=1.0e-8, vmax=0.01,
-            cmap='RdBu_r', aspect='auto', interpolation=None
-        )
+            cmap='RdBu_r', aspect='auto', interpolation=None)
 
         fig.colorbar(im)
         ax.set_title(
             f'Hamiltonian matrix colormesh: '
-            f'rows={rows[0]}:{rows[1]}, cols={cols[0]}:{cols[1]}'
-        )
+            f'rows={rows[0]}:{rows[1]}, cols={cols[0]}:{cols[1]}')
 
         if save:
             # fig.tight_layout()
@@ -863,11 +781,9 @@ class Plotting:
                 ax.set_ylabel(ylabel)
                 ax.set_xlabel(xlabel)
                 plt.axis('on')
-
                 plt.plot(igrid, wavefunc[:, i-1])
 
             plt.subplots_adjust(wspace=0.4, hspace=0.4)
-
             plt.show()
 
     @classmethod
