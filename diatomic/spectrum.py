@@ -13,10 +13,10 @@ except ModuleNotFoundError:
 
 class Spectrum:
 
-    def __init__(self, mlevels, grid, spectrum='absorption'):
+    def __init__(self, H, grid, spectrum='absorption'):
 
         # TODO: allow for setting an input file with computed energies and grid
-        self.mlevels = mlevels
+        self.H = H
         self.grid = grid
 
         self.dfreq_range = (0, 1e5)
@@ -49,15 +49,18 @@ class Spectrum:
 
         # TODO: set default constarints for J, par, El, Eu, freq
 
-        evalues = self.mlevels.get_predicted_data()
+        # evalues = self.mlevels.get_predicted_data()
+        evalues = self.H.calc_data
         eind, jind, pind = 1, 2, 3
 
         # constraints by energy
         self.lower_levels = evalues[
-            (evalues[:, eind] >= Elower[0]) & (evalues[:, eind] <= Elower[1])
+            (evalues[:, eind] >= Elower[0]) &
+            (evalues[:, eind] <= Elower[1])
         ]
         self.upper_levels = evalues[
-            (evalues[:, eind] >= Eupper[0]) & (evalues[:, eind] <= Eupper[1])
+            (evalues[:, eind] >= Eupper[0]) &
+            (evalues[:, eind] <= Eupper[1])
         ]
 
         # constraints by J
@@ -96,8 +99,7 @@ class Spectrum:
         # for J and symmetry
         self.freq_calc = self._create_wavenumbers_list(
             self.upper_levels, self.lower_levels, jind,
-            pind, self.freq_range, array_size
-        )
+            pind, self.freq_range, array_size)
 
         # apply additional selection rules by computing Honl-London factors
         if apply_rules:
@@ -137,27 +139,26 @@ class Spectrum:
     def calculate_Einstein_coefficients(self, ninter=1000, dmf=None,
                                         save=False, filename=None):
 
-        # TODO: check if HLF has already been computed or not
-        # TODO: check if freq_calc has already been computed or not
+        # TODO: check if HLF has already been computed
+        # TODO: check if freq_calc has already been computed
 
         initial_levels = self.freq_calc[:, :9]
         final_levels = self.freq_calc[:, 9:-1]
 
         self.edipole_element = self._compute_electric_dipole_elements(
-            initial_levels, final_levels, dmf, ninter=ninter
-        )
+            initial_levels, final_levels, dmf, ninter=ninter)
 
         line_strength = self.edipole_element[:, -1] * self.hlf
-
         jinitial = self.edipole_element[:, 1]
         wavenumber = self.edipole_element[:, -2]
 
         # statistical weight of the initial level
         self.gji = (2 * jinitial + 1)
         self.acoef = self._calculate_Einstein_coeffcients(
-            wavenumber, line_strength, self.gji
-        )
+            wavenumber, line_strength, self.gji)
+
         acoef_result = np.c_[self.edipole_element[:, :-1], self.acoef]
+
         self.nonzero_ainds = np.where(self.acoef != 0.0)[0]
         self.acoef_final = acoef_result[self.nonzero_ainds, :]
 
@@ -199,8 +200,7 @@ class Spectrum:
         # get the indices of the unique upper levels
         _, unq_uinds, unq_uinv = np.unique(
             self.acoef_final[:, :6], return_index=True,
-            return_inverse=True, axis=0,
-        )
+            return_inverse=True, axis=0)
 
         # sum the Einstein coefficients for each group of unique upper levels
         # sum_acoefs = np.zeros(unq_uinv.shape[0])
@@ -213,9 +213,9 @@ class Spectrum:
         lifetimes = 1.0 / sum_acoefs
 
         # conncatenate the upper levels and the calculated lifetimes
-        lifetimes_final = np.column_stack(
-            (self.acoef_final[unq_uinds, :6], lifetimes[:unq_uinds.shape[0]])
-        )
+        lifetimes_final = np.column_stack((
+            self.acoef_final[unq_uinds, :6],
+            lifetimes[:unq_uinds.shape[0]]))
 
         if save:
             filename = filename or self.fname_lifetimes
@@ -245,8 +245,10 @@ class Spectrum:
         # qpart = gns *
 
     def calculate_absolute_intensity(self):
+
         # the formula for the absolute line intensity is diffrent for
         # absorption and emission
+
         if self.spectrum == 'absorption' or self.spectrum == 'a':
             self._calculate_absorption_line_intensity()
         else:
@@ -309,7 +311,7 @@ class Spectrum:
         # js = min(np.amin(uterms[:, uj]), np.amin(lterms[:, lj]))
         # je = max(np.amax(uterms[:, uj]), np.amax(lterms[:, lj]))
 
-        evalues = self.mlevels.get_predicted_data()
+        evalues = self.H.calc_data
 
         # TODO: set default constarints for J, par, El, Eu, freq
 
@@ -430,9 +432,7 @@ class Spectrum:
         jcol, pcol = jind + len(select), pind + len(select)
 
         for ulevel in range(ushape[0]):
-            level = np.tile(
-                upper_levels[ulevel, select], lshape[0]
-            ).reshape(lshape[0], len(select))
+            level = np.tile(upper_levels[ulevel, select], lshape[0]).reshape(lshape[0], len(select))
 
             levels = np.hstack((level, lower_levels[:, select]))
 
@@ -451,8 +451,7 @@ class Spectrum:
 
             levels_selected = np.vstack((
                 levels[cond_pee], levels[cond_pff], levels[cond_qef],
-                levels[cond_qfe], levels[cond_ree], levels[cond_rff]
-            ))
+                levels[cond_qfe], levels[cond_ree], levels[cond_rff]))
 
             freq = levels_selected[:, 1] - levels_selected[:, 10]
             fq_calc = np.column_stack((levels_selected, freq))
@@ -497,17 +496,15 @@ class Spectrum:
 
         rgrid, rstep = self.grid.rgrid * C_bohr, self.grid.rstep * C_bohr
         ngrid = rgrid.shape[0]
-        igrid, istep = np.linspace(
-            self.grid.rmin, self.grid.rmax, num=ninter,
-            endpoint=True, retstep=True
-        )
+        igrid, istep = np.linspace(self.grid.rmin, self.grid.rmax, num=ninter,
+                                   endpoint=True, retstep=True)
+
         igrid, istep = igrid * C_bohr, istep * C_bohr
 
         sinc_matrix = self._calculate_sinc_matrix(rgrid, igrid, ngrid, rstep)
+
         if dmf is None:
-            dipole_matrix = np.ones(
-                (self.mlevels.nch, self.mlevels.nch, igrid.shape[0])
-            )
+            dipole_matrix = np.ones((self.H.nch, self.H.nch, igrid.shape[0]))
         else:
             dipole_matrix = self._interpolate_dipole_moment(rgrid, igrid, dmf)
 
@@ -549,7 +546,6 @@ class Spectrum:
                 init_levels[ii, select], final_levels[ii, select], freq, res**2
             ))
             ii += 1
-
             # print(i, j, freq, res**2)
 
         return result
@@ -560,9 +556,8 @@ class Spectrum:
         # TODO: check if getvalue works when dmf is string
         # print(io.StringIO(dmf[(n, k)]))
         # print(io.StringIO(dmf[(n, k)]).getvalue())
-        dipole_moment = np.zeros(
-            (self.mlevels.nch, self.mlevels.nch, igrid.shape[0])
-        )
+
+        dipole_moment = np.zeros((self.H.nch, self.H.nch, igrid.shape[0]))
 
         for n in range(1, self.mlevels.nch+1):
             for k in range(1, self.mlevels.nch+1):
@@ -656,88 +651,76 @@ class Spectrum:
 
     def _save_wavenumbers(self, freq_calc, filename):
 
-        labels = (
-            "v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
-            'J', 'E', 'symm', 'iso', 'state', 'freq'
-        )
-        header = (
-            f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
-            f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
-            f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}{labels[11]:<10}'
-            f'{labels[12]}'
-        )
-        fmt = (
-            '%6.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%7.1d',
-            '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%15.5f'
-        )
+        labels = ("v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
+                  'J', 'E', 'symm', 'iso', 'state', 'freq')
+
+        header = (f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
+                  f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
+                  f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}'
+                  f'{labels[11]:<10}{labels[12]}')
+
+        fmt = ('%6.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%7.1d',
+               '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%15.5f')
+
         np.savetxt(filename, freq_calc, header=header, fmt=fmt)
 
     def _save_Honl_London_factor(self, hlf, filename):
 
-        labels = (
-            "v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
-            'J', 'E', 'symm', 'iso', 'state', 'freq', 'hlf'
-        )
-        header = (
-            f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
-            f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
-            f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}{labels[11]:<10}'
-            f'{labels[12]:<14}{labels[13]}'
-        )
-        fmt = (
-            '%6.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%7.1d',
-            '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%15.5f', '%12.5f'
-        )
+        labels = ("v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
+                  'J', 'E', 'symm', 'iso', 'state', 'freq', 'hlf')
+
+        header = (f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
+                  f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
+                  f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}'
+                  f'{labels[11]:<10}{labels[12]:<14}{labels[13]}')
+
+        fmt = ('%6.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d',
+               '%5.1d', '%7.1d', '%7.1f', '%14.5f', '%5.1d',
+               '%5.1d', '%5.1d', '%15.5f', '%12.5f')
+
         np.savetxt(filename, hlf, header=header, fmt=fmt)
 
     def _save_rel_intensity(self, result, out_file):
 
-        labels = (
-            "v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
-            'J', 'E', 'symm', 'iso', 'state', 'freq', 'intensity'
-        )
-        header = (
-            f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
-            f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
-            f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}{labels[11]:<10}'
-            f'{labels[12]:<15}{labels[13]}'
-        )
-        fmt = (
-            '%5.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%7.1d',
-            '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%15.5f', '%16.5e',
-        )
+        labels = ("v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
+                  'J', 'E', 'symm', 'iso', 'state', 'freq', 'intensity')
+
+        header = (f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
+                  f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
+                  f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}'
+                  f'{labels[11]:<10}{labels[12]:<15}{labels[13]}')
+
+        fmt = ('%5.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d',
+               '%5.1d', '%7.1d', '%7.1f', '%14.5f', '%5.1d',
+               '%5.1d', '%5.1d', '%15.5f', '%16.5e')
+
         np.savetxt(out_file, result, comments='#', header=header, fmt=fmt)
 
     def _save_Einstein_coeffcients(self, acoefs, filename):
 
-        labels = (
-            "v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
-            'J', 'E', 'symm', 'iso', 'state', 'freq', 'A'
-        )
-        header = (
-            f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
-            f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
-            f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}{labels[11]:<10}'
-            f'{labels[12]:<17}{labels[13]}'
-        )
-        fmt = (
-            '%5.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%7.1d',
-            '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%15.5f', '%15.5e'
-        )
+        labels = ("v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
+                  'J', 'E', 'symm', 'iso', 'state', 'freq', 'A')
+
+        header = (f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
+                  f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
+                  f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}'
+                  f'{labels[11]:<10}{labels[12]:<17}{labels[13]}')
+
+        fmt = ('%5.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d',
+               '%5.1d', '%7.1d', '%7.1f', '%14.5f', '%5.1d',
+               '%5.1d', '%5.1d', '%15.5f', '%15.5e')
+
         np.savetxt(filename, acoefs, comments='#', header=header, fmt=fmt)
 
     def _save_lifetimes(self, lifetimes, filename):
 
-        labels = (
-            "v'", "J'", "E'", "symm'", "iso'", "state'", 'life_time'
-        )
-        header = (
-            f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<8}'
-            f'{labels[4]:<7}{labels[5]:<10}{labels[6]}'
-        )
-        fmt = (
-            '%5.1d', '%7.1f', '%14.5f', '%6.1d', '%6.1d', '%6.1d', '%17.5e'
-        )
+        labels = ("v'", "J'", "E'", "symm'", "iso'", "state'", 'life_time')
+
+        header = (f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<8}'
+                  f'{labels[4]:<7}{labels[5]:<10}{labels[6]}')
+
+        fmt = ('%5.1d', '%7.1f', '%14.5f', '%6.1d', '%6.1d', '%6.1d', '%17.5e')
+
         np.savetxt(filename, lifetimes, comments='#', header=header, fmt=fmt)
 
     def _get_default_jrange(self, uterms, uj, lterms, lj):
@@ -748,25 +731,19 @@ class Spectrum:
 
     def _save_compared_frequencies(self, fname, final_freqs, fmode):
 
-        labels = (
-            "v'", "v", "J'", "J", "st'", "st", "p'", "p", "FJ'",
-            "FJ", "calc_freq", "obs_freq", "calc-obs", "unc",
-        )
+        labels = ("v'", "v", "J'", "J", "st'", "st", "p'", "p", "FJ'",
+                  "FJ", "calc_freq", "obs_freq", "calc-obs", "unc")
 
-        header = (
-            f'{labels[0]:^10}{labels[1]:<7}{labels[2]:<8}{labels[3]:<6}'
-            f'{labels[4]:<6}{labels[5]:<7}{labels[6]:<6}{labels[7]:<10}'
-            f'{labels[8]:<12}{labels[9]:<10}{labels[10]:<12}{labels[11]:<13}'
-            f'{labels[12]:<11}{labels[13]}'
-        )
+        header = (f'{labels[0]:^10}{labels[1]:<7}{labels[2]:<8}{labels[3]:<6}'
+                  f'{labels[4]:<6}{labels[5]:<7}{labels[6]:<6}{labels[7]:<10}'
+                  f'{labels[8]:<12}{labels[9]:<10}{labels[10]:<12}'
+                  f'{labels[11]:<13}{labels[12]:<11}{labels[13]}')
 
         if fmode == 'ab':
             header = ''
 
-        fmt = [
-            '%6d', '%5d', '%7.1f', '%7.1f', '%5d', '%5d', '%5d', '%5d',
-            '%13.4f', '%12.4f', '%12.4f', '%12.4f', '%9.4f', '%8.3f'
-        ]
+        fmt = ['%6d', '%5d', '%7.1f', '%7.1f', '%5d', '%5d', '%5d', '%5d',
+               '%13.4f', '%12.4f', '%12.4f', '%12.4f', '%9.4f', '%8.3f']
 
         with open(fname, fmode) as f:
             np.savetxt(f, final_freqs, header=header, comments='#', fmt=fmt)
@@ -792,70 +769,3 @@ class Spectrum:
             'Ree': 5,
             'Rff': 6
         }
-
-    def _compare_frequencies(self, freq_exp_file, fcomp_file, freq_calc):
-
-        assigned_freq = np.loadtxt(freq_exp_file)
-        fmode = 'w'
-
-        for row in range(0, freq_calc.shape[0]):
-            ln = assigned_freq.shape[0]
-            term = np.tile(
-                freq_calc[row, :], ln
-            ).reshape(ln, freq_calc.shape[1])
-            merged_freq = np.hstack((term, assigned_freq))
-
-            # if freq_calc.shape[0] > assigned_freq.shape[0]:
-            #     merged_freq = np.hstack(
-            #         (freq_calc[0:assigned_freq.shape[0], :], assigned_freq)
-            #     )
-            # else:
-            #     merged_freq = np.hstack(
-            #         (freq_calc, assigned_freq[0:freq_calc.shape[0], :])
-            #     )
-
-            vcond = (merged_freq[:, 0] == merged_freq[:, 16]) & \
-                    (merged_freq[:, 1] == merged_freq[:, 17])
-            merged_freq = merged_freq[vcond]
-
-            scond = (merged_freq[:, 8] == merged_freq[:, 24]) & \
-                    (merged_freq[:, 9] == merged_freq[:, 25])
-            merged_freq = merged_freq[scond]
-
-            rcond = (merged_freq[:, 2] == merged_freq[:, 18]) & \
-                    (merged_freq[:, 3] == merged_freq[:, 19])
-            merged_freq = merged_freq[rcond]
-
-            pcond = (merged_freq[:, 10] == merged_freq[:, 26]) & \
-                    (merged_freq[:, 11] == merged_freq[:, 27])
-            merged_freq = merged_freq[pcond]
-
-            # lcond = (merged_freq[:, 4] == merged_freq[:, 20]) & \
-            #         (merged_freq[:, 5] == merged_freq[:, 21])
-            # merged_freq = merged_freq[lcond]
-
-            # ocond = (merged_freq[:, 6] == merged_freq[:, 22]) & \
-            #         (merged_freq[:, 7] == merged_freq[:, 23])
-            # merged_freq = merged_freq[ocond]
-
-            # will work only for the if case above
-            merged_freq_final = np.column_stack((
-                merged_freq[:, 0:4], merged_freq[:, 8:12],
-                merged_freq[:, 12:15], merged_freq[:, 28],
-                merged_freq[:, 14] - merged_freq[:, 28],
-                merged_freq[:, 29]
-            ))
-
-            if merged_freq_final.shape[0] != 0:
-                #     branches = \
-                #         np.vectorize(self._map_number_to_branch().get)(freqs[:, -1])
-                #     branch_freqs = np.column_stack((freqs[:, :-1], branches))
-                # TODO: add branch inside this function
-                # self._save_compared_frequencies(fcomp_file, branch_freqs)
-                self._save_compared_frequencies(fcomp_file, merged_freq_final, fmode)
-                fmode = 'ab'
-            # else:
-            #     print(
-            #         f'No calculated frequencies corresponding to the '
-            #         f'observed frequencies in file - {freq_exp_file} found.'
-            #     )
