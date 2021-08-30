@@ -29,8 +29,8 @@ DiAtomic is an open-source library written in Python with useful routines for pe
 
 **Cite as:**
 
-I. Havalyova and A. Pashov: Аn open-source library for calculating energy levels and spectra of diatomic molecules (2020) https://github.com/ihavalyova/Diatomic
+I. Havalyova and A. Pashov: Аn open-source Python library for calculating energy levels and spectra of diatomic molecules (2020) https://github.com/ihavalyova/Diatomic
 
 **Acknowledgements**:
 
-I.H. acknowledges partial support from the National program - Young scientists and postdoctoral candidates 2020 of Ministry of Education and Science.
+This work was partially supported by the National program "Young scientists and postdoctoral candidates" 2020/2021 of Ministry of Education and Science.
