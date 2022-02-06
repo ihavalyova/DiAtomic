@@ -16,6 +16,9 @@ C_bohr = _physical_constants['Bohr radius'][0] / _angstrom
 # devide by m_e to convert from amu to au
 C_massau = _atomic_mass / _physical_constants['electron mass'][0]
 
+c_boltzmank_str = 'Boltzmann constant in inverse meter per kelvin'
+C_boltzmannk = _physical_constants[c_boltzmank_str][0] * 0.01
+
 
 class Utils:
 

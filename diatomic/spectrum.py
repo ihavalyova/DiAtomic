@@ -1,9 +1,10 @@
 import io
 import numpy as np
-from scipy.interpolate import CubicSpline
-from utils import C_bohr
-from scipy import constants
+import wavenumbers
+import wavenumbers_intens
 
+from scipy.interpolate import CubicSpline
+from utils import C_bohr, C_boltzmannk
 try:
     import py3nj
 except ModuleNotFoundError:
@@ -12,65 +13,61 @@ except ModuleNotFoundError:
 
 
 class Spectrum:
+    """[summary]
+    """
 
-    def __init__(self, H, grid, spectrum='absorption'):
+    def __init__(self, H, dmfs=None, spec_type='absorption'):
 
-        # TODO: allow for setting an input file with computed energies and grid
         self.H = H
-        self.grid = grid
+        self.rgrid = self.H.rgrid
+        self.rmax = H.rmax
+        self.rmin = H.rmin
+        self.ngrid = H.ngrid
+        self.rstep = H.rstep
 
-        self.dfreq_range = (0, 1e5)
-        self.dusymm = (0, 1)
-        self.dlsymm = (0, 1)
-        self.is_hlf_computed = False
-        self.freq_calc = None
-        self.spectrum = spectrum
-        # TODO: set default constarints for J, par, El, Eu, freq
+        self.dmfs_init = None
+        if dmfs is not None:
+            self.dmfs_init = {}
+            for (n, k) in dmfs:
+                self.dmfs_init[(n, k)] = np.loadtxt(io.StringIO(dmfs[(n, k)]).getvalue())
+
+        self.wavens = None
+        self.hlf = None
+        self.spec_type = spec_type
 
         # default file names
-        self.fname_wavenumbers = 'wavenumbers.dat'
+        self.fname_wavens = 'out_wavenumbers.dat'
         self.fname_hlf = 'hlf.dat'
         self.fname_lifetimes = 'lifetimes.dat'
         self.fname_rel_int = 'relative_intensities.dat'
         self.fname_acoefs = 'Acoefs.dat'
         self.fname_compare = 'compared_wavenumbers.dat'
 
-        self.c_boltzmannk = constants.value(
-            'Boltzmann constant in inverse meter per kelvin'
-        ) * 0.01
-
-    def set_constraints(self, Elower=None, Eupper=None, lsymm=None, usymm=None,
-                        ujrange=None, ljrange=None, freq_range=None):
+    def set_constraints(self, uenr_range=None, lenr_range=None, lsymm=None,
+                        usymm=None, ujrange=None, ljrange=None, wrange=None):
 
         # set default constraints
-        self.freq_range = freq_range or (0, 1e5)
-        usymm = usymm or self.dusymm
-        lsymm = lsymm or self.dlsymm
+        self.freq_range = wrange or (0, 1e5)
+        usymm = usymm or (0, 1)
+        lsymm = lsymm or (0, 1)
 
-        # TODO: set default constarints for J, par, El, Eu, freq
-
-        # evalues = self.mlevels.get_predicted_data()
         evalues = self.H.calc_data
+
         eind, jind, pind = 1, 2, 3
 
         # constraints by energy
-        self.lower_levels = evalues[
-            (evalues[:, eind] >= Elower[0]) &
-            (evalues[:, eind] <= Elower[1])
-        ]
-        self.upper_levels = evalues[
-            (evalues[:, eind] >= Eupper[0]) &
-            (evalues[:, eind] <= Eupper[1])
-        ]
+        self.lower_levels = evalues[(evalues[:, eind] >= lenr_range[0]) &
+                                    (evalues[:, eind] <= lenr_range[1])]
+
+        self.upper_levels = evalues[(evalues[:, eind] >= uenr_range[0]) &
+                                    (evalues[:, eind] <= uenr_range[1])]
 
         # constraints by J
         ujs, uje = ujrange[0], ujrange[1]
 
         # upper_jrots = np.arange(ujs, uje+1)
-        self.upper_levels = self.upper_levels[
-            (self.upper_levels[:, jind] >= ujs) &
-            (self.upper_levels[:, jind] <= uje)
-        ]
+        self.upper_levels = self.upper_levels[(self.upper_levels[:, jind] >= ujs) &
+                                              (self.upper_levels[:, jind] <= uje)]
 
         ljs, lje = ljrange[0], ljrange[1]
         # lower_jrots = np.arange(ljs, lje+1)
@@ -89,105 +86,254 @@ class Spectrum:
             (np.in1d(self.upper_levels[:, pind], usymm[1]))
         ]
 
-    def calculate_wavenumbers(self, apply_rules=False, array_size=10000,
-                              save=False, filename=None):
+    def calculate_wavenumbers(self, ulevels, llevels, wrange=None, apply_rules=False):
 
-        jind, pind = 2, 3
-        # TODO: remove self parameters from the function call
+        if self.H.wavens_data is None:
+            return self._calculate_wavenumbers_without_observations(
+                ulevels, llevels, wrange, apply_rules)
+        else:
+            return self._calculate_wavenumber_with_observations(
+                ulevels, llevels, wrange, apply_rules)
 
-        # create a list of wavenumbers based on the strict selection rules
-        # for J and symmetry
-        self.freq_calc = self._create_wavenumbers_list(
-            self.upper_levels, self.lower_levels, jind,
-            pind, self.freq_range, array_size)
+    def _calculate_wavenumbers_without_observations(self, ulevels, llevels, wrange, apply_rules):
 
-        # apply additional selection rules by computing Honl-London factors
+        # id v J E p s iso lambda omega
+        ulevels = ulevels[:, [0, -3, 2, 1, 3, -4, 4, -2, -1]]
+        llevels = llevels[:, [0, -3, 2, 1, 3, -4, 4, -2, -1]]
+
+        # convert to row-major/c-style/c-contiguous format
+        ulevels = np.ascontiguousarray(ulevels)
+        llevels = np.ascontiguousarray(llevels)
+
+        # uid uv uJ up us ucE ul uo lid lv lJ lp ls lcE ll lo cw branch
+        out_wavens = wavenumbers.calculate_wavenumbers_list(ulevels, llevels)
+
+        # apply strict selection rules by J and symmetry through the branch label
+        out_wavens = out_wavens[out_wavens[:, -1] != -1]
+
+        # filter by wavenumber value
+        if wrange is not None:
+            out_wavens = out_wavens[out_wavens[:, -2] >= wrange[0] &
+                                    out_wavens[:, -2] <= wrange[1]]
+
+        # apply non-strict selection rules by computing the Honl-London factors
         if apply_rules:
-            self._apply_rules_by_HLF()
+            self.hlf = self._apply_rules(out_wavens)
+            out_wavens = out_wavens[np.where(self.hlf != 0.0)[0], :]
+            self.hlf = self.hlf[np.where(self.hlf != 0.0)[0]]
 
-        cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -1]
-        if save:
-            filename = filename or self.fname_wavenumbers
-            self._save_wavenumbers(self.freq_calc[:, cols], filename)
+        return out_wavens
 
-        return self.freq_calc[:, cols]
+    def _calculate_wavenumber_with_observations(self, ulevels, llevels, wrange=None,
+                                                apply_rules=False):
 
-    def _apply_rules_by_HLF(self):
+        # id v J E p s iso lambda omega
+        ulevels = ulevels[:, [0, -3, 2, 1, 3, -4, 4, -2, -1]]
+        llevels = llevels[:, [0, -3, 2, 1, 3, -4, 4, -2, -1]]
 
-        self.hlf = np.ones(self.freq_calc.shape[0])
+        # find the matching experimental and calculated term values
+        euterms = np.unique(self.H.wavens_data[:, :4], axis=0)
+        elterms = np.unique(self.H.wavens_data[:, 4:8], axis=0)
+        v, j, pi, si = 1, 2, 4, 5
+        uinds, linds = [], []
+        for i in euterms:
+            inds = np.where(np.all(ulevels[:, [v, j, pi, si]] == i, axis=1))[0]
+            if len(inds) > 0:
+                uinds.append(inds[0])
+        for i in elterms:
+            inds = np.where(np.all(llevels[:, [v, j, pi, si]] == i, axis=1))[0]
+            if len(inds) > 0:
+                linds.append(inds[0])
+        llevels = llevels[linds, :]
+        ulevels = ulevels[uinds, :]
 
-        # extract the quantum numbers from the computed wavenumbers list
-        usymm, lsymm = self.freq_calc[:, 3], self.freq_calc[:, 12]
-        uj, lj = self.freq_calc[:, 2], self.freq_calc[:, 11]
-        ulambda, llambda = self.freq_calc[:, 7], self.freq_calc[:, -3]
-        uomega, lomega = self.freq_calc[:, 8], self.freq_calc[:, -2]
+        # convert to row-major/c-style/c-contiguous format
+        ulevels = np.ascontiguousarray(ulevels)
+        llevels = np.ascontiguousarray(llevels)
 
-        self.hlf = self._compute_Honl_London_factors(
-            usymm, lsymm, uj, lj, uomega, lomega, ulambda, llambda
-        )
+        # uid uv uJ up us ucE ul uo lid lv lJ lp ls lcE ll lo cw ew dw uncw eint unci branch
+        out_wavens = wavenumbers_intens.calculate_wavenumbers_list(
+            ulevels, llevels, self.H.wavens_data)
 
-        self.is_hlf_computed = True
+        # apply strict selection rules by J and symmetry through the branch label
+        out_wavens = out_wavens[out_wavens[:, -1] != -1]
 
-    def save_HLF(self, filename=None):
+        # chi2, rms, rmsd = self.H.calculate_stats(out_wavens[:, 17], out_wavens[:, 16],
+        #                                          out_wavens[:, 19], is_weighted=False)
 
-        calc_hlf = np.c_[self.freq_calc, self.hlf]
-        # calc_hlf = calc_hlf[np.where(hlf != 0.0)[0], :]
-        cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -2, -1]
-        filename = filename or self.fname_hlf
-        self._save_Honl_London_factor(calc_hlf[:, cols], filename)
+        # apply non-strict selection rules by computing the Honl-London factors
+        if apply_rules:
+            self.hlf = self._apply_rules(out_wavens)
+            out_wavens = out_wavens[np.where(self.hlf != 0.0)[0], :]
+            self.hlf = self.hlf[np.where(self.hlf != 0.0)[0]]
 
-    def calculate_Einstein_coefficients(self, ninter=1000, dmf=None,
-                                        save=False, filename=None):
+        return out_wavens
 
-        # TODO: check if HLF has already been computed
-        # TODO: check if freq_calc has already been computed
+    def wrapper_calculate_wavenumbers(self, ypar):
 
-        initial_levels = self.freq_calc[:, :9]
-        final_levels = self.freq_calc[:, 9:-1]
+        self.H.interpolate_functions(ypar)
+        self.H.solve(energy_subset_index=self.H.energy_subset_index,
+                     energy_subset_value=self.H.energy_subset_value)
+        ulevels, llevels = self.H.extract_terms_in_range(
+            uenergy=self.H.uenergy, lenergy=self.H.lenergy, usymm=self.H.usymm,
+            lsymm=self.H.lsymm, uj=self.H.uj, lj=self.H.lj,
+            ustate=self.H.ustate, lstate=self.H.lstate)
 
-        self.edipole_element = self._compute_electric_dipole_elements(
-            initial_levels, final_levels, dmf, ninter=ninter)
+        return self._calculate_wavenumber_with_observations(ulevels, llevels)
 
+    def _apply_rules(self, out_wavens):
+
+        usymm, lsymm = out_wavens[:, 3], out_wavens[:, 11]
+        ujq, ljq = out_wavens[:, 2], out_wavens[:, 10]
+        ulambda, llambda = out_wavens[:, 6], out_wavens[:, 14]
+        uomega, lomega = out_wavens[:, 7], out_wavens[:, 15]
+
+        return self._compute_honl_london_factors(
+            usymm, lsymm, ujq, ljq, uomega, lomega, ulambda, llambda)
+
+    def calculate_Einstein_coefficients(self, out_wavens, dmfs=None, ninter=1000):
+        # if self.hlf is None:
+        #     self._apply_rules(out_wavens)
+
+        if dmfs is None:
+            dmfs = self.dmfs_init
+
+        # uid uv uJ up us ucE ul uo lid lv lJ lp ls lcE ll lo cw ew dw uncw eint unci branch
+        self.edipole_element = self._compute_line_strength(out_wavens, dmfs, ninter=ninter)
+
+        # np.savetxt('dipole_element.dat', self.edipole_element, fmt='%14.8e')
         line_strength = self.edipole_element[:, -1] * self.hlf
-        jinitial = self.edipole_element[:, 1]
-        wavenumber = self.edipole_element[:, -2]
-
+        jinitial = self.edipole_element[:, 2]
+        waven = self.edipole_element[:, 16]
         # statistical weight of the initial level
         self.gji = (2 * jinitial + 1)
-        self.acoef = self._calculate_Einstein_coeffcients(
-            wavenumber, line_strength, self.gji)
-
+        self.acoef = self._calculate_Einstein_coeffcients(waven, line_strength, self.gji)
         acoef_result = np.c_[self.edipole_element[:, :-1], self.acoef]
-
         self.nonzero_ainds = np.where(self.acoef != 0.0)[0]
         self.acoef_final = acoef_result[self.nonzero_ainds, :]
 
-        if save:
-            filename = filename or self.fname_acoefs
-            self._save_Einstein_coeffcients(self.acoef_final, filename)
-
         return self.acoef_final
 
-    def calculate_relative_intensities(self, T=296, save=False, filename=None):
+    def wrapper_calculate_Einstein_coefficients(self, ypar):
 
-        if self.spectrum == 'absorption' or self.spectrum == 'a':
+        # TODO: call wrapper_calculate_wavenumbers()
+        self.H.interpolate_functions(ypar)
+        self.H.solve(energy_subset_index=self.H.energy_subset_index,
+                     energy_subset_value=self.H.energy_subset_value)
+        ulevels, llevels = self.H.extract_terms_in_range(
+            uenergy=self.H.uenergy, lenergy=self.H.lenergy, usymm=self.H.usymm,
+            lsymm=self.H.lsymm, uj=self.H.uj, lj=self.H.lj,
+            ustate=self.H.ustate, lstate=self.H.lstate)
+        out_wavens = self.calculate_wavenumbers(ulevels, llevels)
+
+        dmfs = None
+        if self.dmfs_init is not None:
+            dmfs = {}
+            ypar_shape = self.H.ypar_init.shape[0]
+            for (n, k) in self.dmfs_init:
+                dmf_params = ypar[ypar_shape:self.dmfs_init[(n, k)].shape[0]+ypar_shape]
+                dmfs[(n, k)] = np.column_stack((self.dmfs_init[(n, k)][:, 0], dmf_params,
+                                                self.dmfs_init[(n, k)][:, 2]))
+
+        return self.calculate_Einstein_coefficients(out_wavens, dmfs=dmfs)
+
+    def _calculate_Einstein_coeffcients(self, wavenumber, line_strength, gji):
+
+        # e0 = constants.value('vacuum electric permittivity')
+        # planck = constants.value('Planck constant')
+        # consts = (16 * np.pi**3) / 3 * e0 * planck
+        # acoef = (consts * wavenumber**3 * line_strength) / gi
+        acoef = (3.1361891e-7 * line_strength * wavenumber**3) / gji
+
+        return acoef
+
+    def _compute_line_strength(self, out_wavens, dmfs, ninter=1000):
+
+        ivec_inds = out_wavens[:, 0].astype(np.int)
+        fvec_inds = out_wavens[:, 8].astype(np.int)
+
+        rgrid, rstep = self.rgrid * C_bohr, self.rstep * C_bohr
+        igrid, istep = np.linspace(self.rmin, self.rmax, num=ninter, endpoint=True, retstep=True)
+        igrid, istep = igrid * C_bohr, istep * C_bohr
+
+        sinc_matrix = self._calculate_sinc_matrix(rgrid, igrid, rstep)
+        dipole_matrix = self._interpolate_dipole_moment(igrid, dmfs)
+
+        # np.savetxt('sinc_matrix.dat', sinc_matrix, fmt='%14.11e')
+        # np.savetxt('evecs_all.dat', self.H.evecs_matrix, fmt='%12.11e')
+        # np.savetxt('dipole_matrix.dat', dipole_matrix[0, 1, :], fmt='%14.8e')
+        result = np.zeros((ivec_inds.shape[0], out_wavens.shape[1]+1))
+
+        ii = 0
+        for (i, j) in zip(ivec_inds, fvec_inds):
+            dme = 0.0
+            for n in range(self.H.nch):
+                for m in range(self.H.nch):
+                    ncoefs = self.H.evecs_matrix[n*self.H.ngrid:(n+1)*self.H.ngrid, i-1]
+                    kcoefs = self.H.evecs_matrix[m*self.H.ngrid:(m+1)*self.H.ngrid, j-1]
+                    # for l in range(ngrid):
+                    #     for p in range(ngrid):
+                    #         sincl = sinc_matrix[l, :]
+                    #         sincp = sinc_matrix[p, :]
+                    #         sumq = np.sum(sincl*dipole_matrix[n, m, :]*sincp)
+                    #         dme += kcoefs[l] * ncoefs[p] * sumq * istep
+                    # res = dme / rstep
+                    # res = dme / rstep # this should be outside n, m loops
+                    sumq = np.dot(sinc_matrix, (dipole_matrix[n, m, :]*sinc_matrix).T)
+                    dme += np.dot(kcoefs, ncoefs * sumq) * istep
+            res = np.sum(dme) / rstep
+            result[ii, :] = np.hstack((out_wavens[ii, :], res**2))
+            ii += 1
+
+        return result
+
+    def _interpolate_dipole_moment(self, igrid, dmfs):
+
+        #dipole_matrix = np.zeros((self.H.nch, self.H.nch, igrid.shape[0]))
+        dipole_matrix = np.ones((self.H.nch, self.H.nch, igrid.shape[0]))
+
+        for n in range(1, self.H.nch+1):
+            for k in range(1, self.H.nch+1):
+                is_interp = False
+                try:
+                    dmx, dmy = dmfs[(n,k)][:, 0], dmfs[(n,k)][:, 1]
+                    cs = CubicSpline(dmx, dmy, bc_type='natural')
+                    dmi = cs(igrid)
+                    is_interp = True
+                except (KeyError, TypeError):
+                    # dmi = np.ones_like(igrid)
+                    continue
+
+                dipole_matrix[n-1, k-1, :] = dmi
+                if n != k and is_interp:
+                    dipole_matrix[k-1, n-1, :] = dmi
+
+        return dipole_matrix
+
+    def _calculate_sinc_matrix(self, rgrid, igrid, rstep):
+
+        sinc_matrix = np.zeros((self.H.ngrid, igrid.shape[0]))
+
+        for i in range(self.H.ngrid):
+            argi = (igrid - rgrid[i]) / rstep
+            sinc = np.sinc(argi)
+            sinc_matrix[i, :] = sinc
+
+        return sinc_matrix
+
+    def calculate_relative_intensities(self, wavens, T=296):
+
+        if self.spec_type.lower().startswith('a'):
 
             # TODO: check if Einstein coefs have already been calculated
+            kt = C_boltzmannk * T
 
-            kt = self.c_boltzmannk * T
-            print(self.freq_calc[:, 10])
-            print(self.freq_calc[:, -1])
-            # TODO check this
-            intensity = self.acoef * self.gji * self.freq_calc[:, -1] * np.exp(-self.freq_calc[:, 10]/kt)
+            # TODO check column numbers
+            intensity = self.acoef * self.gji * wavens[:, -1] * np.exp(-wavens[:, 10]/kt)
             # (1 - np.exp(-freq_calc[:, -1]/kt))
             # np.square(np.square(freq_calc[:, -1]))
             intensity_result = np.c_[self.edipole_element[:, :-1], intensity]
             intensity_final = intensity_result[self.nonzero_ainds, :]
-
-            # cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -2, -1]
-            if save:
-                filename = filename or self.fname_rel_int
-                self._save_rel_intensity(intensity_final, filename)
         else:
             pass
 
@@ -241,7 +387,7 @@ class Spectrum:
         else:
             gns = (2*Ia+1)*(2*Ib+1)
 
-        kt = self.c_boltzmannk * T
+        kt = C_boltzmannk * T
         # qpart = gns *
 
     def calculate_absolute_intensity(self):
@@ -263,329 +409,7 @@ class Spectrum:
     def calculate_oscilator_strength(self):
         raise NotImplementedError()
 
-    def _define_optional_keywords(self):
-
-        return {
-            1: 'spectrum_type',
-            2: 'apply_rules',
-            3: 'compute_A',
-            4: 'compute_rel_intensity',
-            6: 'temperature',
-            7: 'save_hlf',
-            8: 'filename_rel_int',
-            9: 'filename_Acoefs',
-            10: 'filename_hlf',
-            11: 'compare_obs',
-            12: 'ninter',
-            13: 'wavenumber_only',
-            14: 'size',
-            15: 'filename_wavenumber'
-        }
-
-    def compute_linelist(self, Elower=None, Eupper=None,
-                         ujrange=None, ljrange=None, lsymm=None, usymm=None,
-                         freq_range=None, dmf=None, **kwargs):
-
-        # get optional keywords
-        opt_keys = self._define_optional_keywords()
-
-        # spectrum_type = kwargs.get(opt_keys[1]) or 'absorption'
-        apply_rules = kwargs.get(opt_keys[2]) or True
-        temperature = kwargs.get(opt_keys[6]) or 297
-        ninter = kwargs.get(opt_keys[12]) or 1000
-        compute_A = kwargs.get(opt_keys[3]) or False
-        compute_rel_intensity = kwargs.get(opt_keys[4]) or False
-        wavenumber_only = kwargs.get(opt_keys[13]) or False
-        save_hlf = kwargs.get(opt_keys[7]) or False
-        filename_hlf = kwargs.get(opt_keys[10]) or 'hlf.dat'
-        filename_rel_int = kwargs.get(opt_keys[8]) or 'result_hlf.dat'
-        filename_Acoefs = kwargs.get(opt_keys[9]) or 'result_A.dat'
-        size = kwargs.get(opt_keys[14]) or 10000
-        wavenumbers_file = kwargs.get(opt_keys[15]) or 'wavenumbers.dat'
-
-        # TODO: check if dmf is None
-        freq_range = freq_range or (0, 1e5)
-        usymm = usymm or (0, 1)
-        lsymm = lsymm or (0, 1)
-
-        # js = min(np.amin(uterms[:, uj]), np.amin(lterms[:, lj]))
-        # je = max(np.amax(uterms[:, uj]), np.amax(lterms[:, lj]))
-
-        evalues = self.H.calc_data
-
-        # TODO: set default constarints for J, par, El, Eu, freq
-
-        eind, jind, pind = 1, 2, 3
-
-        # constraints by energy
-        lower_levels = evalues[
-            (evalues[:, eind] >= Elower[0]) & (evalues[:, eind] <= Elower[1])
-        ]
-        upper_levels = evalues[
-            (evalues[:, eind] >= Eupper[0]) & (evalues[:, eind] <= Eupper[1])
-        ]
-
-        # constraints by J
-        ujs, uje = ujrange[0], ujrange[1]
-        # upper_jrots = np.arange(ujs, uje+1)
-        upper_levels = upper_levels[
-            (upper_levels[:, jind] >= ujs) & (upper_levels[:, jind] <= uje)
-        ]
-
-        ljs, lje = ljrange[0], ljrange[1]
-        # lower_jrots = np.arange(ljs, lje+1)
-        lower_levels = lower_levels[
-            (lower_levels[:, jind] >= ljs) & (lower_levels[:, jind] <= lje)
-        ]
-
-        # constarints by symmetry
-        lower_levels = lower_levels[
-            (np.in1d(lower_levels[:, pind], lsymm[0])) |
-            (np.in1d(lower_levels[:, pind], lsymm[1]))
-        ]
-        upper_levels = upper_levels[
-            (np.in1d(upper_levels[:, pind], usymm[0])) |
-            (np.in1d(upper_levels[:, pind], usymm[1]))
-        ]
-
-        freq_calc = self._create_wavenumbers_list(
-            upper_levels, lower_levels, jind, pind, freq_range, size
-        )
-
-        # extract initial and final levels from the wavenumbers list
-        # by filtering the unique inidicies of the levels
-        _, ilinds = np.unique(freq_calc[:, 0], return_index=True)
-        _, flinds = np.unique(freq_calc[:, 9], return_index=True)
-        initial_levels = freq_calc[:, :9]
-        final_levels = freq_calc[:, 9:-1]
-        print(compute_A, compute_rel_intensity)
-        compute_A = compute_A or compute_rel_intensity
-        print(compute_A, compute_rel_intensity)
-        apply_rules = apply_rules or (compute_A or compute_rel_intensity)
-
-        if wavenumber_only:
-            compute_A, compute_rel_intensity, save_hlf = False, False, False
-            cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -1]
-            self._save_wavenumbers(freq_calc[:, cols], wavenumbers_file)
-
-        hlf = np.ones(freq_calc.shape[0])
-        if apply_rules:
-            usymm, lsymm = freq_calc[:, 3], freq_calc[:, 12]
-            uj, lj = freq_calc[:, 2], freq_calc[:, 11]
-            ulambda, llambda = freq_calc[:, 7], freq_calc[:, -3]
-            uomega, lomega = freq_calc[:, 8], freq_calc[:, -2]
-
-            hlf = self._compute_Honl_London_factors(
-                usymm, lsymm, uj, lj, uomega, lomega, ulambda, llambda
-            )
-
-        if save_hlf:
-            calc_hlf = np.c_[freq_calc, hlf]
-            # calc_hlf = calc_hlf[np.where(hlf != 0.0)[0], :]
-            cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -2, -1]
-            self._save_Honl_London_factor(calc_hlf[:, cols], filename_hlf)
-
-        if compute_A or compute_rel_intensity:
-
-            # calculate Einstein coeffcients
-            result = self._compute_electric_dipole_elements(
-                initial_levels, final_levels, dmf, ninter=ninter
-            )
-
-            line_strength = result[:, -1] * hlf
-
-            jinitial, wavenumber = result[:, 1], result[:, -2]
-            gji = (2 * jinitial + 1)  # statistical weight of the initial level
-            acoef = self._calculate_Einstein_coeffcients(
-                wavenumber, line_strength, gji
-            )
-            acoef_result = np.c_[result[:, :-1], acoef]
-            nonzero_inds = np.where(acoef != 0.0)[0]
-            nonzero_result = acoef_result[nonzero_inds, :]
-
-            self._save_Einstein_coeffcients(nonzero_result, filename_Acoefs)
-
-            if compute_rel_intensity:
-                kt = self.c_boltzmannk * temperature
-                # TODO: check if the exponent should be calculated with
-                # the energy value or the term value
-
-                intensity = acoef * gji * np.exp(-freq_calc[:, 10] / kt)
-                # (1 - np.exp(-freq_calc[:, -1]/kt))
-                # np.square(np.square(freq_calc[:, -1]))
-                intensity_result = np.c_[result[:, :-1], intensity]
-                nonzero_result = intensity_result[nonzero_inds, :]
-                cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -2, -1]
-
-                self._save_rel_intensity(nonzero_result, filename_rel_int)
-
-    def _create_wavenumbers_list(self, upper_levels, lower_levels, jind, pind,
-                                 freq_range, size):
-
-        lshape, ushape = lower_levels.shape, upper_levels.shape
-        freq_calc = np.zeros((size, 19))
-        countf = 0
-
-        # select which columns from the levels to use
-        # n' E' J' p' iso' st' v' l' o' n E J p iso st v l o freq
-        select = [0, 1, 2, 3, 4, -4, -3, -2, -1]
-        jcol, pcol = jind + len(select), pind + len(select)
-
-        for ulevel in range(ushape[0]):
-            level = np.tile(upper_levels[ulevel, select], lshape[0]).reshape(lshape[0], len(select))
-
-            levels = np.hstack((level, lower_levels[:, select]))
-
-            # apply selection rules by J and symmetry - the remaining
-            # approximate selection rules will be applied by computing HLF
-            jp = levels[:, jind] == levels[:, jcol] - 1.0
-            jq = levels[:, jind] == levels[:, jcol]
-            jr = levels[:, jind] == levels[:, jcol] + 1.0
-
-            cond_pee = jp & (levels[:, pind] == 1) & (levels[:, pcol] == 1)
-            cond_pff = jp & (levels[:, pind] == 0) & (levels[:, pcol] == 0)
-            cond_qef = jq & (levels[:, pind] == 1) & (levels[:, pcol] == 0)
-            cond_qfe = jq & (levels[:, pind] == 0) & (levels[:, pcol] == 1)
-            cond_ree = jr & (levels[:, pind] == 1) & (levels[:, pcol] == 1)
-            cond_rff = jr & (levels[:, pind] == 0) & (levels[:, pcol] == 0)
-
-            levels_selected = np.vstack((
-                levels[cond_pee], levels[cond_pff], levels[cond_qef],
-                levels[cond_qfe], levels[cond_ree], levels[cond_rff]))
-
-            freq = levels_selected[:, 1] - levels_selected[:, 10]
-            fq_calc = np.column_stack((levels_selected, freq))
-
-            freq_calc[countf:countf+fq_calc.shape[0]] = fq_calc
-            countf += fq_calc.shape[0]
-
-        freq_calc = freq_calc[:countf]
-
-        # apply constraints by frequency
-        fs, fe = freq_range[0], freq_range[1]
-        fcond = (freq_calc[:, -1] >= fs) & (freq_calc[:, -1] <= fe)
-        fcond = fcond & (freq_calc[:, -1] >= 0.0)
-        freq_calc = freq_calc[fcond]
-
-        if freq_calc.shape[0] == 0:
-            raise SystemExit(
-                'Error: Allowed transition frequencies were not found.\n'
-            )
-
-        return freq_calc
-
-    def _calculate_Einstein_coeffcients(self, wavenumber, line_strength, gji):
-
-        # e0 = constants.value('vacuum electric permittivity')
-        # planck = constants.value('Planck constant')
-        # consts = (16 * np.pi**3) / 3 * e0 * planck
-        # acoef = (consts * wavenumber**3 * line_strength) / gi
-        acoef = (3.1361891e-7 * line_strength * wavenumber**3) / gji
-
-        return acoef
-
-    def _compute_electric_dipole_elements(self, init_levels, final_levels,
-                                          dmf, ninter=1000):
-
-        ivec_inds = init_levels[:, 0].astype(np.int)
-        fvec_inds = final_levels[:, 0].astype(np.int)
-        # print('inds', ivec_inds, fvec_inds)
-
-        select = [-3, 2, 1, 3, 4, -4]
-        result = np.zeros((ivec_inds.shape[0], 2*len(select)+2))
-
-        rgrid, rstep = self.grid.rgrid * C_bohr, self.grid.rstep * C_bohr
-        ngrid = rgrid.shape[0]
-        igrid, istep = np.linspace(self.grid.rmin, self.grid.rmax, num=ninter,
-                                   endpoint=True, retstep=True)
-
-        igrid, istep = igrid * C_bohr, istep * C_bohr
-
-        sinc_matrix = self._calculate_sinc_matrix(rgrid, igrid, ngrid, rstep)
-
-        if dmf is None:
-            dipole_matrix = np.ones((self.H.nch, self.H.nch, igrid.shape[0]))
-        else:
-            dipole_matrix = self._interpolate_dipole_moment(rgrid, igrid, dmf)
-
-        # np.savetxt('sinc_matrix.dat', sinc_matrix, fmt='%14.11e')
-        # np.savetxt('evecs_all.dat', mlevels.evecs_matrix, fmt='%12.11e')
-        # np.savetxt('dipole_matrix.dat', dipole_matrix[0, 0, :], fmt='%14.8e')
-
-        # arrays with the initial and final levels are guaranteed to have the
-        # same size since they are extracted from the list of wavenumbers so
-        # we can loop over them with only one cycle (no need of 2 nested loops)
-
-        ii = 0
-        for (i, j) in zip(ivec_inds, fvec_inds):
-            dme = 0.0
-            for n in range(self.mlevels.nch):
-                for m in range(self.mlevels.nch):
-                    ncoefs = self.mlevels.evecs_matrix[n*ngrid:(n+1)*ngrid, i-1]
-                    kcoefs = self.mlevels.evecs_matrix[m*ngrid:(m+1)*ngrid, j-1]
-
-                    # for l in range(ngrid):
-                    #     for p in range(ngrid):
-                    #         sincl = sinc_matrix[l, :]
-                    #         sincp = sinc_matrix[p, :]
-                    #         sumq = np.sum(sincl*dipole_matrix[n, m, :]*sincp)
-                    #         dme += kcoefs[l] * ncoefs[p] * sumq * istep
-                    # res = dme / rstep
-                    # print(n, m, res**2)
-                    # to get the fianl result this should be outside n, m loops
-                    # res = dme / rstep
-
-                    sumq = np.dot(
-                        sinc_matrix, (dipole_matrix[n, m, :]*sinc_matrix).T
-                    )
-                    dme += np.dot(kcoefs, ncoefs * sumq) * istep
-            res = np.sum(dme) / rstep
-
-            freq = init_levels[ii, 1] - final_levels[ii, 1]
-            result[ii, :] = np.hstack((
-                init_levels[ii, select], final_levels[ii, select], freq, res**2
-            ))
-            ii += 1
-            # print(i, j, freq, res**2)
-
-        return result
-
-    def _interpolate_dipole_moment(self, rgrid, igrid, dmf):
-
-        # TODO: initilize with ones and remove try/except?
-        # TODO: check if getvalue works when dmf is string
-        # print(io.StringIO(dmf[(n, k)]))
-        # print(io.StringIO(dmf[(n, k)]).getvalue())
-
-        dipole_moment = np.zeros((self.H.nch, self.H.nch, igrid.shape[0]))
-
-        for n in range(1, self.mlevels.nch+1):
-            for k in range(1, self.mlevels.nch+1):
-                try:
-                    dip_moment = np.loadtxt(io.StringIO(dmf[(n, k)]).getvalue())
-                    dmx, dmy = dip_moment[:, 0], dip_moment[:, 1]
-                    # dmx /= C_bohr
-                except KeyError:
-                    dmx = rgrid
-                    dmy = np.ones_like(dmx)
-
-                cs = CubicSpline(dmx, dmy, bc_type='natural')
-                dipole_moment[n-1, k-1, :] = cs(igrid)
-
-        return dipole_moment
-
-    def _calculate_sinc_matrix(self, rgrid, igrid, ngrid, rstep):
-
-        sinc_matrix = np.zeros((ngrid, igrid.shape[0]))
-
-        for i in range(ngrid):
-            argi = (igrid - rgrid[i]) / rstep
-            sinc = np.sinc(argi)
-            sinc_matrix[i, :] = sinc
-
-        return sinc_matrix
-
-    def _compute_Honl_London_factors(self, usymm, lsymm, uj, lj, uomega,
+    def _compute_honl_london_factors(self, usymm, lsymm, uj, lj, uomega,
                                      lomega, ulambda, llambda):
 
         # n' E' J' p' iso' st' v' l' o' n E J p iso st v l o freq
@@ -649,22 +473,64 @@ class Spectrum:
 
         return np.array(list(map(lambda x: 1 if x == 0 else 0, qlist)))
 
-    def _save_wavenumbers(self, freq_calc, filename):
+    def save_wavenumbers(self, out_wavens, filename=None):
 
-        labels = ("v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
-                  'J', 'E', 'symm', 'iso', 'state', 'freq')
+        if self.H.wavens_data is None:
+            self._save_wavenumbers_without_observations(out_wavens, filename)
+        else:
+            self._save_wavenumbers_with_obseravtions(out_wavens, filename)
 
-        header = (f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
-                  f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
-                  f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}'
-                  f'{labels[11]:<10}{labels[12]}')
+    def _save_wavenumbers_with_obseravtions(self, out_wavens, filename):
 
-        fmt = ('%6.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%7.1d',
-               '%7.1f', '%14.5f', '%5.1d', '%5.1d', '%5.1d', '%15.5f')
+        filename = filename or self.fname_wavens
 
-        np.savetxt(filename, freq_calc, header=header, fmt=fmt)
+        cols = list(range(1,8)) + list(range(9, out_wavens.shape[1]))
+        wavens = out_wavens[:, cols]
 
-    def _save_Honl_London_factor(self, hlf, filename):
+        labels = ("v'", "J'", "symm'", "state'", "E'", "Lambda'", "Omega'",
+                  'v', 'J', 'symm', 'state', 'E', 'Lambda', 'Omega', 'cfreq',
+                  'efreq', 'diff_freq', 'unc_freq', 'eintens', 'unc_int', 'branch')
+
+        header = (f'{labels[0]:^7}{labels[1]:<5}{labels[2]:<5}{labels[3]:<10}'
+                  f'{labels[4]:<6}{labels[5]:<8}{labels[6]:<7}{labels[7]:<6}'
+                  f'{labels[8]:<4}{labels[9]:<5}{labels[10]:<10}{labels[11]:<6}'
+                  f'{labels[12]:<7}{labels[13]:<8}{labels[14]:<10}{labels[15]:<9}'
+                  f'{labels[16]:<10}{labels[17]:<14}{labels[18]:<11}{labels[19]:<10}'
+                  f'{labels[20]}')
+
+        fmt = ('%5.1d', '%6.1f',  '%4.1d', '%4.1d', '%12.5f', '%4.1d',
+               '%5.1f', '%4.1d', '%5.1f', '%4.1d', '%4.1d', '%12.5f',
+               '%4.1d', '%4.1f', '%15.8f', '%15.8f', '%11.3e', '%7.3f',
+               '%14.5e', '%8.2f', '%6.1d')
+
+        np.savetxt(filename, wavens, header=header, fmt=fmt)
+
+    def _save_wavenumbers_without_observations(self, out_wavens, filename):
+
+        filename = filename or self.fname_wavens
+        cols = list(range(1,8)) + list(range(9, out_wavens.shape[1]))
+        wavens = out_wavens[:, cols]
+
+        labels = ("v'", "J'", "symm'", "state'", "E'", "Lambda'", "Omega'",
+                  "v", "J", "symm", "state", "E", "Lambda", "Omega", "cfreq", "branch")
+
+        header = (f'{labels[0]:^7}{labels[1]:<5}{labels[2]:<5}{labels[3]:<10}'
+                  f'{labels[4]:<6}{labels[5]:<8}{labels[6]:<7}{labels[7]:<6}'
+                  f'{labels[8]:<4}{labels[9]:<5}{labels[10]:<10}{labels[11]:<6}'
+                  f'{labels[12]:<7}{labels[13]:<8}{labels[14]:<8}{labels[15]}')
+
+        fmt = ('%5.1d', '%6.1f',  '%4.1d', '%4.1d', '%12.5f', '%4.1d',
+               '%5.1f', '%4.1d', '%5.1f', '%4.1d', '%4.1d', '%12.5f',
+               '%4.1d', '%4.1f', '%12.5f', '%4.1d')
+
+        np.savetxt(filename, wavens, header=header, fmt=fmt)
+
+    def save_Honl_London_factor(self, out_wavens, hlf, filename=None):
+
+        calc_hlf = np.c_[out_wavens, hlf]
+        # calc_hlf = calc_hlf[np.where(hlf != 0.0)[0], :]
+        # cols = [6, 2, 1, 3, 4, 5, 15, 11, 10, 12, 13, 14, -2, -1]
+        filename = filename or self.fname_hlf
 
         labels = ("v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
                   'J', 'E', 'symm', 'iso', 'state', 'freq', 'hlf')
@@ -678,9 +544,11 @@ class Spectrum:
                '%5.1d', '%7.1d', '%7.1f', '%14.5f', '%5.1d',
                '%5.1d', '%5.1d', '%15.5f', '%12.5f')
 
-        np.savetxt(filename, hlf, header=header, fmt=fmt)
+        np.savetxt(filename, calc_hlf, header=header, fmt=fmt)
 
-    def _save_rel_intensity(self, result, out_file):
+    def save_rel_intensity(self, result, filename=None):
+
+        filename = filename or self.fname_rel_int
 
         labels = ("v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
                   'J', 'E', 'symm', 'iso', 'state', 'freq', 'intensity')
@@ -694,25 +562,66 @@ class Spectrum:
                '%5.1d', '%7.1d', '%7.1f', '%14.5f', '%5.1d',
                '%5.1d', '%5.1d', '%15.5f', '%16.5e')
 
-        np.savetxt(out_file, result, comments='#', header=header, fmt=fmt)
+        np.savetxt(filename, result, comments='#', header=header, fmt=fmt)
 
-    def _save_Einstein_coeffcients(self, acoefs, filename):
+    def save_einstein_coeffcients(self, acoefs, filename=None):
 
-        labels = ("v'", "J'", "E'", "symm'", "iso'", "state'", 'v',
-                  'J', 'E', 'symm', 'iso', 'state', 'freq', 'A')
+        if self.H.wavens_data is None:
+            self._save_einstein_coeffcients_without_observations(acoefs, filename)
+        else:
+            self._save_einstein_coeffcients_with_observations(acoefs, filename)
 
-        header = (f'{labels[0]:^9}{labels[1]:<13}{labels[2]:<9}{labels[3]:<6}'
-                  f'{labels[4]:<6}{labels[5]:<9}{labels[6]:<6}{labels[7]:<13}'
-                  f'{labels[8]:<9}{labels[9]:<6}{labels[10]:<6}'
-                  f'{labels[11]:<10}{labels[12]:<17}{labels[13]}')
+    def _save_einstein_coeffcients_without_observations(self, acoefs, filename):
 
-        fmt = ('%5.1d', '%7.1f', '%14.5f', '%5.1d', '%5.1d',
-               '%5.1d', '%7.1d', '%7.1f', '%14.5f', '%5.1d',
-               '%5.1d', '%5.1d', '%15.5f', '%15.5e')
+        filename = filename or self.fname_acoefs
 
-        np.savetxt(filename, acoefs, comments='#', header=header, fmt=fmt)
+        cols = list(range(1,8)) + list(range(9, acoefs.shape[1]))
+        acoefs_out = acoefs[:, cols]
 
-    def _save_lifetimes(self, lifetimes, filename):
+        labels = ("v'", "J'", "symm'", "state'", "E'", "Lambda'", "Omega'", "v",
+                  "J", "symm", "state", "E", "Lambda", "Omega", "cfreq", "branch", "A")
+
+        header = (f'{labels[0]:^7}{labels[1]:<6}{labels[2]:<6}{labels[3]:<10}'
+                  f'{labels[4]:<7}{labels[5]:<8}{labels[6]:<7}{labels[7]:<6}'
+                  f'{labels[8]:<6}{labels[9]:<6}{labels[10]:<10}{labels[11]:<8}'
+                  f'{labels[12]:<7}{labels[13]:<8}{labels[14]:<14}{labels[15]}')
+
+        fmt = ('%5.1d', '%6.1f',  '%5.1d', '%5.1d', '%12.5f', '%5.1d',
+               '%5.1f', '%5.1d', '%5.1f', '%5.1d', '%5.1d', '%12.5f',
+               '%5.1d', '%5.1f', '%12.5f', '%8.1d', '%12.5e')
+
+        np.savetxt(filename, acoefs_out, comments='#', header=header, fmt=fmt)
+
+    def _save_einstein_coeffcients_with_observations(self, acoefs, filename):
+
+        filename = filename or self.fname_acoefs
+
+        # the diff column for A is added here
+        adiff = acoefs[:, -4] - acoefs[:, -1]
+        acoefs_out = np.column_stack((acoefs, adiff))
+
+        cols = list(range(1,8)) + list(range(9, acoefs_out.shape[1]))
+        acoefs_out = acoefs_out[:, cols]
+
+        labels = ("v'", "J'", "symm'", "state'", "E'", "Lambda'", "Omega'",
+                  "v", "J", "symm", "state", "E", "Lambda", "Omega", "cfreq", "efreq",
+                  "diff_freq", "unc_freq", "eintens", "unc_int", "branch", "A", "diff_A")
+
+        header = (f'{labels[0]:^7}{labels[1]:<5}{labels[2]:<5}{labels[3]:<10}'
+                  f'{labels[4]:<6}{labels[5]:<8}{labels[6]:<7}{labels[7]:<6}'
+                  f'{labels[8]:<4}{labels[9]:<5}{labels[10]:<10}{labels[11]:<6}'
+                  f'{labels[12]:<7}{labels[13]:<8}{labels[14]:<12}{labels[15]:<10}'
+                  f'{labels[16]:<10}{labels[17]:<10}{labels[18]:<11}{labels[19]:<9}'
+                  f'{labels[20]:<11}{labels[21]:<10}{labels[22]}')
+
+        fmt = ('%5.1d', '%6.1f',  '%4.1d', '%4.1d', '%12.5f', '%4.1d',
+               '%5.1f', '%4.1d', '%5.1f', '%4.1d', '%4.1d', '%12.5f',
+               '%4.1d', '%4.1f', '%15.8f', '%15.8f', '%11.3e', '%7.3f',
+               '%16.10e', '%8.2f', '%5.1d', '%16.10e', '%12.3e')
+
+        np.savetxt(filename, acoefs_out, comments='#', header=header, fmt=fmt)
+
+    def save_lifetimes(self, lifetimes, filename=None):
 
         labels = ("v'", "J'", "E'", "symm'", "iso'", "state'", 'life_time')
 
@@ -728,25 +637,6 @@ class Spectrum:
         js = min(np.amin(uterms[:, uj]), np.amin(lterms[:, lj]))
         je = max(np.amax(uterms[:, uj]), np.amax(lterms[:, lj]))
         return js, je
-
-    def _save_compared_frequencies(self, fname, final_freqs, fmode):
-
-        labels = ("v'", "v", "J'", "J", "st'", "st", "p'", "p", "FJ'",
-                  "FJ", "calc_freq", "obs_freq", "calc-obs", "unc")
-
-        header = (f'{labels[0]:^10}{labels[1]:<7}{labels[2]:<8}{labels[3]:<6}'
-                  f'{labels[4]:<6}{labels[5]:<7}{labels[6]:<6}{labels[7]:<10}'
-                  f'{labels[8]:<12}{labels[9]:<10}{labels[10]:<12}'
-                  f'{labels[11]:<13}{labels[12]:<11}{labels[13]}')
-
-        if fmode == 'ab':
-            header = ''
-
-        fmt = ['%6d', '%5d', '%7.1f', '%7.1f', '%5d', '%5d', '%5d', '%5d',
-               '%13.4f', '%12.4f', '%12.4f', '%12.4f', '%9.4f', '%8.3f']
-
-        with open(fname, fmode) as f:
-            np.savetxt(f, final_freqs, header=header, comments='#', fmt=fmt)
 
     def _map_number_to_branch(self):
 

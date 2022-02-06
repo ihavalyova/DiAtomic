@@ -1,7 +1,8 @@
 import io
-import numpy as np
-import scipy as sp
 from os.path import join as _join
+import scipy as sp
+import numpy as np
+
 from utils import C_hartree
 
 try:
@@ -14,76 +15,112 @@ __all__ = ['Fitting']
 
 
 class Fitting:
+    """[summary]
+    """
 
-    def __init__(self, H, output_progress=False, is_weighted=False):
+    def __init__(self, H, S=None, output_progress=False, is_weighted=False):
 
         self.H = H
+        self.S = S
         self.progress = output_progress
         self.is_weighted = is_weighted
         self.progress_str = io.StringIO()
 
-    def calculate_levels(self, ypar):
+    def _calculate_levels(self, ypar):
 
-        out_data = self.H.wrapper_calculate_diatomic_levels(ypar)
-        ycal = out_data[:, 7] / C_hartree
-        yobs = out_data[:, 8] / C_hartree
-        ydel = -out_data[:, 9] / C_hartree
-        yvar = out_data[:, 10] / C_hartree
+        out_levels = self.H.wrapper_calculate_diatomic_levels(ypar)
+        ycal = out_levels[:, 7]  # / C_hartree
+        yobs = out_levels[:, 8]  # / C_hartree
+        ydel = -out_levels[:, 9]  # / C_hartree
+        yvar = out_levels[:, 10]  # / C_hartree
 
         stats = self.H.calculate_stats(yobs, ycal, yvar, self.is_weighted)
 
         return ycal, yobs, ydel, yvar, stats
 
-    def optimize_levels_by_svd(self, niter=1, derivative='n', tol=0.1,
-                               lapack_driver='gelsd', step_size=1.0e-4,
-                               store_output=False, update_input=False):
-        """SVD algorithm for nonliner least squares fitting.Solves Ax = b using
-        Singular Value Decomposition (SVD). Starting from some trial set of
-        parameters on each iteration the linear system Ax=b for the corrections
-        x to the current set of parameters x_cur will be solved and a new set
-        x_new = x_cur + x will be obtained. Matrix A contains the derivatives
-        of the energies with respect to the parameters and b is the rhs vector
-        E_obs - E_cal(x_cur).
+    def _calculate_wavenumbers(self, ypar):
+
+        if self.S is None:
+            raise ValueError('The "Spectrum" object should be passed as '
+                             'an argument to the __init__() method')
+
+        out_wavens = self.S.wrapper_calculate_wavenumbers(ypar)
+        ycal = out_wavens[:, 16]  # / C_hartree
+        yobs = out_wavens[:, 17]  # / C_hartree
+        ydel = out_wavens[:, 18]  # / C_hartree
+        yvar = out_wavens[:, 19]  # / C_hartree
+
+        stats = self.H.calculate_stats(yobs, ycal, yvar, self.is_weighted)
+
+        return ycal, yobs, ydel, yvar, stats
+
+    def _calculate_intensity(self, ypar):
+
+        if self.S is None:
+            raise ValueError('The "Spectrum" object should be passed as '
+                             'an argument to the __init__() method')
+
+        acoefs = self.S.wrapper_calculate_Einstein_coefficients(ypar)
+        ycal = acoefs[:, 23]
+        yobs = acoefs[:, 20]
+        ydel = yobs-ycal
+        yvar = acoefs[:, 21]
+
+        stats = self.H.calculate_stats(yobs, ycal, yvar, self.is_weighted)
+
+        print('stats intensity', stats)
+
+        return ycal, yobs, ydel, yvar, stats
+
+    def optimize(self, ypar, yfixed, calculate_data, niter, derivative,
+                 tol, lapack_driver, step_size):
+        """Implementation of the SVD algorithm used for nonliner least squares fitting.
+        Solves the linear system Ax = b using SVD. Starting with a trial set of
+        parameters, the system Ax=b is solved on each iteration for the
+        corrections x to the current set of parameters x_0, yielding and a new
+        set of parameters x_1 so that: (x_1 = x_0 + x). The matrix A contains
+        the derivatives of the data wrt the parameters and b is the rhs vector.
 
         Args:
-            niter (int, optional): number of iterations. Defaults to 1.
-            derivative (str, optional): Type of derivative. Defaults to 'n'.
-            tol (float, optional): the tolerance - determines which linear
-            combinations of parameters to be discarded by SVD. Defaults to 0.1.
-            lapack_driver (str, optional): lapack routine. Defaults to 'gelsd'.
-            step_size (float, optional): the value used to change the
-            parameters in the calculation of derivatives. Defaults to 1.0e-4.
-            restart (bool, optional): Not yet implemented. Defaults to False.
+            ypar (array): The parameters which to be optimized
+            yfixed (array): Whether the parameter is fixed or free
+            calculate_data ([type]): [description]
+            niter (int): The number of iterations
+            derivative (str): Whether to use numerical or analytical derivative
+            tol (float): The tolerance parameter of SVD: determines which
+                linear combinations of parameters to be discarded by SVD
+            lapack_driver (str): [description]
+            step_size (float): Used to change the parameters during
+                the computation of derivatives
+        Returns:
+            array: The optimized parameters
         """
 
-        # get initial parameters
-        ypar, yfixed = self.H.ypar_init, self.H.yfixed_init
         chisq_best, rms_best = 0.0, 0.0
         eps = 1.0e-3
 
         print(f'\nTotal number of parameters = {ypar.shape[0]}'
-              f'\nTotal number of parameters to optimize = '
+              f'\nTotal number of parameters to be optimized = '
               f'{yfixed[yfixed == 1].shape[0]}\n')
 
         for it in range(1, niter+1):
 
             # get the energies with the initial/updated parameters from
             # the first/previous iteration
-
-            ycal, yobs, ydel, yvar, stats = self.calculate_levels(ypar)
+            ycal, yobs, ydel, yvar, stats = calculate_data(ypar)
             chisq_best, rms_best = stats[0], stats[1]
+
             print(self.print_info(it, tol, chisq_best, rms_best))
 
-            # build the matrix of the derivatives w.r.t. to the parameters
-
+            # build the matrix of the derivatives w.r.t. parameters
             if derivative == 'n':
                 dydp = self._calculate_numerical_derivatives(
-                    ypar, yfixed, ycal, step_size=step_size)
+                    ypar, yfixed, calculate_data, ycal, step_size=step_size)
                 # np.savetxt('dydp_numerical.dat', dydp, fmt='%.6e')
             else:
                 pass
 
-            # calculate the data matrix A from derivatives matrix
+            # calculate the data matrix A from derivative matrix
             A = (dydp.T / yvar).T
 
             # calculate the rhs vector b
@@ -94,7 +131,7 @@ class Fitting:
 
             # calculate new energies using the proposed corrections
 
-            *_, stats_try = self.calculate_levels(ypar+x)
+            *_, stats_try = calculate_data(ypar+x)
             chi2_try, rms_try = stats_try[0], stats_try[1]
 
             # try to change the corrections
@@ -102,7 +139,6 @@ class Fitting:
                 chisq_best, rms_best = chi2_try, rms_try
                 ypar = ypar + x
                 is_failed = False
-
             else:  # chi2try >= chi2best
                 step = 10.0
                 ypar_try = np.copy(ypar)
@@ -113,18 +149,15 @@ class Fitting:
                 while True:
                     ypar_try = ypar_try + x_try
 
-                    *_, stats_new = self.calculate_levels(ypar_try)
+                    *_, stats_new = calculate_data(ypar_try)
                     chi2_new, rms_new = stats_new[0], stats_new[1]
 
                     if chi2_new + eps < chisq_best:
                         chisq_best, rms_best = chi2_new, rms_new
                         ypar = ypar_try
-
+                        is_failed = False
                         print(f'Smaller step => Chi square = '
                               f'{chisq_best:.6f} | RMS = {rms_best:.6f}')
-
-                        is_failed = False
-
                     else:  # chi2new >= chi2best:
                         break
 
@@ -140,18 +173,44 @@ class Fitting:
 
         self.singular_values = sv
 
+        return ypar
+
+    def optimize_levels_by_svd(self, niter=1, derivative='n', tol=0.1,
+                               lapack_driver='gelsd', step_size=1.0e-4,
+                               store_output=False, update_input=False):
+        """This procedure applies the SVD algorithm to optimize the parameters
+        using an input information about the energy levels
+
+        Args:
+            niter (int, optional): The number of iterations. Defaults to 1.
+            derivative (str, optional): Type of derivative. Defaults to 'n'.
+            tol (float, optional): The tolerance value. Defaults to 0.1.
+            lapack_driver (str, optional): Which lapack procedure to use.
+                Defaults to 'gelsd'.
+            step_size (float, optional): The value used to change the
+                parameters. Defaults to 1.0e-4.
+            store_output (bool, optional): Store the output. Defaults to False.
+            update_input (bool, optional): Update the input. Defaults to False.
+
+        Returns:
+            [type]: [description]
+        """
+
+        # get initial parameters
+        ypar, yfixed = self.H.ypar_init, self.H.yfixed_init
+        ypar_final = self.optimize(ypar, yfixed, self._calculate_levels, niter,
+                                   derivative, tol, lapack_driver, step_size)
+
         # TODO: fix the units
-
+        # store the updated channel parameters in new files
         if store_output:
-            # store the updated channel parameters in new files
             prefix = 'fit_'
-
             for i, c in enumerate(self.H.channels):
                 if i in self.H.unq_channel_inds:
                     file_name = prefix + c.filep
                     if c.model == 'pointwise' or c.model == 'cspline':
                         x = c.rpoints/c.xunits
-                        y = ypar[c.start_index:c.end_index]/c.yunits,
+                        y = ypar_final[c.start_index:c.end_index]/c.yunits
                         z = c.fixed
                         c.write_pointwise_data(file_name, x, y, z)
                     elif c.model == 'morse':
@@ -162,27 +221,64 @@ class Fitting:
                         pass
                     elif c.model == 'custom':
                         pass
-
             # TODO: store the updated coupling parameters in new file
-            # TODO: the file with the energies to be updated
+            # TODO: to update the file with the energies
 
+        # update the parameters in the input files
         if update_input:
-
-            # store the updated parameters in the old files
-            self.H.edit_channel_parameters(ypar, self.H.channels)
+            self.H.edit_channel_parameters(ypar_final, self.H.channels)
 
             if self.H.ncp > 0:
-                self.H.edit_coupling_parameters(ypar, self.H.couplings)
+                self.H.edit_coupling_parameters(ypar_final, self.H.couplings)
 
-        # return the optimized parameters
+        return ypar_final
+
+    def optimize_wavenumbers_by_svd(self, niter=1, derivative='n', tol=0.1,
+                                    lapack_driver='gelsd', step_size=1.0e-4,
+                                    store_output=False, update_input=False):
+
+        # get initial parameters
+        ypar, yfixed = self.H.ypar_init, self.H.yfixed_init
+        print(ypar*C_hartree)
+        ypar = self.optimize(ypar, yfixed, self._calculate_wavenumbers, niter,
+                             derivative, tol, lapack_driver, step_size)
+        print(ypar*C_hartree)
+        if store_output:
+            pass
+        if update_input:
+            pass
+
+        return ypar
+
+    def optimize_intensity_by_svd(self, niter=1, derivative='n', tol=0.1,
+                                  lapack_driver='gelsd', step_size=1.0e-4,
+                                  store_output=False, update_input=False):
+
+        # get initial parameters
+        ypar, yfixed = self.H.ypar_init, self.H.yfixed_init
+
+        # add initial dmf parameters to ypar
+        if self.S.dmfs_init is not None:
+            for (n, k) in self.S.dmfs_init:
+                ypar = np.hstack((ypar, self.S.dmfs_init[(n, k)][:, 1]))
+                yfixed = np.hstack((yfixed, self.S.dmfs_init[(n, k)][:, 2]))
+
+        ypar = self.optimize(ypar, yfixed, self._calculate_intensity, niter,
+                             derivative, tol, lapack_driver, step_size)
+
+        if store_output:
+            np.savetxt('fitted_dm.dat', ypar)
+        if update_input:
+            pass
+
         return ypar
 
     def get_singular_values(self):
 
         return self.singular_values
 
-    def _calculate_numerical_derivatives(self, ypar, yfixed, ycal_init,
-                                         step_size):
+    def _calculate_numerical_derivatives(self, ypar, yfixed, calculate_data,
+                                         ycal_init, step_size):
         """Compute the derivatives matrix by the parameters
 
         Args:
@@ -207,7 +303,7 @@ class Fitting:
                 continue
             dpar = np.copy(ypar)
             dpar[prm] += dp[prm]
-            ycal, *_ = self.calculate_levels(dpar)
+            ycal, *_ = calculate_data(dpar)
             dydp[:, prm] = (ycal - ycal_init) / dp[prm]
 
         return dydp
@@ -373,9 +469,6 @@ class Fitting:
                                        step_size=1.0e-4, regular=0.0):
         pass
 
-    def optimize_wavenumbers_by_svd(self):
-        pass
-
     def _minuit_least_squares(self, ypar):
 
         """The procedure which Minuit calls on each iteration
@@ -389,7 +482,7 @@ class Fitting:
         Remarks:
             1. Minuit requires this procedure to accept a single argument
         """
-        ycal, yobs, ydel, yvar, stats = self.calculate_levels(ypar)
+        ycal, yobs, ydel, yvar, stats = self._calculate_levels(ypar)
 
         return np.sum(ydel ** 2 / yvar)
 

@@ -1,6 +1,7 @@
 import numpy as np
 import scipy as sp
 import identify
+
 from math import sqrt as _sqrt
 from scipy.interpolate import CubicSpline as _CubicSpline
 from os.path import splitext as _splitext
@@ -23,15 +24,19 @@ class Hamiltonian:
         Parameters
         ----------
             grid : Grid object
-                [description]
+                The defined Grid object which has information about the grid
+                parameters like number of grid points, the required range of
+                internuclear distancies and the chosen solving method.
             diatomic_data : DiatomicData object
-                [description]
+                The defined DiatomicData object which contains information
+                about the specific molecule.
             channels : list
-                a list with the defined channel objects
+                Contains the list of the defined channel objects.
             couplings : list, optional
-                a list with the defined coupling objects. Defaults to [].
+                Contains the list of the defined coupling objects.
+                Defaults to [].
             eig_decomp : str, optional
-                the package LAPACK or ARPACK which to be used for eigen
+                The package LAPACK or ARPACK which to be used for eigen
                 decomposition. Defaults to 'lapack'.
             lapack_driver : str, optional
                  Defines which LAPACK driver should be used when eig_decomp is
@@ -51,6 +56,7 @@ class Hamiltonian:
         self.rmax = grid.rmax
         self.rgrid = grid.rgrid
         self.rgrid2 = np.square(self.rgrid)
+        self.rstep = grid.rstep
         self.solver = grid.solver
 
         self.molecule = diatomic_data.molecule
@@ -70,6 +76,10 @@ class Hamiltonian:
         self.couplings = couplings
         self.nch = len(self.channels)
         self.ncp = len(self.couplings)
+
+        # energy ranges when extracting term values
+        # self.uenergy_range = None
+        # self.lenergy_range = None
 
         # mapping arrays
         self.Fy = grid.Fy
@@ -131,8 +141,10 @@ class Hamiltonian:
 
         self.interpolate_functions(self.ypar_init)
 
+        self.file_energies = f'energies_{self.mol_name}.dat'
+
     def interpolate_functions(self, ypar):
-        """Interpolate coupling and channel functions on the grid of points
+        """Interpolates coupling and channel functions on the grid of points
 
         Parameters
         ----------
@@ -159,14 +171,16 @@ class Hamiltonian:
             self.out_data = identify.identify_levels(
                 self.calc_data, self.exp_data, self.nch, ident_option)
 
-        if store_output:
-            stats = self.calculate_stats(
-                self.out_data[:, 8], self.out_data[:, 7],
-                self.out_data[:, 10], self.is_weighted)
+            if store_output:
+                stats = self.calculate_stats(
+                    self.out_data[:, 8], self.out_data[:, 7],
+                    self.out_data[:, 10], self.is_weighted)
 
-            self.energy_out_file = out_file or f'energies_{self.mol_name}.dat'
-            self.save_predicted_energies()
-            self.save_output_data(stats)
+                self.energy_out_file = out_file or self.file_energies
+                self.save_predicted_energies(self.calc_data)
+                self.save_output_data(stats)
+        else:
+            raise AttributeError('Experimental energy terms should be provided.')
 
         return self.out_data
 
@@ -217,26 +231,68 @@ class Hamiltonian:
                    energy_subset_value=self.energy_subset_value)
         return self.get_energy_levels(self.ident_option, store_output=False)
 
+    def extract_terms_in_range(self, uenergy=None, lenergy=None, usymm=None, lsymm=None,
+                               uj=None, lj=None, ustate=None, lstate=None):
+
+        # TODO: it may happen that the number of levels within these
+        # ranges will vary during the fit
+
+        eind, jind, pind, sind = 1, 2, 3, -4
+
+        # filter by energy
+        self.uenergy = uenergy
+        self.lenergy = lenergy
+        calc_uterms = self.calc_data[(self.calc_data[:, eind] >= self.uenergy[0]) &
+                                     (self.calc_data[:, eind] <= self.uenergy[1])]
+        calc_lterms = self.calc_data[(self.calc_data[:, eind] >= self.lenergy[0]) &
+                                     (self.calc_data[:, eind] <= self.lenergy[1])]
+
+        # filter by J
+        self.uj = uj or (np.amin(calc_uterms[:, jind]), np.amax(calc_uterms[:, jind]))
+        self.lj = lj or (np.amin(calc_lterms[:, jind]), np.amax(calc_lterms[:, jind]))
+        calc_uterms = calc_uterms[(calc_uterms[:, jind] >= self.uj[0]) &
+                                  (calc_uterms[:, jind] <= self.uj[1])]
+        calc_lterms = calc_lterms[(calc_lterms[:, jind] >= self.lj[0]) &
+                                  (calc_lterms[:, jind] <= self.lj[1])]
+
+        # filter by symmetry
+        self.usymm = usymm or (0, 1)
+        self.lsymm = lsymm or (0, 1)
+        calc_uterms = calc_uterms[(np.in1d(calc_uterms[:, pind], self.usymm[0])) |
+                                  (np.in1d(calc_uterms[:, pind], self.usymm[1]))]
+        calc_lterms = calc_lterms[(np.in1d(calc_lterms[:, pind], self.lsymm[0])) |
+                                  (np.in1d(calc_lterms[:, pind], self.lsymm[1]))]
+
+        # filter by state - use only for single states
+        self.ustate = ustate
+        self.lstate = lstate
+        if self.ustate is not None:
+            calc_uterms = calc_uterms[calc_uterms[:, sind] == ustate]
+        if self.lstate is not None:
+            calc_lterms = calc_lterms[calc_lterms[:, sind] == lstate]
+
+        return calc_uterms, calc_lterms
+
     def build_hamiltonian(self, iso, par, jrotn, tmatrix):
-        """Build the Hamiltonian matrix by summing the block diagonal matrix
-        of the kinetic energy the diagonal matrix of potential energy
-        and the coupling matrix
+        """Builds the Hamiltonian matrix by summing the block diagonal matrix
+        of the kinetic energy, the diagonal matrix of potential energy
+        and the coupling matrix with diagonal and off-diagonal blocks
 
         Parameters
         ----------
-            iso : bool
-                isotopologue number
+            iso : bool0
+                Isotopologue number
             par : int
-                symmetry label
+                Symmetry label
             jrotn : float
-                rotational quantum number
+                The rotational quantum number
             tmatrix : numpy.ndarray
-                the kinetic energy matrix
+                The kinetic energy matrix
 
         Returns
         ----------
             hmatrix : numpy.ndarray
-                the Hamiltonian matrix
+                The Hamiltonian matrix
         """
 
         vmatrix = self.pot_enr.calculate_potential_energy(jrotn, par, iso)
@@ -247,7 +303,7 @@ class Hamiltonian:
         return hmatrix
 
     def _lapack_eig_decomposition(self, hmatrix):
-        """Diagonilizes the Hamiltonian matrix with the scipy eigh() procedure
+        """Diagonilizes the Hamiltonian matrix with the scipy "eigh" procedure
         from the LAPACK package
 
         Parameters
@@ -258,16 +314,15 @@ class Hamiltonian:
         Returns
         ----------
             evalues : numpy.ndarray
-                the computed eigenvalues
+                The computed eigenvalues
             evecs : numpy.ndarray
-                the computed eigenvectors
+                The computed eigenvectors
 
         Notes
         ----------
         """
 
         subset_value, subset_index = None, None
-
         if self.energy_subset_index:
             emini, emaxi = self.energy_subset_index[0]
             emaxi = self.energy_subset_index[-1]
@@ -306,14 +361,14 @@ class Hamiltonian:
         Parameters
         ----------
             hmatrix : numpy.ndarray
-                the Hamiltonian matrix
+                The Hamiltonian matrix
 
         Returns
         ----------
             evalues : numpy.ndarray
-                the coumputed eiegenvalues
+                The coumputed eiegenvalues
             evecs : numpy.ndarray
-                the computed eigenvectors
+                The computed eigenvectors
 
         Notes
         ----------
@@ -352,25 +407,26 @@ class Hamiltonian:
         Parameters
         ----------
             jrotn : float
-                the rotational quantum number
+                The rotational quantum number
             par : int
-                symmetry label, 0 for f- and 1 for e-symmetry
+                Symmetry label, 0 for f- and 1 for e-symmetry
             iso : int
-                the isotopolgue number
+                The isotopolgue number
             evalues : numpy.ndarray
-                the array with the computed eigenvalues
+                The array with the computed eigenvalues
             evecs : numpy.ndarray
-                the array with the computed eigenvectors
+                The array with the computed eigenvectors
             shiftE : list, optional
-                the value of the energy to shift the levels. Defaults to [0.0].
+                The value of the energy to shift the levels. Defaults to [0.0].
 
         Returns
         ----------
             levels : numpy.ndarray
-                an array with all levels i.e. energy+quantum numbers and labels
+                An array containing all levels i.e. energy, quantum numbers
+                and labels
         """
 
-        ids = np.arange(1, evalues.shape[0]+1)
+        ids = np.arange(self.ecount+1, evalues.shape[0]+self.ecount+1)
 
         if self.refj and jrotn == self.jqnumbers[0]:
             shiftE[0] = evalues[0]
@@ -394,48 +450,6 @@ class Hamiltonian:
         ))
 
         return levels
-
-    def get_wavenumbers(self, uenergy_range, lenergy_range):
-
-        # print(self.wavens_data.shape)
-
-        # get unique upper and lower terms from experimental wavenumbers list
-        unique_uterms = np.unique(self.wavens_data[:, :4], axis=0)
-        unique_lterms = np.unique(self.wavens_data[:, 4:8], axis=0)
-
-        # calculate term energies for the given channels
-        self.calc_data, self.evecs_matrix = self._calculate_diatomic_levels()
-
-        ulevels = self.calc_data[(self.calc_data[:, 1] >= uenergy_range[0]) &
-                                 (self.calc_data[:, 1] <= uenergy_range[1])]
-
-        llevels = self.calc_data[(self.calc_data[:, 1] >= lenergy_range[0]) &
-                                 (self.calc_data[:, 1] <= lenergy_range[1])]
-
-        print(ulevels.shape, llevels.shape)
-
-        v, j, pi, si = -3, 2, 3, -4
-        uinds, linds = [], []
-        for i in unique_uterms:
-            inds = np.where(np.all(ulevels[:, [v, j, pi, si]] == i, axis=1))[0]
-            if len(inds) > 0:
-                uinds.append(inds[0])
-
-        for i in unique_lterms:
-            inds = np.where(np.all(llevels[:, [v, j, pi, si]] == i, axis=1))[0]
-            if len(inds) > 0:
-                linds.append(inds[0])
-        print('inds', uinds, linds)
-
-        llevels = llevels[linds]
-        print(llevels.shape)
-        # llevels = np.column_stack((linds, llevels))
-
-        ulevels = ulevels[uinds]
-        print(ulevels.shape)
-        # ulevels = np.column_stack((uinds, ulevels))
-
-        # TODO: rewrite wavenumbers.cpp for the correct number of cols
 
     def _get_coupling_coefficients(self, evecs):
 
@@ -525,13 +539,14 @@ class Hamiltonian:
         np.savetxt(self.energy_out_file, outdata_num, header=header,
                    footer=footer, fmt=fmt)
 
-    def save_predicted_energies(self):
+    def save_predicted_energies(self, calc_energies, filename=None):
         """Stores the complete list of computed energy levels in external file
         """
 
         nrows = self.calc_data.shape[1]
         cols = [0, -3] + list(range(1, nrows-3)) + [-2, -1]
-        calc_data_out = self.calc_data[:, cols]
+        # calc_data_out = self.calc_data[:, cols]
+        calc_energies_out = calc_energies[:, cols]
 
         coef = 'coef'
         coef_labels = ''.join(
@@ -547,10 +562,11 @@ class Hamiltonian:
         fmt = ['%7.1d', '%5.1d', '%16.6f', '%7.1f', '%5.1d', '%7.1d']
         fmt += self.nch*['%9.3f'] + 2*['%6.1d'] + ['%8.1f']
 
-        file_name, file_ext = _splitext(self.energy_out_file)
-        output_file = file_name + '_predicted' + file_ext
+        fname_def, fext_def = _splitext(self.file_energies)
+        output_file = fname_def + '_predicted' + fext_def
+        output_file = filename or output_file
 
-        np.savetxt(output_file, calc_data_out, header=header, fmt=fmt)
+        np.savetxt(output_file, calc_energies_out, header=header, fmt=fmt)
 
     def _sort_predicted_energies(self, cols=[]):
 
@@ -579,7 +595,7 @@ class Hamiltonian:
         Returns
         ----------
             calc_data: numpy.ndarray
-                the computed energy levels
+                The computed energy levels
         """
 
         return self.calc_data
@@ -595,7 +611,7 @@ class Hamiltonian:
         Returns
         ----------
             hamiltonian : numpy.ndarray
-                the computed Hamiltonian matrix
+                The computed Hamiltonian matrix
         """
         # will get the matrix for the last comupted J, e/f-level and isotope
         return self.hamiltonian
@@ -622,17 +638,18 @@ class KineticEnergy:
         Parameters
         ----------
             iso : int
-                isotopologue number
+                Isotopologue number
 
         Raises
         ----------
             ValueError:
-                if name of the solver method is not correct, an error occurrs
+                If the name of the solver method is not correct,
+                an error occurrs
 
         Returns
         ----------
             T : numpy.ndarray
-                the calculated matrix of the kinetic energy
+                The calculated matrix of the kinetic energy
         """
 
         mass = self.masses[iso-1]
@@ -930,6 +947,7 @@ class Interaction:
         self.ncp = H.ncp
         self.channels = H.channels
         self.couplings = H.couplings
+        self.rgrid = H.rgrid
         self.rgrid2 = H.rgrid2
         self.masses = H.masses
         self.msize = H.msize
@@ -971,7 +989,7 @@ class Interaction:
                 col1, col2 = (ch2-1)*self.ngrid, ch2*self.ngrid
 
                 pert_matrix[row1:row2, col1:col2][self.dd] += cfunc * ycs
-                self.cp_map[cp+countc][row1:row2, self.countl] = cfunc
+                # self.cp_map[cp+countc][row1:row2, self.countl] = cfunc
 
         self.countl += 1
 
@@ -999,12 +1017,12 @@ class Interaction:
             if self.couplings[cp].model.lower() == 'custom':
                 self._calculate_custom_coupling_on_grid(cp, ypar)
 
-            self._countp += self.couplings[cp].npnts
+            # self._countp += self.couplings[cp].npnts
 
     def _calculate_pointwise_coupling_on_grid(self, cp, ypar):
 
         xpnts = self.couplings[cp].xc
-        ypnts = self.calculate_coupling_points(cp, ypar)
+        ypnts = ypar[self.couplings[cp].start_index:self.couplings[cp].end_index]
 
         cs = _CubicSpline(xpnts, ypnts, bc_type='natural', extrapolate=True)
         self.fgrid[cp*self.ngrid:(cp+1)*self.ngrid] = cs(self.rgrid)
@@ -1019,13 +1037,11 @@ class Interaction:
 
         self.fgrid[index[0]:index[1]], sk = cs(self.rgrid, return_deriv=True)
 
-    def calculate_coupling_points(self, cp, yrange, ypar):
-
-        yrange['end'] = yrange['start'] + self.couplings[cp].npnts
-        ypnts = ypar[yrange['start']:yrange['end']]
-        yrange['start'] += self.couplings[cp].npnts
-
-        return ypnts
+    # def calculate_coupling_points(self, cp, yrange, ypar):
+    #     yrange['end'] = yrange['start'] + self.couplings[cp].npnts
+    #     ypnts = ypar[yrange['start']:yrange['end']]
+    #     yrange['start'] += self.couplings[cp].npnts
+    #     return ypnts
 
     def calculate_constant_coupling_on_grid(self, cp, ypar):
         # st = Channel.totp_unique
@@ -1043,7 +1059,7 @@ class Interaction:
         self.fgrid[cp*self.ngrid:(cp+1)*self.ngrid] = \
             self.couplings[cp].cfunc(ypnts, self.rgrid)
 
-    def get_quantum_numbers(self, channels, ch1, ch2):
+    def get_quantum_numbers(self, ch1, ch2):
 
         return {
             'lm1': self.channels[ch1-1].nlambda,

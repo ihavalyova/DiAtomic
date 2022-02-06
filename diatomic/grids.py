@@ -18,9 +18,14 @@ class Grid:
         self.Fy = np.zeros(self.ngrid)
 
         if self.solver == 'sinc':
-            self.rgrid, self.rstep = self.generate_sinc_uniform_grid()
+            self.rgrid, self.rstep = np.linspace(
+                self.rmin, self.rmax, num=self.ngrid,
+                endpoint=True, retstep=True)
+
         else:
-            self.rgrid, self.rstep = self.generate_fourier_uniform_grid()
+            self.rgrid, self.rstep = np.linspace(
+                self.rmin, self.rmax, num=self.ngrid,
+                endpoint=False, retstep=True)
 
         if alpha > 0.0:
             # mapping is allowed with sinc method only
@@ -33,9 +38,11 @@ class Grid:
 
             gy_power1 = np.power(1.0+ygrid, (1.0/alpha)-1.0)
             gy_power2 = np.power(1.0-ygrid, (1.0/alpha)+1.0)
+
             self.Gy = (2.0*rbar/alpha) * gy_power1 / gy_power2
 
             fy_power = (np.power((1.0 - np.power(ygrid, 2)), 2))
+
             self.Fy = (1.0 - (1.0/(alpha**2))) / fy_power
 
     def get_grid_points(self):
@@ -45,28 +52,6 @@ class Grid:
     def get_grid_bounding_values(self, rlimit, rbar, alpha):
 
         return ((rlimit/rbar)**alpha - 1.0) / ((rlimit/rbar)**alpha + 1.0)
-
-    def generate_fourier_uniform_grid(self):
-
-        return np.linspace(
-            self.rmin, self.rmax, num=self.ngrid, endpoint=False, retstep=True
-        )
-
-    def generate_sinc_uniform_grid(self):
-
-        return np.linspace(
-            self.rmin, self.rmax, num=self.ngrid, endpoint=True, retstep=True
-        )
-
-    def calculate_sinc_basis_functions(self, r):
-
-        # numpy sinc function is defined as sin(pi*x)/(pi*x) where pi is
-        # used for normalization. Thus I do not need to multiply by pi
-        # for j in range(0, self.nch*self.ngrid):
-        for j in range(0, self.ngrid):
-            arg = (r - self.rgrid[j]) / self.rstep
-            # return one column from a matrix
-        return np.sinc(arg)
 
     def generate_nonuniform_grid(self, alpha, rbar):
 
@@ -85,8 +70,5 @@ class Grid:
             ygrid[j-1] = self.rmin + ystep*(j-1.0)
 
         Ry = rbar * np.power((1.0+ygrid) / (1.0-ygrid), 1.0/alpha)
-
-        print(ygrid)
-        print(len(ygrid))
 
         return Ry, ygrid

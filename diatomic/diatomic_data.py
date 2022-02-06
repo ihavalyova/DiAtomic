@@ -80,12 +80,12 @@ class DiatomicData:
         err_msg = f'Error: Molecule {molecule} not in the correct format'
 
         if not found:
-            raise SystemExit(err_msg)
+            raise ValueError(err_msg)
 
         molecule_data = found.groups()
 
         if len(molecule_data) != 4:
-            raise SystemExit(err_msg)
+            raise ValueError(err_msg)
 
         atoms = (molecule_data[1].strip(), molecule_data[3].strip())
         mass_numbers = (int(molecule_data[0]), int(molecule_data[2]))
@@ -116,7 +116,7 @@ class DiatomicData:
         atom_data = _findall(pattern, atomic_db)
 
         if len(atom_data) != 1:
-            raise SystemExit(
+            raise ValueError(
                 f'Error: Incorrect matching or nothing found in '
                 f'the atomic database for symbol {symbol}.')
 
@@ -137,10 +137,9 @@ class DiatomicData:
             raise SystemExit(e)
 
         if self.exp_data.shape[0] == 0 or self.exp_data.shape[1] != 8:
-            raise TypeError(
+            raise ValueError(
                 f'Wrong shape/format of observed energies in file {file_name}'
-                f'{self.exp_data.shape[0]} x {self.exp_data.shape[1]}\n'
-                f'Check markers, Js, the format of the data and so forth...')
+                f'{self.exp_data.shape[0]} x {self.exp_data.shape[1]}\n')
 
     def _read_observed_energies(self, markers, apply_filters):
 
@@ -177,14 +176,19 @@ class DiatomicData:
 
         try:
             self._read_observed_wavenumbers(file_name, markers)
-        except Exception as e:
-            raise SystemExit(e)
+            # self.euterms = np.unique(self.H.wavens_data[:, :4], axis=0)
+            # self.elterms = np.unique(self.H.wavens_data[:, 4:8], axis=0)
+        except Exception as err:
+            raise SystemExit(err)
 
-        if self.wavens_data.shape[0] == 0 or self.wavens_data.shape[1] != 10:
-            raise SystemExit(
-                f'Wrong shape of observed wavenumbers: '
-                f'{self.wavens_data.shape[0]} x {self.wavens_data.shape[1]}\n'
-                f'Check markers, Js, the format of the data and so forth...')
+        ncols = 12
+
+        if self.wavens_data.shape[0] == 0 or \
+           self.wavens_data.shape[1] != ncols:
+            raise ValueError(
+                f'Cannot read the format of the observed wavenumbers. '
+                f'Wrong shape of the data: '
+                f'{self.wavens_data.shape[0]} x {self.wavens_data.shape[1]}\n')
 
     def _read_observed_wavenumbers(self, file_name, markers):
 
@@ -212,7 +216,7 @@ class DiatomicData:
             raise SystemExit(e)
 
         if self.uterms_data.shape[0] == 0 or self.uterms_data.shape[1] != 8:
-            raise TypeError(
+            raise ValueError(
                 f'Wrong shape/format of observed energies in file {file_name}'
                 f'{self.uterms_data.shape[0]} x {self.uterms_data.shape[1]}\n'
                 f'Check markers, Js, the format of the data and so forth...')
@@ -229,7 +233,7 @@ class DiatomicData:
             raise SystemExit(e)
 
         if self.lterms_data.shape[0] == 0 or self.lterms_data.shape[1] != 8:
-            raise TypeError(
+            raise ValueError(
                 f'Wrong shape/format of observed energies in file {file_name}'
                 f'{self.lterms_data.shape[0]} x {self.lterms_data.shape[1]}\n'
                 f'Check markers, Js, the format of the data and so forth...')
@@ -242,6 +246,7 @@ class DiatomicData:
         # keep here the indices of the unique channels
         self.unq_chind = []
 
+        # TODO: check if counting is correct
         for i, ch in enumerate(channels):
             if ch.filep not in self.unq_channels:
                 self.unq_channels[ch.filep] = (count_pnts, count_pnts+ch.npnts)
@@ -266,6 +271,13 @@ class DiatomicData:
 
     def get_coupling_parameters(self, couplings):
 
+        # TODO: check if counting is correct
+        count_pnts = self.tot_npts
+        for i, cp in enumerate(couplings):
+            cp.start_index = count_pnts
+            count_pnts += cp.npnts
+            cp.end_index = count_pnts
+
         # for cp in couplings:
         try:
             cpar = np.concatenate([c.yc for c in couplings])
@@ -281,10 +293,10 @@ class DiatomicData:
     def set_couplings_data(cls, file_name):
 
         cls.cpl_file = file_name
-        cls.cpl_data = cls._read_couplings_data()
+        cls.cpl_data = cls.read_couplings_data()
 
     @classmethod
-    def _read_couplings_data(cls):
+    def read_couplings_data(cls):
 
         try:
             with open(cls.cpl_file, 'r') as inps:
@@ -481,8 +493,7 @@ class Channel:
             def_fixed = True
 
         bparams = dict(
-            filter(lambda x: x[0].lower().startswith('b'), emo_data.items())
-        )
+            filter(lambda x: x[0].lower().startswith('b'), emo_data.items()))
 
         # TODO: check for key error
 
@@ -541,26 +552,22 @@ class Channel:
             def_fixed = True
 
         bparams = dict(
-            filter(lambda x: x[0].lower().startswith('b'), mlr_data.items())
-        )
+            filter(lambda x: x[0].lower().startswith('b'), mlr_data.items()))
         cparams = dict(
-            filter(lambda x: x[0].lower().startswith('c'), mlr_data.items())
-        )
+            filter(lambda x: x[0].lower().startswith('c'), mlr_data.items()))
         dparams = dict(
-            filter(lambda x: x[0].lower().startswith('d'), mlr_data.items())
-        )
+            filter(lambda x: x[0].lower().startswith('d'), mlr_data.items()))
         # remove De
         dparams = dict(
-            filter(lambda x: x[0].lower() != 'de', dparams.items())
-        )
+            filter(lambda x: x[0].lower() != 'de', dparams.items()))
         # remove binf
         bparams = dict(
-            filter(lambda x: x[0].lower() != 'binf', bparams.items())
-        )
+            filter(lambda x: x[0].lower() != 'binf', bparams.items()))
         # TODO: check for key error
 
         mapp = {
-            0: 'Te', 1: 'De', 2: 'p', 3: 'q', 4: 'rref', 5: 're', 6: 'binf'
+            0: 'Te', 1: 'De', 2: 'p', 3: 'q',
+            4: 'rref', 5: 're', 6: 'binf'
         }
 
         upoints, fixed = np.zeros(npt), np.zeros(npt, dtype=np.int64)
@@ -574,14 +581,11 @@ class Channel:
 
         # TODO: check dimenstions of C and D parameters - they are not correct!
         bvalues = list(
-            map(lambda x: float(x[0]) * C_bohr, bparams.values())
-        )
+            map(lambda x: float(x[0]) * C_bohr, bparams.values()))
         cvalues = list(
-            map(lambda x: float(x[0]), cparams.values())
-        )
+            map(lambda x: float(x[0]), cparams.values()))
         dvalues = list(
-            map(lambda x: float(x[0]), dparams.values())
-        )
+            map(lambda x: float(x[0]), dparams.values()))
 
         ni, nb, nc, nd = 7, len(bvalues), len(cvalues), len(dvalues)
         upoints[ni:ni+nb] = bvalues
@@ -689,12 +693,14 @@ class Coupling:
         self.fixed = 0
         self.xunits = 1.0 / C_bohr
         self.yunits = 1
+        self.start_index = None  # start index in ypar
+        self.end_index = None  # end index in ypar
 
         # regularization parameters
         self.cregular = 0
         self.clambda = 0
 
-        params_str = list(map(str.split, DiatomicData.cdata[self.label]))
+        params_str = list(map(str.split, DiatomicData.cpl_data[self.label]))
         params = np.array([list(map(float, i)) for i in params_str])
 
         # if string convert to tuples
@@ -713,7 +719,6 @@ class Coupling:
         if all(item.startswith('lambdad') for item in self.coupling):
             self.yunits = C_hartree
 
-        # set parameters for pointwise models
         if self.model == 'pointwise' or self.model == 'cspline':
             self.xc = params[:, 0] * self.xunits
             self.yc = params[:, 1] * self.yunits
@@ -724,7 +729,6 @@ class Coupling:
                 self.cregular = params[:, 3]
                 self.clambda = params[:, 4]
 
-        # set parameters for constant or custom models
         if self.model == 'constant' or self.model == 'custom':
             self.yc = params[:, 0]
             if params.shape[1] >= 2:
