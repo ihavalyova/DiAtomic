@@ -5,7 +5,7 @@ import identify
 from math import sqrt as _sqrt
 from scipy.interpolate import CubicSpline as _CubicSpline
 from os.path import splitext as _splitext
-from interpolate import CSpline
+from interpolator import CSpline
 from utils import C_hartree
 
 __all__ = ['Hamiltonian']
@@ -618,7 +618,8 @@ class Hamiltonian:
 
 
 class KineticEnergy:
-
+    """Calculate the kinetic energy operator
+    """
     def __init__(self, H):
 
         self.rmin = H.rmin
@@ -668,6 +669,14 @@ class KineticEnergy:
                 f'{self.solver_method} is not allowed solver method...')
 
     def _calculate_kinetic_energy_fourier(self, mass):
+        """Calculate the kinetic energy operator using the Fourir basis
+
+        Args:
+            mass (double): The mass value
+
+        Returns:
+            array: The computed kinetic energy matrix
+        """
 
         length = self.rmax - self.rmin
         n2 = (self.ngrid**2 + 2.0) / 6.0
@@ -697,6 +706,14 @@ class KineticEnergy:
         return self.T
 
     def _calculate_kinetic_energy_sinc(self, mass):
+        """Calculate the kinetic energy operator using the sinc basis
+
+        Args:
+            mass (double): The mass value
+
+        Returns:
+            array: The computed kinetic energy matrix
+        """
 
         pc = 1.0
         pi2 = np.pi ** 2
@@ -726,6 +743,14 @@ class KineticEnergy:
         return self.T
 
     def _calculate_kinetic_energy_FD5(self, mass):
+        """Calculate the kinetic energy operator using the finite difference method
+
+        Args:
+            mass (double): The mass value
+
+        Returns:
+            array: The computed kinetic energy matrix
+        """
 
         # the first and last 2 eigenvalues are wrong
         pc = 1.0
@@ -1091,14 +1116,21 @@ class Interaction:
         }
 
     def spin_orbit_interaction(self, jjrotn, mass, m, par, args):
+        """Calculate diagonal and off-diagonal Spin-Orbit matrix element
+            ``<State1| SO |State1>`` = multiplier * A(R)
+            ``<State1| SO |State2>`` = multiplier * alpha(R)
 
-        """
-        Calculate diagonal and off-diagonal Spin-Orbit coupling matrix element
-        <State1| SO |State1> = multiplier * A(R)
-        <State1| SO |State2> = multiplier * alpha(R)
+           with selection rules:
 
-        with selection rules:
+        Args:
+            jjrotn (float): parameter with value equal to J(J+1)
+            mass (float): the mass value
+            m (float): multiplier for the R-dependent functions
+            par (int): specify e- or f-symmetry
+            args (list): the electronic and rotational quantum numbers
 
+        Returns:
+            array: the computed matrix elements
         """
 
         socoef = m * (self.rule_SOdiag(args) or self.rule_SOnondiag(args))
@@ -1125,13 +1157,21 @@ class Interaction:
         return 0
 
     def lj_interaction(self, jjrotn, mass, m, par, args):
+        """Calculate the matrix elements of LJ operator which are:
+           ``<State1| LJ |State1>`` =
+           ``<State1| LJ |State2>`` =
 
-        """
-        Calculate the matrix element of L-uncoupling operator
-        <State1| LJ |State1> =
-        <State1| LJ |State2> =
+           with selection rules:
 
-        with selection rules:
+        Args:
+            jjrotn (float): parameter with value equal to J(J+1)
+            mass (float): the mass value
+            m (float): multiplier for the R-dependent functions
+            par (int): specify e- or f-symmetry
+            args (list): the electronic and rotational quantum numbers
+
+        Returns:
+            array: the computed matrix elements
         """
 
         qexpression = 1.0
@@ -1214,13 +1254,21 @@ class Interaction:
         return 0
 
     def sj_interaction(self, jjrotn, mass, m, par, args):
+        """Calculate the matrix elements of SJ operator which are:
+            ``<State1| SJ |State1>`` =
+            ``<State1| SJ |State2>`` =
 
-        """
-        Calculate the matrix element of S-uncoupling operator
-        <State1| SJ |State1> =
-        <State1| SJ |State2> =
+           with selection rules:
 
-        with selection rules:
+        Args:
+            jjrotn (float): parameter with value equal to J(J+1)
+            mass (float): the mass value
+            m (float): multiplier for the R-dependent functions
+            par (int): specify e- or f-symmetry
+            args (list): the electronic and rotational quantum numbers
+
+        Returns:
+            array: the computed matrix elements
         """
 
         qexpression = _sqrt(
@@ -1280,12 +1328,21 @@ class Interaction:
         return 0
 
     def spin_electornic_interaction(self, jjrotn, mass, m, par, args):
-        """
-        Calculate the matrix element of spin-electronic operator
-        <State1| LS |State1> =
-        <State1| LS |State2> =
+        """Calculate the matrix elements of SL operator which are:
+            ``<State1| SL |State1>`` =
+            ``<State1| SL |State2>`` =
 
-        with selection rules:
+           with selection rules:
+
+        Args:
+            jjrotn (float): parameter with value equal to J(J+1)
+            mass (float): the mass value
+            m (float): multiplier for the R-dependent functions
+            par (int): specify e- or f-symmetry
+            args (list): the electronic and rotational quantum numbers
+
+        Returns:
+            array: the computed matrix elements
         """
 
         qexpression = _sqrt(
@@ -1340,6 +1397,18 @@ class Interaction:
         return m * bocoef * C_hartree
 
     def DBOBC(self, jjrotn, mass, m, par, args):
+        """The diagonal BOB correction
+
+        Args:
+            jjrotn (float): parameter with value equal to J(J+1)
+            mass (float): the mass value
+            m (float): multiplier for the R-dependent functions
+            par (int): specify e- or f-symmetry
+            args (list): the electronic and rotational quantum numbers
+
+        Returns:
+            array: the computed correction
+        """
 
         # return (1.0 / C_hartree) * m
         # return m * ((mass - self.masses[0]) / mass)
