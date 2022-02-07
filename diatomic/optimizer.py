@@ -11,10 +11,10 @@ except ModuleNotFoundError:
     pass
     # print("'iminuit' module is not installed!\n")
 
-__all__ = ['Fitting']
+__all__ = ['Optimizer']
 
 
-class Fitting:
+class Optimizer:
     """[summary]
     """
 

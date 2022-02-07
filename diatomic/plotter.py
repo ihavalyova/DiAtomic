@@ -17,10 +17,10 @@ try:
 except ModuleNotFoundError:
     pass
 
-__all__ = ['Plotting']
+__all__ = ['Plotter']
 
 
-class Plotting:
+class Plotter:
 
     def __init__(self):
         pass
