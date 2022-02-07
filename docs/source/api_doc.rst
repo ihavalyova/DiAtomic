@@ -11,7 +11,6 @@ API Reference
    interpolator
    plotter
    spectrum
-   tasks
    utils
    wavenumbers
    wavenumbers_intens

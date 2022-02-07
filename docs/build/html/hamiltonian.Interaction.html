@@ -1,99 +1,318 @@
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>hamiltonian.Interaction &mdash; diatom  documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>hamiltonian.Interaction &#8212; Diatomic  documentation</title>
+    
+    <link href="_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
-    <script src="_static/js/theme.js"></script>
+    
+    <link rel="stylesheet"
+      href="_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+    
+      
+  
+    
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/pydata-sphinx-theme.css" />
+    
+    <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="hamiltonian.KineticEnergy" href="hamiltonian.KineticEnergy.html" />
-    <link rel="prev" title="hamiltonian.Hamiltonian" href="hamiltonian.Hamiltonian.html" /> 
-</head>
+    <link rel="prev" title="hamiltonian.Hamiltonian" href="hamiltonian.Hamiltonian.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
 
-<body class="wy-body-for-nav"> 
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> diatom
-          </a>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="instalation.html">Instalation</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="api_doc.html">API Reference</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="optimizer.html">Optimize Function Parameters</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="hamiltonian.html">Build the Hamiltonian Matrix</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="hamiltonian.Hamiltonian.html">hamiltonian.Hamiltonian</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">hamiltonian.Interaction</a></li>
-<li class="toctree-l3"><a class="reference internal" href="hamiltonian.KineticEnergy.html">hamiltonian.KineticEnergy</a></li>
-<li class="toctree-l3"><a class="reference internal" href="hamiltonian.PotentialEnergy.html">hamiltonian.PotentialEnergy</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="grid.html">Construct the grid</a></li>
-<li class="toctree-l2"><a class="reference internal" href="identify.html">identify module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="interpolator.html">Interpolate Functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plotter.html">Plotting Functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="spectrum.html">Compute Spectral Quantities</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tasks.html">tasks module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="utils.html">Utility Functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="wavenumbers.html">wavenumbers module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="wavenumbers_intens.html">wavenumbers_intens module</a></li>
-</ul>
-</li>
-</ul>
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
 
-        </div>
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+<a class="navbar-brand" href="index.html">
+<p class="title">Diatomic</p>
+</a>
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="instalation.html">
+  Instalation
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="api_doc.html">
+  API Reference
+ </a>
+</li>
+
+    
+</ul>
       </div>
-    </nav>
+      
+    </div>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">diatom</a>
-      </nav>
-
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="api_doc.html">API Reference</a> &raquo;</li>
-          <li><a href="hamiltonian.html">Build the Hamiltonian Matrix</a> &raquo;</li>
-      <li>hamiltonian.Interaction</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="_sources/hamiltonian.Interaction.rst.txt" rel="nofollow"> View page source</a>
-      </li>
-  </ul>
-  <hr/>
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+      </ul>
+      </div>
+      
+    </div>
+  </div>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="optimizer.html">
+   Optimize Function Parameters
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="optimizer.Optimizer.html">
+     optimizer.Optimizer
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="hamiltonian.html">
+   Build the Hamiltonian Matrix
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+  <label for="toctree-checkbox-2">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="current">
+   <li class="toctree-l2">
+    <a class="reference internal" href="hamiltonian.Hamiltonian.html">
+     hamiltonian.Hamiltonian
+    </a>
+   </li>
+   <li class="toctree-l2 current active">
+    <a class="current reference internal" href="#">
+     hamiltonian.Interaction
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="hamiltonian.KineticEnergy.html">
+     hamiltonian.KineticEnergy
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="hamiltonian.PotentialEnergy.html">
+     hamiltonian.PotentialEnergy
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="grid.html">
+   Construct the grid
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+  <label for="toctree-checkbox-3">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="grid.Grid.html">
+     grid.Grid
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="identify.html">
+   identify module
+  </a>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="interpolator.html">
+   Interpolate Functions
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+  <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="interpolator.CSpline.html">
+     interpolator.CSpline
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="plotter.html">
+   Plotting Functions
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="plotter.Plotter.html">
+     plotter.Plotter
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="spectrum.html">
+   Compute Spectral Quantities
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="spectrum.Spectrum.html">
+     spectrum.Spectrum
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="tasks.html">
+   tasks module
+  </a>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="utils.html">
+   Utility Functions
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+  <label for="toctree-checkbox-7">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="utils.Utils.html">
+     utils.Utils
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="wavenumbers.html">
+   wavenumbers module
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="wavenumbers_intens.html">
+   wavenumbers_intens module
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+
+<nav id="bd-toc-nav">
+    
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
   <div class="section" id="hamiltonian-interaction">
-<h1>hamiltonian.Interaction<a class="headerlink" href="#hamiltonian-interaction" title="Permalink to this headline"></a></h1>
+<h1>hamiltonian.Interaction<a class="headerlink" href="#hamiltonian-interaction" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="hamiltonian.Interaction">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">hamiltonian.</span></span><span class="sig-name descname"><span class="pre">Interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">H</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">hamiltonian.</span></span><span class="sig-name descname"><span class="pre">Interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">H</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p class="rubric">Methods</p>
-<table class="longtable docutils align-default">
+<table class="longtable table autosummary">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -202,7 +421,7 @@
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.DBOBC">
-<span class="sig-name descname"><span class="pre">DBOBC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.DBOBC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.DBOBC" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">DBOBC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.DBOBC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.DBOBC" title="Permalink to this definition">¶</a></dt>
 <dd><p>The diagonal BOB correction</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -225,72 +444,72 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.NDBOBC">
-<span class="sig-name descname"><span class="pre">NDBOBC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.NDBOBC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.NDBOBC" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NDBOBC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.NDBOBC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.NDBOBC" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction._calculate_cspline_coupling_on_grid">
-<span class="sig-name descname"><span class="pre">_calculate_cspline_coupling_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ypar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction._calculate_cspline_coupling_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction._calculate_cspline_coupling_on_grid" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">_calculate_cspline_coupling_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ypar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction._calculate_cspline_coupling_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction._calculate_cspline_coupling_on_grid" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction._calculate_custom_coupling_on_grid">
-<span class="sig-name descname"><span class="pre">_calculate_custom_coupling_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ypar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction._calculate_custom_coupling_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction._calculate_custom_coupling_on_grid" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">_calculate_custom_coupling_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ypar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction._calculate_custom_coupling_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction._calculate_custom_coupling_on_grid" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction._calculate_pointwise_coupling_on_grid">
-<span class="sig-name descname"><span class="pre">_calculate_pointwise_coupling_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ypar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction._calculate_pointwise_coupling_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction._calculate_pointwise_coupling_on_grid" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">_calculate_pointwise_coupling_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ypar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction._calculate_pointwise_coupling_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction._calculate_pointwise_coupling_on_grid" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.calculate_constant_coupling_on_grid">
-<span class="sig-name descname"><span class="pre">calculate_constant_coupling_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ypar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.calculate_constant_coupling_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.calculate_constant_coupling_on_grid" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">calculate_constant_coupling_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ypar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.calculate_constant_coupling_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.calculate_constant_coupling_on_grid" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.calculate_coupling_matrix">
-<span class="sig-name descname"><span class="pre">calculate_coupling_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iso</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.calculate_coupling_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.calculate_coupling_matrix" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">calculate_coupling_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iso</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.calculate_coupling_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.calculate_coupling_matrix" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.calculate_couplings_on_grid">
-<span class="sig-name descname"><span class="pre">calculate_couplings_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ypar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.calculate_couplings_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.calculate_couplings_on_grid" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">calculate_couplings_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ypar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.calculate_couplings_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.calculate_couplings_on_grid" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.define_interaction_keys">
-<span class="sig-name descname"><span class="pre">define_interaction_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.define_interaction_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.define_interaction_keys" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">define_interaction_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.define_interaction_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.define_interaction_keys" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.get_couplings_on_grid">
-<span class="sig-name descname"><span class="pre">get_couplings_on_grid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.get_couplings_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.get_couplings_on_grid" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_couplings_on_grid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.get_couplings_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.get_couplings_on_grid" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.get_quantum_numbers">
-<span class="sig-name descname"><span class="pre">get_quantum_numbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ch1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.get_quantum_numbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.get_quantum_numbers" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_quantum_numbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ch1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.get_quantum_numbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.get_quantum_numbers" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.lambda_doubling">
-<span class="sig-name descname"><span class="pre">lambda_doubling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.lambda_doubling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.lambda_doubling" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">lambda_doubling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.lambda_doubling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.lambda_doubling" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.lambda_doubling_e_parity">
-<span class="sig-name descname"><span class="pre">lambda_doubling_e_parity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.lambda_doubling_e_parity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.lambda_doubling_e_parity" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">lambda_doubling_e_parity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.lambda_doubling_e_parity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.lambda_doubling_e_parity" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.lambda_doubling_f_parity">
-<span class="sig-name descname"><span class="pre">lambda_doubling_f_parity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.lambda_doubling_f_parity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.lambda_doubling_f_parity" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">lambda_doubling_f_parity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.lambda_doubling_f_parity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.lambda_doubling_f_parity" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.lj_interaction">
-<span class="sig-name descname"><span class="pre">lj_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.lj_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.lj_interaction" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">lj_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.lj_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.lj_interaction" title="Permalink to this definition">¶</a></dt>
 <dd><dl>
 <dt>Calculate the matrix elements of LJ operator which are:</dt><dd><p><code class="docutils literal notranslate"><span class="pre">&lt;State1|</span> <span class="pre">LJ</span> <span class="pre">|State1&gt;</span></code> =
 <code class="docutils literal notranslate"><span class="pre">&lt;State1|</span> <span class="pre">LJ</span> <span class="pre">|State2&gt;</span></code> =</p>
@@ -318,69 +537,69 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.lj_parity_interaction">
-<span class="sig-name descname"><span class="pre">lj_parity_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.lj_parity_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.lj_parity_interaction" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">lj_parity_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.lj_parity_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.lj_parity_interaction" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.rule_SOdiag">
-<span class="sig-name descname"><span class="pre">rule_SOdiag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_SOdiag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_SOdiag" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rule_SOdiag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_SOdiag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_SOdiag" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.rule_SOnondiag">
-<span class="sig-name descname"><span class="pre">rule_SOnondiag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_SOnondiag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_SOnondiag" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rule_SOnondiag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_SOnondiag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_SOnondiag" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.rule_lj_interaction">
-<span class="sig-name descname"><span class="pre">rule_lj_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_lj_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_lj_interaction" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rule_lj_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_lj_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_lj_interaction" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.rule_lj_parity">
-<span class="sig-name descname"><span class="pre">rule_lj_parity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_lj_parity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_lj_parity" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rule_lj_parity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_lj_parity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_lj_parity" title="Permalink to this definition">¶</a></dt>
 <dd><p>This interaction is allowed only between Sigma-Pi or Sigma-Sigma states
 with even multiplicity with Lambda &lt;= 1 and abs(Omega) = 0.5</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.rule_sj_interaction">
-<span class="sig-name descname"><span class="pre">rule_sj_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_sj_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_sj_interaction" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rule_sj_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_sj_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_sj_interaction" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.rule_sj_parity">
-<span class="sig-name descname"><span class="pre">rule_sj_parity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_sj_parity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_sj_parity" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rule_sj_parity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_sj_parity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_sj_parity" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.rule_spin_electronic">
-<span class="sig-name descname"><span class="pre">rule_spin_electronic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_spin_electronic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_spin_electronic" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rule_spin_electronic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_spin_electronic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_spin_electronic" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.rule_spin_rot_diag">
-<span class="sig-name descname"><span class="pre">rule_spin_rot_diag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_spin_rot_diag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_spin_rot_diag" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rule_spin_rot_diag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_spin_rot_diag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_spin_rot_diag" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.rule_spin_rot_nondiag">
-<span class="sig-name descname"><span class="pre">rule_spin_rot_nondiag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_spin_rot_nondiag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_spin_rot_nondiag" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rule_spin_rot_nondiag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_spin_rot_nondiag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_spin_rot_nondiag" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.rule_spin_spin_diag">
-<span class="sig-name descname"><span class="pre">rule_spin_spin_diag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_spin_spin_diag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_spin_spin_diag" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rule_spin_spin_diag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_spin_spin_diag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_spin_spin_diag" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.rule_spin_spin_nondiag">
-<span class="sig-name descname"><span class="pre">rule_spin_spin_nondiag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_spin_spin_nondiag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_spin_spin_nondiag" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rule_spin_spin_nondiag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.rule_spin_spin_nondiag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.rule_spin_spin_nondiag" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.sj_interaction">
-<span class="sig-name descname"><span class="pre">sj_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.sj_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.sj_interaction" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">sj_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.sj_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.sj_interaction" title="Permalink to this definition">¶</a></dt>
 <dd><dl>
 <dt>Calculate the matrix elements of SJ operator which are:</dt><dd><blockquote>
 <div><p><code class="docutils literal notranslate"><span class="pre">&lt;State1|</span> <span class="pre">SJ</span> <span class="pre">|State1&gt;</span></code> =
@@ -410,13 +629,13 @@ with even multiplicity with Lambda &lt;= 1 and abs(Omega) = 0.5</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.sj_parity_interaction">
-<span class="sig-name descname"><span class="pre">sj_parity_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.sj_parity_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.sj_parity_interaction" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">sj_parity_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.sj_parity_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.sj_parity_interaction" title="Permalink to this definition">¶</a></dt>
 <dd><p>only between Sigma states</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.spin_electornic_interaction">
-<span class="sig-name descname"><span class="pre">spin_electornic_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.spin_electornic_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.spin_electornic_interaction" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">spin_electornic_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.spin_electornic_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.spin_electornic_interaction" title="Permalink to this definition">¶</a></dt>
 <dd><dl>
 <dt>Calculate the matrix elements of SL operator which are:</dt><dd><blockquote>
 <div><p><code class="docutils literal notranslate"><span class="pre">&lt;State1|</span> <span class="pre">SL</span> <span class="pre">|State1&gt;</span></code> =
@@ -446,7 +665,7 @@ with even multiplicity with Lambda &lt;= 1 and abs(Omega) = 0.5</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.spin_orbit_interaction">
-<span class="sig-name descname"><span class="pre">spin_orbit_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.spin_orbit_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.spin_orbit_interaction" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">spin_orbit_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.spin_orbit_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.spin_orbit_interaction" title="Permalink to this definition">¶</a></dt>
 <dd><dl>
 <dt>Calculate diagonal and off-diagonal Spin-Orbit matrix element</dt><dd><blockquote>
 <div><p><code class="docutils literal notranslate"><span class="pre">&lt;State1|</span> <span class="pre">SO</span> <span class="pre">|State1&gt;</span></code> = multiplier * A(R)
@@ -476,12 +695,12 @@ with even multiplicity with Lambda &lt;= 1 and abs(Omega) = 0.5</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.spin_rotation_interaction">
-<span class="sig-name descname"><span class="pre">spin_rotation_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.spin_rotation_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.spin_rotation_interaction" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">spin_rotation_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.spin_rotation_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.spin_rotation_interaction" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="hamiltonian.Interaction.spin_spin_interaction">
-<span class="sig-name descname"><span class="pre">spin_spin_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.spin_spin_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.spin_spin_interaction" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">spin_spin_interaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jjrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Interaction.spin_spin_interaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Interaction.spin_spin_interaction" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -489,34 +708,50 @@ with even multiplicity with Lambda &lt;= 1 and abs(Omega) = 0.5</p>
 </div>
 
 
-           </div>
-          </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="hamiltonian.Hamiltonian.html" class="btn btn-neutral float-left" title="hamiltonian.Hamiltonian" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="hamiltonian.KineticEnergy.html" class="btn btn-neutral float-right" title="hamiltonian.KineticEnergy" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>&#169; Copyright 2022, ihavalyova.</p>
-  </div>
-
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
-
-</footer>
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+    <a class='left-prev' id="prev-link" href="hamiltonian.Hamiltonian.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">hamiltonian.Hamiltonian</p>
         </div>
-      </div>
-    </section>
-  </div>
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script> 
+    </a>
+    <a class='right-next' id="next-link" href="hamiltonian.KineticEnergy.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">hamiltonian.KineticEnergy</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
 
-</body>
+      </div>
+    </div>
+  
+    <script src="_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2022, ihavalyova.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.0.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
 </html>
