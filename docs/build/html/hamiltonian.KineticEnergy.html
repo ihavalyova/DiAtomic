@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>hamiltonian.KineticEnergy &mdash; diatom  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="hamiltonian.PotentialEnergy" href="hamiltonian.PotentialEnergy.html" />
+    <link rel="prev" title="hamiltonian.Interaction" href="hamiltonian.Interaction.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> diatom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="instalation.html">Instalation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api_doc.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="optimizer.html">Optimize Function Parameters</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="hamiltonian.html">Build the Hamiltonian Matrix</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="hamiltonian.Hamiltonian.html">hamiltonian.Hamiltonian</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hamiltonian.Interaction.html">hamiltonian.Interaction</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">hamiltonian.KineticEnergy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hamiltonian.PotentialEnergy.html">hamiltonian.PotentialEnergy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="grid.html">Construct the grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="identify.html">identify module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="interpolator.html">Interpolate Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotter.html">Plotting Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spectrum.html">Compute Spectral Quantities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tasks.html">tasks module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utility Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="wavenumbers.html">wavenumbers module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="wavenumbers_intens.html">wavenumbers_intens module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">diatom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="api_doc.html">API Reference</a> &raquo;</li>
+          <li><a href="hamiltonian.html">Build the Hamiltonian Matrix</a> &raquo;</li>
+      <li>hamiltonian.KineticEnergy</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/hamiltonian.KineticEnergy.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="hamiltonian-kineticenergy">
+<h1>hamiltonian.KineticEnergy<a class="headerlink" href="#hamiltonian-kineticenergy" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="hamiltonian.KineticEnergy">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">hamiltonian.</span></span><span class="sig-name descname"><span class="pre">KineticEnergy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">H</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#KineticEnergy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.KineticEnergy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Calculate the kinetic energy operator</p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.KineticEnergy._calculate_kinetic_energy_FD5" title="hamiltonian.KineticEnergy._calculate_kinetic_energy_FD5"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_calculate_kinetic_energy_FD5</span></code></a>(mass)</p></td>
+<td><p>Calculate the kinetic energy operator using the finite difference method</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.KineticEnergy._calculate_kinetic_energy_fourier" title="hamiltonian.KineticEnergy._calculate_kinetic_energy_fourier"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_calculate_kinetic_energy_fourier</span></code></a>(mass)</p></td>
+<td><p>Calculate the kinetic energy operator using the Fourir basis</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.KineticEnergy._calculate_kinetic_energy_sinc" title="hamiltonian.KineticEnergy._calculate_kinetic_energy_sinc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_calculate_kinetic_energy_sinc</span></code></a>(mass)</p></td>
+<td><p>Calculate the kinetic energy operator using the sinc basis</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.KineticEnergy._five_diagonal_matrix" title="hamiltonian.KineticEnergy._five_diagonal_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_five_diagonal_matrix</span></code></a>(a, b, c[, k1, k2, k3])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.KineticEnergy.calculate_kinetic_energy" title="hamiltonian.KineticEnergy.calculate_kinetic_energy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_kinetic_energy</span></code></a>(iso)</p></td>
+<td><p>Calls a specific function for the calculation of the kinetic energy depending on the solver method</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.KineticEnergy._calculate_kinetic_energy_FD5">
+<span class="sig-name descname"><span class="pre">_calculate_kinetic_energy_FD5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mass</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#KineticEnergy._calculate_kinetic_energy_FD5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.KineticEnergy._calculate_kinetic_energy_FD5" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate the kinetic energy operator using the finite difference method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mass</strong> (<em>double</em>) – The mass value</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The computed kinetic energy matrix</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.KineticEnergy._calculate_kinetic_energy_fourier">
+<span class="sig-name descname"><span class="pre">_calculate_kinetic_energy_fourier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mass</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#KineticEnergy._calculate_kinetic_energy_fourier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.KineticEnergy._calculate_kinetic_energy_fourier" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate the kinetic energy operator using the Fourir basis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mass</strong> (<em>double</em>) – The mass value</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The computed kinetic energy matrix</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.KineticEnergy._calculate_kinetic_energy_sinc">
+<span class="sig-name descname"><span class="pre">_calculate_kinetic_energy_sinc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mass</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#KineticEnergy._calculate_kinetic_energy_sinc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.KineticEnergy._calculate_kinetic_energy_sinc" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate the kinetic energy operator using the sinc basis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mass</strong> (<em>double</em>) – The mass value</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The computed kinetic energy matrix</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.KineticEnergy._five_diagonal_matrix">
+<span class="sig-name descname"><span class="pre">_five_diagonal_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k3</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#KineticEnergy._five_diagonal_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.KineticEnergy._five_diagonal_matrix" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.KineticEnergy.calculate_kinetic_energy">
+<span class="sig-name descname"><span class="pre">calculate_kinetic_energy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iso</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#KineticEnergy.calculate_kinetic_energy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.KineticEnergy.calculate_kinetic_energy" title="Permalink to this definition"></a></dt>
+<dd><p>Calls a specific function for the calculation of the kinetic energy
+depending on the solver method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>iso</strong> (<em>int</em>) – Isotopologue number</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError:</strong> – If the name of the solver method is not correct,
+    an error occurrs</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>T</strong> – The calculated matrix of the kinetic energy</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="hamiltonian.Interaction.html" class="btn btn-neutral float-left" title="hamiltonian.Interaction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="hamiltonian.PotentialEnergy.html" class="btn btn-neutral float-right" title="hamiltonian.PotentialEnergy" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, ihavalyova.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

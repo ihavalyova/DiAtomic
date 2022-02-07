@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>optimizer &mdash; diatom  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> diatom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../instalation.html">Instalation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_doc.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">diatom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>optimizer</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for optimizer</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">join</span> <span class="k">as</span> <span class="n">_join</span>
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="k">as</span> <span class="nn">sp</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">C_hartree</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">iminuit</span> <span class="kn">import</span> <span class="n">Minuit</span>
+<span class="k">except</span> <span class="ne">ModuleNotFoundError</span><span class="p">:</span>
+    <span class="k">pass</span>
+    <span class="c1"># print(&quot;&#39;iminuit&#39; module is not installed!\n&quot;)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Optimizer&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="Optimizer"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer">[docs]</a><span class="k">class</span> <span class="nc">Optimizer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;[summary]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">S</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">is_weighted</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">H</span> <span class="o">=</span> <span class="n">H</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">S</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span> <span class="o">=</span> <span class="n">output_progress</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_weighted</span> <span class="o">=</span> <span class="n">is_weighted</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_str</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Optimizer._calculate_levels"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer._calculate_levels">[docs]</a>    <span class="k">def</span> <span class="nf">_calculate_levels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ypar</span><span class="p">):</span>
+
+        <span class="n">out_levels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">wrapper_calculate_diatomic_levels</span><span class="p">(</span><span class="n">ypar</span><span class="p">)</span>
+        <span class="n">ycal</span> <span class="o">=</span> <span class="n">out_levels</span><span class="p">[:,</span> <span class="mi">7</span><span class="p">]</span>  <span class="c1"># / C_hartree</span>
+        <span class="n">yobs</span> <span class="o">=</span> <span class="n">out_levels</span><span class="p">[:,</span> <span class="mi">8</span><span class="p">]</span>  <span class="c1"># / C_hartree</span>
+        <span class="n">ydel</span> <span class="o">=</span> <span class="o">-</span><span class="n">out_levels</span><span class="p">[:,</span> <span class="mi">9</span><span class="p">]</span>  <span class="c1"># / C_hartree</span>
+        <span class="n">yvar</span> <span class="o">=</span> <span class="n">out_levels</span><span class="p">[:,</span> <span class="mi">10</span><span class="p">]</span>  <span class="c1"># / C_hartree</span>
+
+        <span class="n">stats</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">calculate_stats</span><span class="p">(</span><span class="n">yobs</span><span class="p">,</span> <span class="n">ycal</span><span class="p">,</span> <span class="n">yvar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_weighted</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ycal</span><span class="p">,</span> <span class="n">yobs</span><span class="p">,</span> <span class="n">ydel</span><span class="p">,</span> <span class="n">yvar</span><span class="p">,</span> <span class="n">stats</span></div>
+
+<div class="viewcode-block" id="Optimizer._calculate_wavenumbers"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer._calculate_wavenumbers">[docs]</a>    <span class="k">def</span> <span class="nf">_calculate_wavenumbers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ypar</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The &quot;Spectrum&quot; object should be passed as &#39;</span>
+                             <span class="s1">&#39;an argument to the __init__() method&#39;</span><span class="p">)</span>
+
+        <span class="n">out_wavens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">wrapper_calculate_wavenumbers</span><span class="p">(</span><span class="n">ypar</span><span class="p">)</span>
+        <span class="n">ycal</span> <span class="o">=</span> <span class="n">out_wavens</span><span class="p">[:,</span> <span class="mi">16</span><span class="p">]</span>  <span class="c1"># / C_hartree</span>
+        <span class="n">yobs</span> <span class="o">=</span> <span class="n">out_wavens</span><span class="p">[:,</span> <span class="mi">17</span><span class="p">]</span>  <span class="c1"># / C_hartree</span>
+        <span class="n">ydel</span> <span class="o">=</span> <span class="n">out_wavens</span><span class="p">[:,</span> <span class="mi">18</span><span class="p">]</span>  <span class="c1"># / C_hartree</span>
+        <span class="n">yvar</span> <span class="o">=</span> <span class="n">out_wavens</span><span class="p">[:,</span> <span class="mi">19</span><span class="p">]</span>  <span class="c1"># / C_hartree</span>
+
+        <span class="n">stats</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">calculate_stats</span><span class="p">(</span><span class="n">yobs</span><span class="p">,</span> <span class="n">ycal</span><span class="p">,</span> <span class="n">yvar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_weighted</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ycal</span><span class="p">,</span> <span class="n">yobs</span><span class="p">,</span> <span class="n">ydel</span><span class="p">,</span> <span class="n">yvar</span><span class="p">,</span> <span class="n">stats</span></div>
+
+<div class="viewcode-block" id="Optimizer._calculate_intensity"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer._calculate_intensity">[docs]</a>    <span class="k">def</span> <span class="nf">_calculate_intensity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ypar</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The &quot;Spectrum&quot; object should be passed as &#39;</span>
+                             <span class="s1">&#39;an argument to the __init__() method&#39;</span><span class="p">)</span>
+
+        <span class="n">acoefs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">wrapper_calculate_Einstein_coefficients</span><span class="p">(</span><span class="n">ypar</span><span class="p">)</span>
+        <span class="n">ycal</span> <span class="o">=</span> <span class="n">acoefs</span><span class="p">[:,</span> <span class="mi">23</span><span class="p">]</span>
+        <span class="n">yobs</span> <span class="o">=</span> <span class="n">acoefs</span><span class="p">[:,</span> <span class="mi">20</span><span class="p">]</span>
+        <span class="n">ydel</span> <span class="o">=</span> <span class="n">yobs</span><span class="o">-</span><span class="n">ycal</span>
+        <span class="n">yvar</span> <span class="o">=</span> <span class="n">acoefs</span><span class="p">[:,</span> <span class="mi">21</span><span class="p">]</span>
+
+        <span class="n">stats</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">calculate_stats</span><span class="p">(</span><span class="n">yobs</span><span class="p">,</span> <span class="n">ycal</span><span class="p">,</span> <span class="n">yvar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_weighted</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;stats intensity&#39;</span><span class="p">,</span> <span class="n">stats</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ycal</span><span class="p">,</span> <span class="n">yobs</span><span class="p">,</span> <span class="n">ydel</span><span class="p">,</span> <span class="n">yvar</span><span class="p">,</span> <span class="n">stats</span></div>
+
+<div class="viewcode-block" id="Optimizer.optimize"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer.optimize">[docs]</a>    <span class="k">def</span> <span class="nf">optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ypar</span><span class="p">,</span> <span class="n">yfixed</span><span class="p">,</span> <span class="n">calculate_data</span><span class="p">,</span> <span class="n">niter</span><span class="p">,</span> <span class="n">derivative</span><span class="p">,</span>
+                 <span class="n">tol</span><span class="p">,</span> <span class="n">lapack_driver</span><span class="p">,</span> <span class="n">step_size</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implementation of the SVD algorithm used for nonliner least squares fitting.</span>
+<span class="sd">        Solves the linear system Ax = b using SVD. Starting with a trial set of</span>
+<span class="sd">        parameters, the system Ax=b is solved on each iteration for the</span>
+<span class="sd">        corrections x to the current set of parameters x_0, yielding and a new</span>
+<span class="sd">        set of parameters x_1 so that: (x_1 = x_0 + x). The matrix A contains</span>
+<span class="sd">        the derivatives of the data wrt the parameters and b is the rhs vector.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ypar (array): The parameters which to be optimized</span>
+<span class="sd">            yfixed (array): Whether the parameter is fixed or free</span>
+<span class="sd">            calculate_data ([type]): [description]</span>
+<span class="sd">            niter (int): The number of iterations</span>
+<span class="sd">            derivative (str): Whether to use numerical or analytical derivative</span>
+<span class="sd">            tol (float): The tolerance parameter of SVD: determines which</span>
+<span class="sd">                linear combinations of parameters to be discarded by SVD</span>
+<span class="sd">            lapack_driver (str): [description]</span>
+<span class="sd">            step_size (float): Used to change the parameters during</span>
+<span class="sd">                the computation of derivatives</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            array: The optimized parameters</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">chisq_best</span><span class="p">,</span> <span class="n">rms_best</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span>
+        <span class="n">eps</span> <span class="o">=</span> <span class="mf">1.0e-3</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Total number of parameters = </span><span class="si">{</span><span class="n">ypar</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span>
+              <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Total number of parameters to be optimized = &#39;</span>
+              <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">yfixed</span><span class="p">[</span><span class="n">yfixed</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">niter</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+
+            <span class="c1"># get the energies with the initial/updated parameters from</span>
+            <span class="c1"># the first/previous iteration</span>
+            <span class="n">ycal</span><span class="p">,</span> <span class="n">yobs</span><span class="p">,</span> <span class="n">ydel</span><span class="p">,</span> <span class="n">yvar</span><span class="p">,</span> <span class="n">stats</span> <span class="o">=</span> <span class="n">calculate_data</span><span class="p">(</span><span class="n">ypar</span><span class="p">)</span>
+            <span class="n">chisq_best</span><span class="p">,</span> <span class="n">rms_best</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">stats</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">print_info</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">chisq_best</span><span class="p">,</span> <span class="n">rms_best</span><span class="p">))</span>
+
+            <span class="c1"># build the matrix of the derivatives w.r.t. parameters</span>
+            <span class="k">if</span> <span class="n">derivative</span> <span class="o">==</span> <span class="s1">&#39;n&#39;</span><span class="p">:</span>
+                <span class="n">dydp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_numerical_derivatives</span><span class="p">(</span>
+                    <span class="n">ypar</span><span class="p">,</span> <span class="n">yfixed</span><span class="p">,</span> <span class="n">calculate_data</span><span class="p">,</span> <span class="n">ycal</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">)</span>
+                <span class="c1"># np.savetxt(&#39;dydp_numerical.dat&#39;, dydp, fmt=&#39;%.6e&#39;)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="c1"># calculate the data matrix A from derivative matrix</span>
+            <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">dydp</span><span class="o">.</span><span class="n">T</span> <span class="o">/</span> <span class="n">yvar</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+            <span class="c1"># calculate the rhs vector b</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">ydel</span> <span class="o">/</span> <span class="n">yvar</span>
+
+            <span class="c1"># the propossed corrections to the parameters is the solution</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">sv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_corrections</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">lapack_driver</span><span class="p">)</span>
+
+            <span class="c1"># calculate new energies using the proposed corrections</span>
+
+            <span class="o">*</span><span class="n">_</span><span class="p">,</span> <span class="n">stats_try</span> <span class="o">=</span> <span class="n">calculate_data</span><span class="p">(</span><span class="n">ypar</span><span class="o">+</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">chi2_try</span><span class="p">,</span> <span class="n">rms_try</span> <span class="o">=</span> <span class="n">stats_try</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">stats_try</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="c1"># try to change the corrections</span>
+            <span class="k">if</span> <span class="n">chi2_try</span> <span class="o">+</span> <span class="n">eps</span> <span class="o">&lt;</span> <span class="n">chisq_best</span><span class="p">:</span>
+                <span class="n">chisq_best</span><span class="p">,</span> <span class="n">rms_best</span> <span class="o">=</span> <span class="n">chi2_try</span><span class="p">,</span> <span class="n">rms_try</span>
+                <span class="n">ypar</span> <span class="o">=</span> <span class="n">ypar</span> <span class="o">+</span> <span class="n">x</span>
+                <span class="n">is_failed</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># chi2try &gt;= chi2best</span>
+                <span class="n">step</span> <span class="o">=</span> <span class="mf">10.0</span>
+                <span class="n">ypar_try</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">ypar</span><span class="p">)</span>
+                <span class="n">x_try</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+                <span class="n">x_try</span> <span class="o">=</span> <span class="n">x_try</span> <span class="o">/</span> <span class="n">step</span>
+                <span class="n">is_failed</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="n">ypar_try</span> <span class="o">=</span> <span class="n">ypar_try</span> <span class="o">+</span> <span class="n">x_try</span>
+
+                    <span class="o">*</span><span class="n">_</span><span class="p">,</span> <span class="n">stats_new</span> <span class="o">=</span> <span class="n">calculate_data</span><span class="p">(</span><span class="n">ypar_try</span><span class="p">)</span>
+                    <span class="n">chi2_new</span><span class="p">,</span> <span class="n">rms_new</span> <span class="o">=</span> <span class="n">stats_new</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">stats_new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+                    <span class="k">if</span> <span class="n">chi2_new</span> <span class="o">+</span> <span class="n">eps</span> <span class="o">&lt;</span> <span class="n">chisq_best</span><span class="p">:</span>
+                        <span class="n">chisq_best</span><span class="p">,</span> <span class="n">rms_best</span> <span class="o">=</span> <span class="n">chi2_new</span><span class="p">,</span> <span class="n">rms_new</span>
+                        <span class="n">ypar</span> <span class="o">=</span> <span class="n">ypar_try</span>
+                        <span class="n">is_failed</span> <span class="o">=</span> <span class="kc">False</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Smaller step =&gt; Chi square = &#39;</span>
+                              <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">chisq_best</span><span class="si">:</span><span class="s1">.6f</span><span class="si">}</span><span class="s1"> | RMS = </span><span class="si">{</span><span class="n">rms_best</span><span class="si">:</span><span class="s1">.6f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>  <span class="c1"># chi2new &gt;= chi2best:</span>
+                        <span class="k">break</span>
+
+            <span class="c1"># on odd iteration try to change tol if nothing has been improved</span>
+            <span class="k">if</span> <span class="n">it</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">it</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">is_failed</span><span class="p">:</span>
+                <span class="n">tol</span> <span class="o">/=</span> <span class="mf">5.0</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Tol changed = </span><span class="si">{</span><span class="n">tol</span><span class="si">:</span><span class="s1">.1e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="c1"># store final parameters</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_write_fit_info</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">sv</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">ypar</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">yfixed</span><span class="p">,</span> <span class="n">it</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">progress_str</span><span class="o">.</span><span class="n">getvalue</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">singular_values</span> <span class="o">=</span> <span class="n">sv</span>
+
+        <span class="k">return</span> <span class="n">ypar</span></div>
+
+<div class="viewcode-block" id="Optimizer.optimize_levels_by_svd"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer.optimize_levels_by_svd">[docs]</a>    <span class="k">def</span> <span class="nf">optimize_levels_by_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">derivative</span><span class="o">=</span><span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                               <span class="n">lapack_driver</span><span class="o">=</span><span class="s1">&#39;gelsd&#39;</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">,</span>
+                               <span class="n">store_output</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">update_input</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This procedure applies the SVD algorithm to optimize the parameters</span>
+<span class="sd">        using an input information about the energy levels</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            niter (int, optional): The number of iterations. Defaults to 1.</span>
+<span class="sd">            derivative (str, optional): Type of derivative. Defaults to &#39;n&#39;.</span>
+<span class="sd">            tol (float, optional): The tolerance value. Defaults to 0.1.</span>
+<span class="sd">            lapack_driver (str, optional): Which lapack procedure to use.</span>
+<span class="sd">                Defaults to &#39;gelsd&#39;.</span>
+<span class="sd">            step_size (float, optional): The value used to change the</span>
+<span class="sd">                parameters. Defaults to 1.0e-4.</span>
+<span class="sd">            store_output (bool, optional): Store the output. Defaults to False.</span>
+<span class="sd">            update_input (bool, optional): Update the input. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            [type]: [description]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># get initial parameters</span>
+        <span class="n">ypar</span><span class="p">,</span> <span class="n">yfixed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">ypar_init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">yfixed_init</span>
+        <span class="n">ypar_final</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">ypar</span><span class="p">,</span> <span class="n">yfixed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_levels</span><span class="p">,</span> <span class="n">niter</span><span class="p">,</span>
+                                   <span class="n">derivative</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">lapack_driver</span><span class="p">,</span> <span class="n">step_size</span><span class="p">)</span>
+
+        <span class="c1"># TODO: fix the units</span>
+        <span class="c1"># store the updated channel parameters in new files</span>
+        <span class="k">if</span> <span class="n">store_output</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="s1">&#39;fit_&#39;</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">channels</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">unq_channel_inds</span><span class="p">:</span>
+                    <span class="n">file_name</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="n">c</span><span class="o">.</span><span class="n">filep</span>
+                    <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;pointwise&#39;</span> <span class="ow">or</span> <span class="n">c</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;cspline&#39;</span><span class="p">:</span>
+                        <span class="n">x</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">rpoints</span><span class="o">/</span><span class="n">c</span><span class="o">.</span><span class="n">xunits</span>
+                        <span class="n">y</span> <span class="o">=</span> <span class="n">ypar_final</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">start_index</span><span class="p">:</span><span class="n">c</span><span class="o">.</span><span class="n">end_index</span><span class="p">]</span><span class="o">/</span><span class="n">c</span><span class="o">.</span><span class="n">yunits</span>
+                        <span class="n">z</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fixed</span>
+                        <span class="n">c</span><span class="o">.</span><span class="n">write_pointwise_data</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">c</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;morse&#39;</span><span class="p">:</span>
+                        <span class="k">pass</span>
+                    <span class="k">elif</span> <span class="n">c</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;emo&#39;</span><span class="p">:</span>
+                        <span class="k">pass</span>
+                    <span class="k">elif</span> <span class="n">c</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;mlr&#39;</span><span class="p">:</span>
+                        <span class="k">pass</span>
+                    <span class="k">elif</span> <span class="n">c</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;custom&#39;</span><span class="p">:</span>
+                        <span class="k">pass</span>
+            <span class="c1"># TODO: store the updated coupling parameters in new file</span>
+            <span class="c1"># TODO: to update the file with the energies</span>
+
+        <span class="c1"># update the parameters in the input files</span>
+        <span class="k">if</span> <span class="n">update_input</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">edit_channel_parameters</span><span class="p">(</span><span class="n">ypar_final</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">channels</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">ncp</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">edit_coupling_parameters</span><span class="p">(</span><span class="n">ypar_final</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">couplings</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ypar_final</span></div>
+
+<div class="viewcode-block" id="Optimizer.optimize_wavenumbers_by_svd"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer.optimize_wavenumbers_by_svd">[docs]</a>    <span class="k">def</span> <span class="nf">optimize_wavenumbers_by_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">derivative</span><span class="o">=</span><span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                                    <span class="n">lapack_driver</span><span class="o">=</span><span class="s1">&#39;gelsd&#39;</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">,</span>
+                                    <span class="n">store_output</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">update_input</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+        <span class="c1"># get initial parameters</span>
+        <span class="n">ypar</span><span class="p">,</span> <span class="n">yfixed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">ypar_init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">yfixed_init</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">ypar</span><span class="o">*</span><span class="n">C_hartree</span><span class="p">)</span>
+        <span class="n">ypar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">ypar</span><span class="p">,</span> <span class="n">yfixed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_wavenumbers</span><span class="p">,</span> <span class="n">niter</span><span class="p">,</span>
+                             <span class="n">derivative</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">lapack_driver</span><span class="p">,</span> <span class="n">step_size</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">ypar</span><span class="o">*</span><span class="n">C_hartree</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">store_output</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">if</span> <span class="n">update_input</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">ypar</span></div>
+
+<div class="viewcode-block" id="Optimizer.optimize_intensity_by_svd"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer.optimize_intensity_by_svd">[docs]</a>    <span class="k">def</span> <span class="nf">optimize_intensity_by_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">derivative</span><span class="o">=</span><span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                                  <span class="n">lapack_driver</span><span class="o">=</span><span class="s1">&#39;gelsd&#39;</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">,</span>
+                                  <span class="n">store_output</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">update_input</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+        <span class="c1"># get initial parameters</span>
+        <span class="n">ypar</span><span class="p">,</span> <span class="n">yfixed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">ypar_init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="o">.</span><span class="n">yfixed_init</span>
+
+        <span class="c1"># add initial dmf parameters to ypar</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">dmfs_init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">dmfs_init</span><span class="p">:</span>
+                <span class="n">ypar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">ypar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">dmfs_init</span><span class="p">[(</span><span class="n">n</span><span class="p">,</span> <span class="n">k</span><span class="p">)][:,</span> <span class="mi">1</span><span class="p">]))</span>
+                <span class="n">yfixed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">yfixed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">dmfs_init</span><span class="p">[(</span><span class="n">n</span><span class="p">,</span> <span class="n">k</span><span class="p">)][:,</span> <span class="mi">2</span><span class="p">]))</span>
+
+        <span class="n">ypar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">ypar</span><span class="p">,</span> <span class="n">yfixed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_intensity</span><span class="p">,</span> <span class="n">niter</span><span class="p">,</span>
+                             <span class="n">derivative</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">lapack_driver</span><span class="p">,</span> <span class="n">step_size</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">store_output</span><span class="p">:</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s1">&#39;fitted_dm.dat&#39;</span><span class="p">,</span> <span class="n">ypar</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">update_input</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">ypar</span></div>
+
+<div class="viewcode-block" id="Optimizer.get_singular_values"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer.get_singular_values">[docs]</a>    <span class="k">def</span> <span class="nf">get_singular_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">singular_values</span></div>
+
+<div class="viewcode-block" id="Optimizer._calculate_numerical_derivatives"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer._calculate_numerical_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">_calculate_numerical_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ypar</span><span class="p">,</span> <span class="n">yfixed</span><span class="p">,</span> <span class="n">calculate_data</span><span class="p">,</span>
+                                         <span class="n">ycal_init</span><span class="p">,</span> <span class="n">step_size</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute the derivatives matrix by the parameters</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ypar (array): fitting parameters</span>
+<span class="sd">            yfixed (array): fixed/free parameter</span>
+<span class="sd">            ycal_init (array): the initial calculated energies</span>
+<span class="sd">            step_size (float): determines the changes in the parameters</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            array: the matrix with the derivatives</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dydp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+            <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">ycal_init</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ypar</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="c1"># change all free parameters</span>
+        <span class="n">dp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ypar</span><span class="p">)</span> <span class="o">*</span> <span class="n">step_size</span>
+        <span class="n">dp</span><span class="p">[</span><span class="n">yfixed</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">for</span> <span class="n">prm</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ypar</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">yfixed</span><span class="p">[</span><span class="n">prm</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="n">dpar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">ypar</span><span class="p">)</span>
+            <span class="n">dpar</span><span class="p">[</span><span class="n">prm</span><span class="p">]</span> <span class="o">+=</span> <span class="n">dp</span><span class="p">[</span><span class="n">prm</span><span class="p">]</span>
+            <span class="n">ycal</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">calculate_data</span><span class="p">(</span><span class="n">dpar</span><span class="p">)</span>
+            <span class="n">dydp</span><span class="p">[:,</span> <span class="n">prm</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ycal</span> <span class="o">-</span> <span class="n">ycal_init</span><span class="p">)</span> <span class="o">/</span> <span class="n">dp</span><span class="p">[</span><span class="n">prm</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">dydp</span></div>
+
+<div class="viewcode-block" id="Optimizer._calculate_analytical_derivatives"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer._calculate_analytical_derivatives">[docs]</a>    <span class="k">def</span> <span class="nf">_calculate_analytical_derivatives</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ypar</span><span class="p">,</span> <span class="n">yfixed</span><span class="p">,</span> <span class="n">qnums</span><span class="p">):</span>
+
+        <span class="n">msize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ml</span><span class="o">.</span><span class="n">nch</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ml</span><span class="o">.</span><span class="n">ngrid</span>
+        <span class="n">evecs_found</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">msize</span><span class="p">,</span> <span class="n">qnums</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">dydp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">evecs_found</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ypar</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">qnums</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">ename</span> <span class="o">=</span> \
+                <span class="sa">f</span><span class="s1">&#39;evector_J</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">qnums</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span><span class="si">}</span><span class="s1">_&#39;</span> <span class="o">+</span> \
+                <span class="sa">f</span><span class="s1">&#39;p</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">qnums</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span><span class="si">}</span><span class="s1">_i</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">qnums</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span><span class="si">}</span><span class="s1">.npy&#39;</span>
+            <span class="n">evectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">_join</span><span class="p">(</span><span class="s1">&#39;eigenvectors&#39;</span><span class="p">,</span> <span class="n">ename</span><span class="p">))</span>
+            <span class="n">vi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">evectors</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">qnums</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">sti</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">evectors</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">qnums</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">4</span><span class="p">]))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">evecs_found</span><span class="p">[:</span><span class="n">msize</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">evectors</span><span class="p">[</span><span class="mi">2</span><span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">vi</span><span class="p">,</span> <span class="n">sti</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+
+        <span class="n">ejqnums</span><span class="p">,</span> <span class="n">fjqnums</span> <span class="o">=</span> <span class="n">qnums</span><span class="p">[</span><span class="n">qnums</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">],</span> <span class="n">qnums</span><span class="p">[</span><span class="n">qnums</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">fjqind</span> <span class="o">=</span> <span class="p">(</span><span class="n">fjqnums</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">fjqnums</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">ejqind</span> <span class="o">=</span> <span class="p">(</span><span class="n">ejqnums</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">ejqnums</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">ejqind</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ml</span><span class="o">.</span><span class="n">jqnumbers</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">jqind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">fjqind</span><span class="p">,</span> <span class="n">ejqind</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">prm</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ypar</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">yfixed</span><span class="p">[</span><span class="n">prm</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="n">sk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">msize</span><span class="p">,</span> <span class="n">msize</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">iprm</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ml</span><span class="o">.</span><span class="n">block_index</span><span class="p">[</span><span class="n">prm</span><span class="p">]:</span>
+                <span class="n">r1</span><span class="p">,</span> <span class="n">r2</span><span class="p">,</span> <span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">cp</span> <span class="o">=</span> <span class="n">iprm</span>
+                <span class="n">sk_grid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ml</span><span class="o">.</span><span class="n">sk_grid</span><span class="p">[</span><span class="n">r1</span><span class="p">:</span><span class="n">r2</span><span class="p">,</span> <span class="n">count</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">cp</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># potential</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">sk</span><span class="p">[</span><span class="n">r1</span><span class="p">:</span><span class="n">r2</span><span class="p">,</span> <span class="n">c1</span><span class="p">:</span><span class="n">c2</span><span class="p">],</span> <span class="n">sk_grid</span><span class="p">)</span>
+                    <span class="n">dydp</span><span class="p">[:,</span> <span class="n">prm</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">evecs_found</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">sk</span> <span class="o">@</span> <span class="n">evecs_found</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># coupling</span>
+                    <span class="n">sk_coef</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ml</span><span class="o">.</span><span class="n">interact</span><span class="o">.</span><span class="n">cp_map</span><span class="p">[</span><span class="n">cp</span><span class="p">][</span><span class="n">r1</span><span class="p">:</span><span class="n">r2</span><span class="p">,</span> <span class="p">:]</span>
+                    <span class="n">memoize</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">countj</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">jqind</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">j</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">memoize</span><span class="p">:</span>
+                            <span class="n">elem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dydp_elem</span><span class="p">(</span><span class="n">iprm</span><span class="p">[:</span><span class="mi">4</span><span class="p">],</span> <span class="n">sk</span><span class="p">,</span> <span class="n">sk_grid</span><span class="p">,</span>
+                                                      <span class="n">sk_coef</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">evecs_found</span><span class="p">)</span>
+                        <span class="n">dydp</span><span class="p">[</span><span class="n">countj</span><span class="p">,</span> <span class="n">prm</span><span class="p">]</span> <span class="o">=</span> <span class="n">elem</span><span class="p">[</span><span class="n">countj</span><span class="p">]</span>
+                        <span class="n">memoize</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dydp</span></div>
+
+    <span class="c1"># @staticmethod</span>
+<div class="viewcode-block" id="Optimizer.get_dydp_elem"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer.get_dydp_elem">[docs]</a>    <span class="k">def</span> <span class="nf">get_dydp_elem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">sk</span><span class="p">,</span> <span class="n">sk_grid</span><span class="p">,</span> <span class="n">sk_coef</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">evecs_found</span><span class="p">):</span>
+        <span class="n">r1</span><span class="p">,</span> <span class="n">r2</span><span class="p">,</span> <span class="n">c1</span><span class="p">,</span> <span class="n">c2</span> <span class="o">=</span> <span class="n">indices</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">sk</span><span class="p">[</span><span class="n">r1</span><span class="p">:</span><span class="n">r2</span><span class="p">,</span> <span class="n">c1</span><span class="p">:</span><span class="n">c2</span><span class="p">],</span> <span class="n">sk_grid</span><span class="p">)</span>
+        <span class="n">sk</span><span class="p">[</span><span class="n">r1</span><span class="p">:</span><span class="n">r2</span><span class="p">,</span> <span class="n">c1</span><span class="p">:</span><span class="n">c2</span><span class="p">]</span> <span class="o">=</span> <span class="n">sk</span><span class="p">[</span><span class="n">r1</span><span class="p">:</span><span class="n">r2</span><span class="p">,</span> <span class="n">c1</span><span class="p">:</span><span class="n">c2</span><span class="p">]</span> <span class="o">*</span> <span class="n">sk_coef</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">r1</span> <span class="o">!=</span> <span class="n">c1</span> <span class="ow">or</span> <span class="n">r2</span> <span class="o">!=</span> <span class="n">c2</span><span class="p">:</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">sk</span><span class="p">[</span><span class="n">c1</span><span class="p">:</span><span class="n">c2</span><span class="p">,</span> <span class="n">r1</span><span class="p">:</span><span class="n">r2</span><span class="p">],</span> <span class="n">sk_grid</span><span class="p">)</span>
+            <span class="n">sk</span><span class="p">[</span><span class="n">c1</span><span class="p">:</span><span class="n">c2</span><span class="p">,</span> <span class="n">r1</span><span class="p">:</span><span class="n">r2</span><span class="p">]</span> <span class="o">=</span> <span class="n">sk</span><span class="p">[</span><span class="n">c1</span><span class="p">:</span><span class="n">c2</span><span class="p">,</span> <span class="n">r1</span><span class="p">:</span><span class="n">r2</span><span class="p">]</span> <span class="o">*</span> <span class="n">sk_coef</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span>
+        <span class="n">elem</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">evecs_found</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">sk</span> <span class="o">@</span> <span class="n">evecs_found</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">elem</span></div>
+
+<div class="viewcode-block" id="Optimizer._find_corrections"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer._find_corrections">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_find_corrections</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">lapack_driver</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find the corrections to the parameters by solving</span>
+<span class="sd">        the system of linear equations with SVD technique</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            A (array): matrix with the derivatives</span>
+<span class="sd">            b (array): rhs vector</span>
+<span class="sd">            tol (float): the tolerance value</span>
+<span class="sd">            lapack_driver (str): the lapack routine</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: the corrections, the rank of the</span>
+<span class="sd">            matrix and the matrix with the singular values</span>
+
+<span class="sd">        Remarks:</span>
+<span class="sd">            1. There are two similar procedures for SVD from numpy</span>
+<span class="sd">                and scipy. In their older versions the definitions of</span>
+<span class="sd">                the default tol value is different</span>
+<span class="sd">            2. Tol controls which and how many linear combinations of the</span>
+<span class="sd">                parameters will be ignored since the matrix is singular</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">x</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">lapack_driver</span><span class="p">)</span>
+        <span class="c1"># x, _, rank, s = np.linalg.lstsq(A, b, rcond=tol)</span>
+
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">s</span></div>
+
+<div class="viewcode-block" id="Optimizer.print_info"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer.print_info">[docs]</a>    <span class="k">def</span> <span class="nf">print_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">chisq</span><span class="p">,</span> <span class="n">rms</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="mi">14</span><span class="o">*</span><span class="s2">&quot;- &quot;</span><span class="si">}</span><span class="s1">Iteration </span><span class="si">{</span><span class="n">it</span><span class="si">}</span><span class="s1"> &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="mi">14</span><span class="o">*</span><span class="s2">&quot;- &quot;</span><span class="si">}</span><span class="se">\n</span><span class="s1">TOL = </span><span class="si">{</span><span class="n">tol</span><span class="si">:</span><span class="s1">.1e</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;Chi square = </span><span class="si">{</span><span class="n">chisq</span><span class="si">:</span><span class="s1">.6f</span><span class="si">}</span><span class="s1"> | &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;RMS = </span><span class="si">{</span><span class="n">rms</span><span class="si">:</span><span class="s1">.6f</span><span class="si">}</span><span class="s1"> cm-1</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Optimizer._write_fit_info"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer._write_fit_info">[docs]</a>    <span class="k">def</span> <span class="nf">_write_fit_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">sv</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">ypar</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">yfixed</span><span class="p">,</span> <span class="n">it</span><span class="p">):</span>
+
+        <span class="c1"># singular values are sorted from the largest to the smallest one</span>
+        <span class="c1"># singular values smaller than tol*largest_singular_value are set to 0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_str</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">TOL * max singular value</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;2</span><span class="si">}</span><span class="s1">= </span><span class="si">{</span><span class="n">tol</span><span class="o">*</span><span class="n">sv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Effective rank = </span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">The first </span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s1"> significant singular values:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_str</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+            <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;</span><span class="si">{:.1e}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sv</span><span class="p">[:</span><span class="n">rank</span><span class="p">]]))</span>
+
+        <span class="c1"># the conditon number is the ratio of the largest to the smallest SV</span>
+        <span class="c1"># the larger the condition number the closer to singular is the matrix</span>
+
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+            <span class="n">cond_number</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">sv</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_str</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Condition number = </span><span class="si">{</span><span class="n">cond_number</span><span class="si">:</span><span class="s1">.1e</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="si">{</span><span class="mi">111</span><span class="o">*</span><span class="s2">&quot;-&quot;</span><span class="si">}</span><span class="se">\n</span><span class="s1">|</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;8</span><span class="si">}</span><span class="s1">|</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;3</span><span class="si">}</span><span class="s1">Initial value</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;5</span><span class="si">}</span><span class="s1">|&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Correction</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;6</span><span class="si">}</span><span class="s1">|</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Final value</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;6</span><span class="si">}</span><span class="s1">|&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;1</span><span class="si">}</span><span class="s1">Percent change</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;1</span><span class="si">}</span><span class="s1">|</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;1</span><span class="si">}</span><span class="s1">Fixed</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;1</span><span class="si">}</span><span class="s1">|&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="si">{</span><span class="mi">111</span><span class="o">*</span><span class="s2">&quot;-&quot;</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="c1"># TODO: what if some parameter has 0 value?</span>
+        <span class="n">nn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ypar</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+        <span class="n">xypar</span> <span class="o">=</span> <span class="n">ypar</span> <span class="o">+</span> <span class="n">x</span>
+        <span class="n">change</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="n">ypar</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress_str</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;|</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;1</span><span class="si">}{</span><span class="n">i</span><span class="si">:</span><span class="s1">4d</span><span class="si">}{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;3</span><span class="si">}</span><span class="s1">|</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;2</span><span class="si">}{</span><span class="n">ypar</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;16.8f</span><span class="si">}{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;3</span><span class="si">}</span><span class="s1">|&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;2</span><span class="si">}{</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;16.8f</span><span class="si">}{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;2</span><span class="si">}</span><span class="s1">|</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;3</span><span class="si">}</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">xypar</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;16.8f</span><span class="si">}{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;2</span><span class="si">}</span><span class="s1">|&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;2</span><span class="si">}{</span><span class="n">change</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;12.8f</span><span class="si">}{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;2</span><span class="si">}</span><span class="s1">|&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;1</span><span class="si">}{</span><span class="nb">int</span><span class="p">(</span><span class="n">yfixed</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="si">:</span><span class="s1">&gt;3d</span><span class="si">}{</span><span class="s2">&quot;&quot;</span><span class="si">:</span><span class="s1">&gt;3</span><span class="si">}</span><span class="s1">|</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Optimizer.calculate_covariance_matrix"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer.calculate_covariance_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_covariance_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># find covariance matrix</span>
+        <span class="c1"># U, s, V = sp.linalg.svd(A, full_matrices=False)</span>
+        <span class="c1"># si = np.zeros(s.shape[0])</span>
+        <span class="c1"># print(s)</span>
+        <span class="c1"># for j in range(s.shape[0]):</span>
+        <span class="c1">#     if s[j] &lt; max(s)*tol:</span>
+        <span class="c1">#         si[j] = 0</span>
+        <span class="c1">#     else:</span>
+        <span class="c1">#         si[j] = 1.0/(s[j]*s[j])</span>
+        <span class="c1"># # V = Vt.T</span>
+        <span class="c1"># cvm = np.zeros((V.shape[0], V.shape[0]))</span>
+        <span class="c1"># for i in range(V.shape[0]):</span>
+        <span class="c1">#     for j in range(i+1):  # range(V.shape[0]):</span>
+        <span class="c1">#         summ = 0.0</span>
+        <span class="c1">#         for k in range(V.shape[0]):</span>
+        <span class="c1">#             summ += (V[i, k] * V[j, k]) * si[k]</span>
+        <span class="c1">#         cvm[j][i] = cvm[i][j] = summ</span>
+        <span class="c1"># np.savetxt(&#39;cov.dat&#39;, cvm, fmt=&#39;%12.4e&#39;)</span>
+
+        <span class="c1"># crm = np.zeros((V.shape[0], V.shape[0]))</span>
+        <span class="c1"># for i in range(s.shape[0]):</span>
+        <span class="c1">#     for j in range(s.shape[0]):</span>
+        <span class="c1">#         crm[i, j] = \</span>
+        <span class="c1">#           cvm[i, j] / (math.sqrt(cvm[i, i]) * math.sqrt(cvm[j, j]))</span>
+
+        <span class="c1"># np.savetxt(&#39;crm.dat&#39;, crm, fmt=&#39;%12.4e&#39;)</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Optimizer.optimize_levels_by_svd_regular"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer.optimize_levels_by_svd_regular">[docs]</a>    <span class="k">def</span> <span class="nf">optimize_levels_by_svd_regular</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">derivative</span><span class="o">=</span><span class="s1">&#39;n&#39;</span><span class="p">,</span>
+                                       <span class="n">tol</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">lapack_driver</span><span class="o">=</span><span class="s1">&#39;gelsd&#39;</span><span class="p">,</span>
+                                       <span class="n">step_size</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">,</span> <span class="n">regular</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Optimizer._minuit_least_squares"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer._minuit_least_squares">[docs]</a>    <span class="k">def</span> <span class="nf">_minuit_least_squares</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ypar</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;The procedure which Minuit calls on each iteration</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ypar (numpy ndarray): The fitting parameters</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float: Chi Square value</span>
+
+<span class="sd">        Remarks:</span>
+<span class="sd">            1. Minuit requires this procedure to accept a single argument</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ycal</span><span class="p">,</span> <span class="n">yobs</span><span class="p">,</span> <span class="n">ydel</span><span class="p">,</span> <span class="n">yvar</span><span class="p">,</span> <span class="n">stats</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_levels</span><span class="p">(</span><span class="n">ypar</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ydel</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">yvar</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Optimizer.set_constraints"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer.set_constraints">[docs]</a>    <span class="k">def</span> <span class="nf">set_constraints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Optimizer.optimize_levels_by_minuit"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer.optimize_levels_by_minuit">[docs]</a>    <span class="k">def</span> <span class="nf">optimize_levels_by_minuit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">,</span>
+                                  <span class="n">set_limits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">uncert</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Minuit algorithm for nonliner least squares fitting</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            niter (int, optional): The number of iterations. Defaults to 0.</span>
+<span class="sd">            step_size (float, optional): the initial change in the parameters.</span>
+<span class="sd">            Defaults to 1.0e-4.</span>
+<span class="sd">            set_limits (array, optional): limit the possible values of</span>
+<span class="sd">            the parameters. Defaults to None.</span>
+<span class="sd">            uncert (bool, optional): whether to compute the covariance and the</span>
+<span class="sd">            correlations matrices and the uncertanties in the parameters.</span>
+<span class="sd">            Defaults to False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">print_level</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="n">ypar</span><span class="p">,</span> <span class="n">yfixed</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_initial_parameters</span><span class="p">()</span>
+
+        <span class="c1"># TODO: # check if this is correct</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ypar</span><span class="p">)</span> <span class="o">*</span> <span class="n">step_size</span>
+
+        <span class="n">m</span> <span class="o">=</span> <span class="n">Minuit</span><span class="o">.</span><span class="n">from_array_func</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_minuit_least_squares</span><span class="p">,</span>
+            <span class="n">ypar</span><span class="p">,</span>
+            <span class="n">errors</span><span class="p">,</span>
+            <span class="n">fix</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="n">yfixed</span><span class="p">,</span>
+            <span class="n">limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">errordef</span><span class="o">=</span><span class="n">Minuit</span><span class="o">.</span><span class="n">LEAST_SQUARES</span><span class="p">,</span>
+            <span class="n">print_level</span><span class="o">=</span><span class="n">print_level</span>
+        <span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Running Minuit Fit...</span><span class="se">\n</span><span class="s1">Initial parameters:</span><span class="se">\n</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">params</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">m</span><span class="o">.</span><span class="n">migrad</span><span class="p">(</span><span class="n">ncall</span><span class="o">=</span><span class="n">niter</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_str</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_str</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;Minuit Fit completed.</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;The initial parameters were:</span><span class="se">\n</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">init_params</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;The final prameters are:</span><span class="se">\n</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">params</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;The reduced chi2 = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">fval</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ypar</span><span class="p">)</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">nfit</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="p">)</span>
+        <span class="c1"># reduced chi2 - should be around 1</span>
+        <span class="c1"># print(m.fmin)</span>
+        <span class="c1"># print(m.migrad_ok())</span>
+        <span class="c1"># print(m.fval)</span>
+        <span class="c1"># print(m.matrix_accurate())</span>
+
+        <span class="c1"># TODO: check how to get the uncertenties</span>
+        <span class="k">if</span> <span class="n">uncert</span><span class="p">:</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">set_printoptions</span><span class="p">(</span><span class="n">linewidth</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">set_printoptions</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress_str</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Correlation matrix</span><span class="se">\n</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">np_matrix</span><span class="p">(</span><span class="n">correlation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Covariance matrix</span><span class="se">\n</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">np_covariance</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Parameter uncertainties</span><span class="se">\n</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">hesse</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">progress_str</span><span class="o">.</span><span class="n">getvalue</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Optimizer.run_levmar"><a class="viewcode-back" href="../optimizer.Optimizer.html#optimizer.Optimizer.run_levmar">[docs]</a>    <span class="k">def</span> <span class="nf">run_levmar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Levenberg-Marquardt algorithm for nonliner least squares fitting</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            niter (int, optional): Number of iterations. Defaults to 1.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;To be implemented!&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, ihavalyova.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

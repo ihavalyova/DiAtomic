@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>utils &mdash; diatom  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> diatom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../instalation.html">Instalation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_doc.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">diatom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.constants</span> <span class="kn">import</span> <span class="n">atomic_mass</span> <span class="k">as</span> <span class="n">_atomic_mass</span><span class="p">,</span> <span class="n">angstrom</span> <span class="k">as</span> <span class="n">_angstrom</span>
+<span class="kn">from</span> <span class="nn">scipy.constants</span> <span class="kn">import</span> <span class="n">physical_constants</span> <span class="k">as</span> <span class="n">_physical_constants</span>
+<span class="kn">from</span> <span class="nn">shutil</span> <span class="kn">import</span> <span class="n">copy2</span> <span class="k">as</span> <span class="n">_copy2</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Utils&#39;</span><span class="p">]</span>
+
+<span class="c1"># convert from m^-1 to cm^-1</span>
+<span class="n">C_hartree</span> <span class="o">=</span> <span class="n">_physical_constants</span><span class="p">[</span><span class="s1">&#39;hartree-inverse meter relationship&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">100.0</span>
+
+<span class="c1"># convert from m to angstrom</span>
+<span class="n">C_bohr</span> <span class="o">=</span> <span class="n">_physical_constants</span><span class="p">[</span><span class="s1">&#39;Bohr radius&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">_angstrom</span>
+
+<span class="c1"># devide by m_e to convert from amu to au</span>
+<span class="n">C_massau</span> <span class="o">=</span> <span class="n">_atomic_mass</span> <span class="o">/</span> <span class="n">_physical_constants</span><span class="p">[</span><span class="s1">&#39;electron mass&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="n">c_boltzmank_str</span> <span class="o">=</span> <span class="s1">&#39;Boltzmann constant in inverse meter per kelvin&#39;</span>
+<span class="n">C_boltzmannk</span> <span class="o">=</span> <span class="n">_physical_constants</span><span class="p">[</span><span class="n">c_boltzmank_str</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mf">0.01</span>
+
+
+<div class="viewcode-block" id="Utils"><a class="viewcode-back" href="../utils.Utils.html#utils.Utils">[docs]</a><span class="k">class</span> <span class="nc">Utils</span><span class="p">:</span>
+
+<div class="viewcode-block" id="Utils.create_backup_file"><a class="viewcode-back" href="../utils.Utils.html#utils.Utils.create_backup_file">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">create_backup_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ref_file</span><span class="p">):</span>
+
+        <span class="n">backup_folder</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)),</span> <span class="s1">&#39;.backup&#39;</span><span class="p">)</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">backup_folder</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">fname</span><span class="p">,</span> <span class="n">fext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">ref_file</span><span class="p">)</span>
+
+        <span class="n">name_bkp</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">fname</span><span class="p">,</span> <span class="s1">&#39;bkp&#39;</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">getDatetime</span><span class="p">()])</span> <span class="o">+</span> <span class="n">fext</span>
+
+        <span class="n">_copy2</span><span class="p">(</span><span class="n">ref_file</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">backup_folder</span><span class="p">,</span> <span class="n">name_bkp</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Utils.get_date_time"><a class="viewcode-back" href="../utils.Utils.html#utils.Utils.get_date_time">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_date_time</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+
+        <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="c1"># milli = str(int(round(now.microsecond / 1.0e3)))  # us to ms</span>
+
+        <span class="n">timelist</span> <span class="o">=</span> <span class="p">[</span><span class="n">now</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">now</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">now</span><span class="o">.</span><span class="n">day</span><span class="p">,</span> <span class="n">now</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span>
+                    <span class="n">now</span><span class="o">.</span><span class="n">minute</span><span class="p">,</span> <span class="n">now</span><span class="o">.</span><span class="n">second</span><span class="p">,</span> <span class="n">now</span><span class="o">.</span><span class="n">microseconds</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">timelist</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Utils.get_current_directory"><a class="viewcode-back" href="../utils.Utils.html#utils.Utils.get_current_directory">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_current_directory</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+
+        <span class="c1"># will not work if the program is used as a module</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span></div>
+
+        <span class="c1"># return os.getcwd()</span>
+
+<div class="viewcode-block" id="Utils.get_plot_dir"><a class="viewcode-back" href="../utils.Utils.html#utils.Utils.get_plot_dir">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_plot_dir</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+
+        <span class="n">plot_dir</span> <span class="o">=</span> <span class="s1">&#39;plotting&#39;</span>
+        <span class="n">func_dir</span> <span class="o">=</span> <span class="s1">&#39;interactions&#39;</span>
+        <span class="n">resid_dir</span> <span class="o">=</span> <span class="s1">&#39;full_residuals&#39;</span>
+        <span class="n">wavefunc_dir</span> <span class="o">=</span> <span class="s1">&#39;wavefunctions&#39;</span>
+        <span class="n">res_dir</span> <span class="o">=</span> <span class="s1">&#39;residuals&#39;</span>
+
+        <span class="bp">cls</span><span class="o">.</span><span class="n">plot_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_current_dir</span><span class="p">(),</span> <span class="n">plot_dir</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">plot_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">func_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">plot_path</span><span class="p">,</span> <span class="n">func_dir</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">resid_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">plot_path</span><span class="p">,</span> <span class="n">resid_dir</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">wavefunc_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">plot_path</span><span class="p">,</span> <span class="n">wavefunc_dir</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">res_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">plot_path</span><span class="p">,</span> <span class="n">res_dir</span><span class="p">)</span>
+
+        <span class="n">paths</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;plot_path&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">plot_path</span><span class="p">,</span>
+            <span class="s1">&#39;func_path&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">func_path</span><span class="p">,</span>
+            <span class="s1">&#39;resid_path&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">resid_path</span><span class="p">,</span>
+            <span class="s1">&#39;wavefunc_path&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">wavefunc_path</span><span class="p">,</span>
+            <span class="s1">&#39;res_path&#39;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">res_path</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">paths</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Utils.print_detailed_output"><a class="viewcode-back" href="../utils.Utils.html#utils.Utils.print_detailed_output">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">print_detailed_output</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="n">file_name</span> <span class="o">=</span> <span class="n">file_name</span> <span class="ow">or</span> <span class="s1">&#39;data_info.dat&#39;</span>
+        <span class="n">nsymb</span> <span class="o">=</span> <span class="mi">50</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
+
+        <span class="n">mass_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">nisotope</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">niso</span><span class="p">):</span>
+            <span class="n">mass</span> <span class="o">=</span> <span class="n">H</span><span class="o">.</span><span class="n">masses</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+            <span class="n">mass_str</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Isotopologue </span><span class="si">{</span><span class="n">nisotope</span><span class="si">}</span><span class="s1">: &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;Reduced Mass = </span><span class="si">{</span><span class="n">mass</span><span class="si">:</span><span class="s1">&gt;15.9</span><span class="si">}</span><span class="s1"> au = &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mass</span> <span class="o">/</span> <span class="n">C_massau</span><span class="si">:</span><span class="s1">&gt;15.9</span><span class="si">}</span><span class="s1"> amu</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">jqnum_str</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">H</span><span class="o">.</span><span class="n">jqnumbers</span><span class="p">))</span>
+        <span class="n">pars_str</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s1">&#39;e&#39;</span> <span class="k">if</span> <span class="n">x</span> <span class="k">else</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="n">H</span><span class="o">.</span><span class="n">pars</span><span class="p">))</span>
+        <span class="n">shift_enr</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">H</span><span class="o">.</span><span class="n">refj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">False</span>
+        <span class="n">iso_str</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">H</span><span class="o">.</span><span class="n">molecule</span><span class="p">))</span>
+
+        <span class="n">output_mol_data</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="s1"> Molecule Data </span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Chemical Symbol of the Molecule: </span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">mol_name</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Number of Defined Isotopologues = &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">masses</span><span class="p">)</span><span class="si">:</span><span class="s1">&gt;4d</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Isotopologues = </span><span class="si">{</span><span class="n">iso_str</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Number of Used Isotopologues = </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">niso</span><span class="p">)</span><span class="si">:</span><span class="s1">&gt;7d</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mass_str</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Number of Rotational Quantum Numbers = &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">jqnumbers</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Rotational Quantum Numbers:</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}{</span><span class="n">jqnum_str</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Symmetry Levels = &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">pars_str</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Shift Energies = </span><span class="si">{</span><span class="n">shift_enr</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Shift Energies by Level J = </span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">refj</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">grid_points_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">H</span><span class="o">.</span><span class="n">rgrid</span><span class="p">:</span>
+            <span class="n">grid_points_str</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;4</span><span class="si">}{</span><span class="n">point</span><span class="o">*</span><span class="n">C_bohr</span><span class="si">:</span><span class="s1">&gt;20.8f</span><span class="si">}</span><span class="s1">;&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">point</span><span class="si">:</span><span class="s1">&gt;20.8f</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">output_grid</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="s1"> Grid </span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Method of Solution: </span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">solver</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Number of Grid Points = </span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">ngrid</span><span class="si">:</span><span class="s1">&lt;5d</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Rmin = </span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">rmin</span><span class="o">*</span><span class="n">C_bohr</span><span class="si">:</span><span class="s1">&gt;12.10f</span><span class="si">}</span><span class="s1"> &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;Angstrom = </span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">rmin</span><span class="si">:</span><span class="s1">&gt;12.10f</span><span class="si">}</span><span class="s1"> Bohr</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Rmax = </span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">rmax</span><span class="o">*</span><span class="n">C_bohr</span><span class="si">:</span><span class="s1">&gt;12.10f</span><span class="si">}</span><span class="s1"> &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;Angstrom = </span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">rmax</span><span class="si">:</span><span class="s1">&gt;12.10f</span><span class="si">}</span><span class="s1"> Bohr</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Hamiltonian Matrix Size = &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}{</span><span class="n">H</span><span class="o">.</span><span class="n">nch</span><span class="o">*</span><span class="n">H</span><span class="o">.</span><span class="n">ngrid</span><span class="si">}</span><span class="s1"> x </span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">nch</span><span class="o">*</span><span class="n">H</span><span class="o">.</span><span class="n">ngrid</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Number of Computed Eigenvalues = &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">ecount</span><span class="si">:</span><span class="s1">&gt;8d</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Number of Selected Eigenvalues = &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">out_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;8d</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Grid Points (Angstrom; Bohr):</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">grid_points_str</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">channels_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">ic</span><span class="p">,</span> <span class="n">ch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">channels</span><span class="p">):</span>
+            <span class="n">eq_pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">ch</span><span class="o">.</span><span class="n">upoints</span><span class="p">)</span>
+            <span class="n">channels_str</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;9</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">ic</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">.</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Model: </span><span class="si">{</span><span class="n">ch</span><span class="o">.</span><span class="n">model</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">File: </span><span class="si">{</span><span class="n">ch</span><span class="o">.</span><span class="n">filep</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Lambda: </span><span class="si">{</span><span class="n">ch</span><span class="o">.</span><span class="n">nlambda</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Sigma: </span><span class="si">{</span><span class="n">ch</span><span class="o">.</span><span class="n">nsigma</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Multiplicity: </span><span class="si">{</span><span class="n">ch</span><span class="o">.</span><span class="n">mult</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Rot correction: </span><span class="si">{</span><span class="n">ch</span><span class="o">.</span><span class="n">rot_correction</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Equilibrium distance point = </span><span class="si">{</span><span class="n">eq_pos</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Equilibrium distance: &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;Rmin = </span><span class="si">{</span><span class="n">ch</span><span class="o">.</span><span class="n">rpoints</span><span class="p">[</span><span class="n">eq_pos</span><span class="p">]</span><span class="o">*</span><span class="n">C_bohr</span><span class="si">}</span><span class="s1">, &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;Umin = </span><span class="si">{</span><span class="n">ch</span><span class="o">.</span><span class="n">upoints</span><span class="p">[</span><span class="n">eq_pos</span><span class="p">]</span><span class="o">*</span><span class="n">C_hartree</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Number of parameters: </span><span class="si">{</span><span class="n">ch</span><span class="o">.</span><span class="n">npnts</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Parameters (Angstrom/cm-1; Bohr/Hartree):</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">ch</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;pointwise&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ch</span><span class="o">.</span><span class="n">rpoints</span><span class="p">)):</span>
+                    <span class="n">channels_str</span> <span class="o">+=</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;4</span><span class="si">}{</span><span class="n">ch</span><span class="o">.</span><span class="n">rpoints</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">C_bohr</span><span class="si">:</span><span class="s1">&gt;20.8f</span><span class="si">}</span><span class="s1">&#39;</span>
+                        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ch</span><span class="o">.</span><span class="n">upoints</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">C_hartree</span><span class="si">:</span><span class="s1">&gt;20.8f</span><span class="si">}</span><span class="s1">;&#39;</span>
+                        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ch</span><span class="o">.</span><span class="n">rpoints</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;20.8f</span><span class="si">}</span><span class="s1">&#39;</span>
+                        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ch</span><span class="o">.</span><span class="n">upoints</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;20.8f</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">output_channels</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="s1"> Channels Data </span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Number of Channels = </span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">nch</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">channels_str</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">ugrid_cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span>
+            <span class="n">H</span><span class="o">.</span><span class="n">rgrid</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">*</span> <span class="n">C_bohr</span><span class="p">,</span>
+            <span class="n">H</span><span class="o">.</span><span class="n">ugrid</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">nch</span><span class="p">,</span> <span class="n">H</span><span class="o">.</span><span class="n">ngrid</span><span class="p">)</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">C_hartree</span><span class="p">))</span>
+
+        <span class="n">output_channels_funcs</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="s1"> Channel Functions on Grid </span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ugrid_cols</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">couplings_str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">ic</span><span class="p">,</span> <span class="n">cp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">couplings</span><span class="p">):</span>
+            <span class="n">couplings_str</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;9</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">ic</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">.</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Type: </span><span class="si">{</span><span class="n">cp</span><span class="o">.</span><span class="n">model</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Channels: </span><span class="si">{</span><span class="n">cp</span><span class="o">.</span><span class="n">interact</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Coupling: </span><span class="si">{</span><span class="n">cp</span><span class="o">.</span><span class="n">coupling</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Label: </span><span class="si">{</span><span class="n">cp</span><span class="o">.</span><span class="n">label</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Multiplier: </span><span class="si">{</span><span class="n">cp</span><span class="o">.</span><span class="n">multiplier</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&lt;13</span><span class="si">}</span><span class="s1">Parameters:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">cp</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;pointwise&#39;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">xc</span><span class="p">)):</span>
+                    <span class="n">couplings_str</span> <span class="o">+=</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">cp</span><span class="o">.</span><span class="n">xc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;29.14f</span><span class="si">}</span><span class="s1">&#39;</span>
+                        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">cp</span><span class="o">.</span><span class="n">yc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;25.14f</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">output_couplings</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="s1"> Couplings Data </span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Number of Couplings = </span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">ncp</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">couplings_str</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">fgrid_cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span>
+            <span class="n">H</span><span class="o">.</span><span class="n">rgrid</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">*</span> <span class="n">C_bohr</span><span class="p">,</span>
+            <span class="n">H</span><span class="o">.</span><span class="n">fgrid</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">ncp</span><span class="p">,</span> <span class="n">H</span><span class="o">.</span><span class="n">ngrid</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+        <span class="n">output_couplings_funcs</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="s1"> Coupling Functions on Grid </span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">fgrid_cols</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">output_exp_energies</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">H</span><span class="o">.</span><span class="n">exp_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_exp_energies</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="s1"> Experimental data </span><span class="si">{</span><span class="n">nsymb</span><span class="o">*</span><span class="s2">&quot;#&quot;</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">File with Experimental Data = </span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">exp_file</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Markers: </span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s1">&gt;4</span><span class="si">}</span><span class="s1">Number of used experimental data = &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">H</span><span class="o">.</span><span class="n">exp_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outf</span><span class="p">:</span>
+            <span class="n">outf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_mol_data</span><span class="p">)</span>
+            <span class="n">outf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_grid</span><span class="p">)</span>
+            <span class="n">outf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_channels</span><span class="p">)</span>
+            <span class="n">outf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_channels_funcs</span><span class="p">)</span>
+            <span class="n">outf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_couplings</span><span class="p">)</span>
+            <span class="n">outf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_couplings_funcs</span><span class="p">)</span>
+            <span class="n">outf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_exp_energies</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, ihavalyova.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

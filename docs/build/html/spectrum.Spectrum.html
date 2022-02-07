@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>spectrum.Spectrum &mdash; diatom  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="tasks module" href="tasks.html" />
+    <link rel="prev" title="Compute Spectral Quantities" href="spectrum.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> diatom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="instalation.html">Instalation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api_doc.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="optimizer.html">Optimize Function Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hamiltonian.html">Build the Hamiltonian Matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="grid.html">Construct the grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="identify.html">identify module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="interpolator.html">Interpolate Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotter.html">Plotting Functions</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="spectrum.html">Compute Spectral Quantities</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">spectrum.Spectrum</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tasks.html">tasks module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utility Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="wavenumbers.html">wavenumbers module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="wavenumbers_intens.html">wavenumbers_intens module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">diatom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="api_doc.html">API Reference</a> &raquo;</li>
+          <li><a href="spectrum.html">Compute Spectral Quantities</a> &raquo;</li>
+      <li>spectrum.Spectrum</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/spectrum.Spectrum.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="spectrum-spectrum">
+<h1>spectrum.Spectrum<a class="headerlink" href="#spectrum-spectrum" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="spectrum.Spectrum">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">spectrum.</span></span><span class="sig-name descname"><span class="pre">Spectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dmfs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spec_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'absorption'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>[summary]</p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum._apply_rules" title="spectrum.Spectrum._apply_rules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_apply_rules</span></code></a>(out_wavens)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum._calculate_Einstein_coeffcients" title="spectrum.Spectrum._calculate_Einstein_coeffcients"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_calculate_Einstein_coeffcients</span></code></a>(wavenumber, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum._calculate_absorption_line_intensity" title="spectrum.Spectrum._calculate_absorption_line_intensity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_calculate_absorption_line_intensity</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum._calculate_emission_line_intensity" title="spectrum.Spectrum._calculate_emission_line_intensity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_calculate_emission_line_intensity</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum._calculate_sinc_matrix" title="spectrum.Spectrum._calculate_sinc_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_calculate_sinc_matrix</span></code></a>(rgrid, igrid, rstep)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum._calculate_wavenumber_with_observations" title="spectrum.Spectrum._calculate_wavenumber_with_observations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_calculate_wavenumber_with_observations</span></code></a>(…)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum._calculate_wavenumbers_without_observations" title="spectrum.Spectrum._calculate_wavenumbers_without_observations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_calculate_wavenumbers_without_observations</span></code></a>(…)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum._compute_honl_london_factors" title="spectrum.Spectrum._compute_honl_london_factors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_compute_honl_london_factors</span></code></a>(usymm, lsymm, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum._compute_line_strength" title="spectrum.Spectrum._compute_line_strength"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_compute_line_strength</span></code></a>(out_wavens, dmfs[, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum._get_default_jrange" title="spectrum.Spectrum._get_default_jrange"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_default_jrange</span></code></a>(uterms, uj, lterms, lj)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum._interpolate_dipole_moment" title="spectrum.Spectrum._interpolate_dipole_moment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_interpolate_dipole_moment</span></code></a>(igrid, dmfs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum._map_branch_to_number" title="spectrum.Spectrum._map_branch_to_number"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_map_branch_to_number</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum._map_number_to_branch" title="spectrum.Spectrum._map_number_to_branch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_map_number_to_branch</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum._map_parity_to_epsilon" title="spectrum.Spectrum._map_parity_to_epsilon"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_map_parity_to_epsilon</span></code></a>(pars)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum._map_quantum_number_to_delta" title="spectrum.Spectrum._map_quantum_number_to_delta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_map_quantum_number_to_delta</span></code></a>(qlist)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum._save_einstein_coeffcients_with_observations" title="spectrum.Spectrum._save_einstein_coeffcients_with_observations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_save_einstein_coeffcients_with_observations</span></code></a>(…)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum._save_einstein_coeffcients_without_observations" title="spectrum.Spectrum._save_einstein_coeffcients_without_observations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_save_einstein_coeffcients_without_observations</span></code></a>(…)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum._save_wavenumbers_with_obseravtions" title="spectrum.Spectrum._save_wavenumbers_with_obseravtions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_save_wavenumbers_with_obseravtions</span></code></a>(…)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum._save_wavenumbers_without_observations" title="spectrum.Spectrum._save_wavenumbers_without_observations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_save_wavenumbers_without_observations</span></code></a>(…)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum.calculate_Einstein_coefficients" title="spectrum.Spectrum.calculate_Einstein_coefficients"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_Einstein_coefficients</span></code></a>(out_wavens)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum.calculate_absolute_intensity" title="spectrum.Spectrum.calculate_absolute_intensity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_absolute_intensity</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum.calculate_lifetimes" title="spectrum.Spectrum.calculate_lifetimes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_lifetimes</span></code></a>([save, filename])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum.calculate_oscilator_strength" title="spectrum.Spectrum.calculate_oscilator_strength"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_oscilator_strength</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum.calculate_partition_functions" title="spectrum.Spectrum.calculate_partition_functions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_partition_functions</span></code></a>([Ia, Ib, T, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum.calculate_relative_intensities" title="spectrum.Spectrum.calculate_relative_intensities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_relative_intensities</span></code></a>(wavens[, T])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum.calculate_wavenumbers" title="spectrum.Spectrum.calculate_wavenumbers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_wavenumbers</span></code></a>(ulevels, llevels[, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum.save_Honl_London_factor" title="spectrum.Spectrum.save_Honl_London_factor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_Honl_London_factor</span></code></a>(out_wavens, hlf[, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum.save_einstein_coeffcients" title="spectrum.Spectrum.save_einstein_coeffcients"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_einstein_coeffcients</span></code></a>(acoefs[, filename])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum.save_lifetimes" title="spectrum.Spectrum.save_lifetimes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_lifetimes</span></code></a>(lifetimes[, filename])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum.save_rel_intensity" title="spectrum.Spectrum.save_rel_intensity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_rel_intensity</span></code></a>(result[, filename])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum.save_wavenumbers" title="spectrum.Spectrum.save_wavenumbers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_wavenumbers</span></code></a>(out_wavens[, filename])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum.set_constraints" title="spectrum.Spectrum.set_constraints"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_constraints</span></code></a>([uenr_range, lenr_range, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spectrum.Spectrum.wrapper_calculate_Einstein_coefficients" title="spectrum.Spectrum.wrapper_calculate_Einstein_coefficients"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wrapper_calculate_Einstein_coefficients</span></code></a>(ypar)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spectrum.Spectrum.wrapper_calculate_wavenumbers" title="spectrum.Spectrum.wrapper_calculate_wavenumbers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wrapper_calculate_wavenumbers</span></code></a>(ypar)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._apply_rules">
+<span class="sig-name descname"><span class="pre">_apply_rules</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_wavens</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._apply_rules"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._apply_rules" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._calculate_Einstein_coeffcients">
+<span class="sig-name descname"><span class="pre">_calculate_Einstein_coeffcients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wavenumber</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_strength</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gji</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._calculate_Einstein_coeffcients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._calculate_Einstein_coeffcients" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._calculate_absorption_line_intensity">
+<span class="sig-name descname"><span class="pre">_calculate_absorption_line_intensity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._calculate_absorption_line_intensity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._calculate_absorption_line_intensity" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._calculate_emission_line_intensity">
+<span class="sig-name descname"><span class="pre">_calculate_emission_line_intensity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._calculate_emission_line_intensity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._calculate_emission_line_intensity" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._calculate_sinc_matrix">
+<span class="sig-name descname"><span class="pre">_calculate_sinc_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rgrid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">igrid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rstep</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._calculate_sinc_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._calculate_sinc_matrix" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._calculate_wavenumber_with_observations">
+<span class="sig-name descname"><span class="pre">_calculate_wavenumber_with_observations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ulevels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llevels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrange</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_rules</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._calculate_wavenumber_with_observations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._calculate_wavenumber_with_observations" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._calculate_wavenumbers_without_observations">
+<span class="sig-name descname"><span class="pre">_calculate_wavenumbers_without_observations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ulevels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llevels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrange</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_rules</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._calculate_wavenumbers_without_observations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._calculate_wavenumbers_without_observations" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._compute_honl_london_factors">
+<span class="sig-name descname"><span class="pre">_compute_honl_london_factors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">usymm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lsymm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uomega</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lomega</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ulambda</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llambda</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._compute_honl_london_factors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._compute_honl_london_factors" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._compute_line_strength">
+<span class="sig-name descname"><span class="pre">_compute_line_strength</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_wavens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dmfs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ninter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._compute_line_strength"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._compute_line_strength" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._get_default_jrange">
+<span class="sig-name descname"><span class="pre">_get_default_jrange</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uterms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lterms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._get_default_jrange"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._get_default_jrange" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._interpolate_dipole_moment">
+<span class="sig-name descname"><span class="pre">_interpolate_dipole_moment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">igrid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dmfs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._interpolate_dipole_moment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._interpolate_dipole_moment" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._map_branch_to_number">
+<span class="sig-name descname"><span class="pre">_map_branch_to_number</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._map_branch_to_number"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._map_branch_to_number" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._map_number_to_branch">
+<span class="sig-name descname"><span class="pre">_map_number_to_branch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._map_number_to_branch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._map_number_to_branch" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._map_parity_to_epsilon">
+<span class="sig-name descname"><span class="pre">_map_parity_to_epsilon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pars</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._map_parity_to_epsilon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._map_parity_to_epsilon" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._map_quantum_number_to_delta">
+<span class="sig-name descname"><span class="pre">_map_quantum_number_to_delta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qlist</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._map_quantum_number_to_delta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._map_quantum_number_to_delta" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._save_einstein_coeffcients_with_observations">
+<span class="sig-name descname"><span class="pre">_save_einstein_coeffcients_with_observations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">acoefs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._save_einstein_coeffcients_with_observations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._save_einstein_coeffcients_with_observations" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._save_einstein_coeffcients_without_observations">
+<span class="sig-name descname"><span class="pre">_save_einstein_coeffcients_without_observations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">acoefs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._save_einstein_coeffcients_without_observations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._save_einstein_coeffcients_without_observations" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._save_wavenumbers_with_obseravtions">
+<span class="sig-name descname"><span class="pre">_save_wavenumbers_with_obseravtions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_wavens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._save_wavenumbers_with_obseravtions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._save_wavenumbers_with_obseravtions" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum._save_wavenumbers_without_observations">
+<span class="sig-name descname"><span class="pre">_save_wavenumbers_without_observations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_wavens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum._save_wavenumbers_without_observations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum._save_wavenumbers_without_observations" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.calculate_Einstein_coefficients">
+<span class="sig-name descname"><span class="pre">calculate_Einstein_coefficients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_wavens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dmfs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ninter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.calculate_Einstein_coefficients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.calculate_Einstein_coefficients" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.calculate_absolute_intensity">
+<span class="sig-name descname"><span class="pre">calculate_absolute_intensity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.calculate_absolute_intensity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.calculate_absolute_intensity" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.calculate_lifetimes">
+<span class="sig-name descname"><span class="pre">calculate_lifetimes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.calculate_lifetimes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.calculate_lifetimes" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.calculate_oscilator_strength">
+<span class="sig-name descname"><span class="pre">calculate_oscilator_strength</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.calculate_oscilator_strength"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.calculate_oscilator_strength" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.calculate_partition_functions">
+<span class="sig-name descname"><span class="pre">calculate_partition_functions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Ia</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ib</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">296</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.calculate_partition_functions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.calculate_partition_functions" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.calculate_relative_intensities">
+<span class="sig-name descname"><span class="pre">calculate_relative_intensities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wavens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">296</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.calculate_relative_intensities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.calculate_relative_intensities" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.calculate_wavenumbers">
+<span class="sig-name descname"><span class="pre">calculate_wavenumbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ulevels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llevels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrange</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_rules</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.calculate_wavenumbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.calculate_wavenumbers" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.save_Honl_London_factor">
+<span class="sig-name descname"><span class="pre">save_Honl_London_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_wavens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hlf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.save_Honl_London_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.save_Honl_London_factor" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.save_einstein_coeffcients">
+<span class="sig-name descname"><span class="pre">save_einstein_coeffcients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">acoefs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.save_einstein_coeffcients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.save_einstein_coeffcients" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.save_lifetimes">
+<span class="sig-name descname"><span class="pre">save_lifetimes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lifetimes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.save_lifetimes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.save_lifetimes" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.save_rel_intensity">
+<span class="sig-name descname"><span class="pre">save_rel_intensity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.save_rel_intensity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.save_rel_intensity" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.save_wavenumbers">
+<span class="sig-name descname"><span class="pre">save_wavenumbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_wavens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.save_wavenumbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.save_wavenumbers" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.set_constraints">
+<span class="sig-name descname"><span class="pre">set_constraints</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uenr_range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lenr_range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lsymm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usymm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ujrange</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ljrange</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrange</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.set_constraints"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.set_constraints" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.wrapper_calculate_Einstein_coefficients">
+<span class="sig-name descname"><span class="pre">wrapper_calculate_Einstein_coefficients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ypar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.wrapper_calculate_Einstein_coefficients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.wrapper_calculate_Einstein_coefficients" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spectrum.Spectrum.wrapper_calculate_wavenumbers">
+<span class="sig-name descname"><span class="pre">wrapper_calculate_wavenumbers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ypar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/spectrum.html#Spectrum.wrapper_calculate_wavenumbers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#spectrum.Spectrum.wrapper_calculate_wavenumbers" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="spectrum.html" class="btn btn-neutral float-left" title="Compute Spectral Quantities" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tasks.html" class="btn btn-neutral float-right" title="tasks module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, ihavalyova.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

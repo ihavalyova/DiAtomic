@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>hamiltonian.Hamiltonian &mdash; diatom  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="hamiltonian.Interaction" href="hamiltonian.Interaction.html" />
+    <link rel="prev" title="Build the Hamiltonian Matrix" href="hamiltonian.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> diatom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="instalation.html">Instalation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api_doc.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="optimizer.html">Optimize Function Parameters</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="hamiltonian.html">Build the Hamiltonian Matrix</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">hamiltonian.Hamiltonian</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hamiltonian.Interaction.html">hamiltonian.Interaction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hamiltonian.KineticEnergy.html">hamiltonian.KineticEnergy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hamiltonian.PotentialEnergy.html">hamiltonian.PotentialEnergy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="grid.html">Construct the grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="identify.html">identify module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="interpolator.html">Interpolate Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plotter.html">Plotting Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spectrum.html">Compute Spectral Quantities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tasks.html">tasks module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utility Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="wavenumbers.html">wavenumbers module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="wavenumbers_intens.html">wavenumbers_intens module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">diatom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="api_doc.html">API Reference</a> &raquo;</li>
+          <li><a href="hamiltonian.html">Build the Hamiltonian Matrix</a> &raquo;</li>
+      <li>hamiltonian.Hamiltonian</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/hamiltonian.Hamiltonian.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="hamiltonian-hamiltonian">
+<h1>hamiltonian.Hamiltonian<a class="headerlink" href="#hamiltonian-hamiltonian" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">hamiltonian.</span></span><span class="sig-name descname"><span class="pre">Hamiltonian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diatomic_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">couplings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eig_decomp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'lapack'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lapack_driver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'evr'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arpack_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('LM',</span> <span class="pre">6,</span> <span class="pre">None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_weighted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Constructs the Hamiltonian operator, solves the time-independant coupled
+system of radial Shrodinger equations and builds a list of energy levels</p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian._arange_levels" title="hamiltonian.Hamiltonian._arange_levels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_arange_levels</span></code></a>(jrotn, par, iso, evalues, evecs)</p></td>
+<td><p>Given the good quantum numbers, labels and the computed eigenvalues this function will find and compute additional quantum numbers and labels and will arange the full information for each level in one matrix</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian._arpack_eig_decomposition" title="hamiltonian.Hamiltonian._arpack_eig_decomposition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_arpack_eig_decomposition</span></code></a>(hmatrix)</p></td>
+<td><p>Diagonilizes the Hamiltonian matrix with the scipy sparse eigsh() procedure from the ARPACK package</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian._assign_vibrational_number" title="hamiltonian.Hamiltonian._assign_vibrational_number"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_assign_vibrational_number</span></code></a>(states)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian._get_coupling_coefficients" title="hamiltonian.Hamiltonian._get_coupling_coefficients"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_coupling_coefficients</span></code></a>(evecs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian._get_lambda_values" title="hamiltonian.Hamiltonian._get_lambda_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_lambda_values</span></code></a>(states)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian._get_omega_values" title="hamiltonian.Hamiltonian._get_omega_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_omega_values</span></code></a>(states)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian._lapack_eig_decomposition" title="hamiltonian.Hamiltonian._lapack_eig_decomposition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_lapack_eig_decomposition</span></code></a>(hmatrix)</p></td>
+<td><p>Diagonilizes the Hamiltonian matrix with the scipy “eigh” procedure from the LAPACK package</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian._sort_output_energies" title="hamiltonian.Hamiltonian._sort_output_energies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_sort_output_energies</span></code></a>([cols])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian._sort_predicted_energies" title="hamiltonian.Hamiltonian._sort_predicted_energies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_sort_predicted_energies</span></code></a>([cols])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.arange_levels" title="hamiltonian.Hamiltonian.arange_levels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">arange_levels</span></code></a>(jrotn, par, iso, evalues, evecs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.build_hamiltonian" title="hamiltonian.Hamiltonian.build_hamiltonian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_hamiltonian</span></code></a>(iso, par, jrotn, tmatrix)</p></td>
+<td><p>Builds the Hamiltonian matrix by summing the block diagonal matrix of the kinetic energy, the diagonal matrix of potential energy and the coupling matrix with diagonal and off-diagonal blocks</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.calculate_stats" title="hamiltonian.Hamiltonian.calculate_stats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_stats</span></code></a>(yobs, ycal, yunc, is_weighted)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.eigh" title="hamiltonian.Hamiltonian.eigh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eigh</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.eigsh" title="hamiltonian.Hamiltonian.eigsh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eigsh</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.extract_terms_in_range" title="hamiltonian.Hamiltonian.extract_terms_in_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extract_terms_in_range</span></code></a>([uenergy, lenergy, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.get_energy_levels" title="hamiltonian.Hamiltonian.get_energy_levels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_energy_levels</span></code></a>([ident_option, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.get_hamiltonian" title="hamiltonian.Hamiltonian.get_hamiltonian"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_hamiltonian</span></code></a>()</p></td>
+<td><p>Gets the Hamiltonian matrix for the last computed J, symmetry and isotopologue</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.get_output_data" title="hamiltonian.Hamiltonian.get_output_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_output_data</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.get_predicted_data" title="hamiltonian.Hamiltonian.get_predicted_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_predicted_data</span></code></a>()</p></td>
+<td><p>Gets the complete list of computed energy levels</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.interpolate_functions" title="hamiltonian.Hamiltonian.interpolate_functions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interpolate_functions</span></code></a>(ypar)</p></td>
+<td><p>Interpolates coupling and channel functions on the grid of points</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.save_output_data" title="hamiltonian.Hamiltonian.save_output_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_output_data</span></code></a>(stats)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.save_predicted_energies" title="hamiltonian.Hamiltonian.save_predicted_energies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_predicted_energies</span></code></a>(calc_energies[, …])</p></td>
+<td><p>Stores the complete list of computed energy levels in external file</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.solve" title="hamiltonian.Hamiltonian.solve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">solve</span></code></a>([energy_subset_index, energy_subset_value])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.sort_output_energies" title="hamiltonian.Hamiltonian.sort_output_energies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort_output_energies</span></code></a>([cols])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.sort_predicted_energies" title="hamiltonian.Hamiltonian.sort_predicted_energies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort_predicted_energies</span></code></a>([cols])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#hamiltonian.Hamiltonian.wrapper_calculate_diatomic_levels" title="hamiltonian.Hamiltonian.wrapper_calculate_diatomic_levels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wrapper_calculate_diatomic_levels</span></code></a>(ypar)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian._arange_levels">
+<span class="sig-name descname"><span class="pre">_arange_levels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iso</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evalues</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evecs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shiftE</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.0]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian._arange_levels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian._arange_levels" title="Permalink to this definition"></a></dt>
+<dd><p>Given the good quantum numbers, labels and the computed eigenvalues this
+function will find and compute additional quantum numbers and labels
+and will arange the full information for each level in one matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>jrotn</strong> (<em>float</em>) – The rotational quantum number</p></li>
+<li><p><strong>par</strong> (<em>int</em>) – Symmetry label, 0 for f- and 1 for e-symmetry</p></li>
+<li><p><strong>iso</strong> (<em>int</em>) – The isotopolgue number</p></li>
+<li><p><strong>evalues</strong> (<em>numpy.ndarray</em>) – The array with the computed eigenvalues</p></li>
+<li><p><strong>evecs</strong> (<em>numpy.ndarray</em>) – The array with the computed eigenvectors</p></li>
+<li><p><strong>shiftE</strong> (<em>list</em><em>, </em><em>optional</em>) – The value of the energy to shift the levels. Defaults to [0.0].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>levels</strong> – An array containing all levels i.e. energy, quantum numbers
+and labels</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian._arpack_eig_decomposition">
+<span class="sig-name descname"><span class="pre">_arpack_eig_decomposition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hmatrix</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian._arpack_eig_decomposition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian._arpack_eig_decomposition" title="Permalink to this definition"></a></dt>
+<dd><p>Diagonilizes the Hamiltonian matrix with the scipy sparse eigsh() procedure
+from the ARPACK package</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>hmatrix</strong> (<em>numpy.ndarray</em>) – The Hamiltonian matrix</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>evalues</strong> (<em>numpy.ndarray</em>) – The coumputed eiegenvalues</p></li>
+<li><p><strong>evecs</strong> (<em>numpy.ndarray</em>) – The computed eigenvectors</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>ARAPCK procedure is the most efficient and suitable for finding
+the largest eigenvalues of a sparse matrix. If the smallest
+eigenvalues are desired then it is recommended to use a
+shift-invert mode. It transforms the eigenvalue problem to
+an eqivalent problem with shifted eigenvalues in which the
+small eigenvalues u become the large eigenvalues v: v = 1 / u</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian._assign_vibrational_number">
+<span class="sig-name descname"><span class="pre">_assign_vibrational_number</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian._assign_vibrational_number"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian._assign_vibrational_number" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian._get_coupling_coefficients">
+<span class="sig-name descname"><span class="pre">_get_coupling_coefficients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">evecs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian._get_coupling_coefficients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian._get_coupling_coefficients" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian._get_lambda_values">
+<span class="sig-name descname"><span class="pre">_get_lambda_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian._get_lambda_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian._get_lambda_values" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian._get_omega_values">
+<span class="sig-name descname"><span class="pre">_get_omega_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian._get_omega_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian._get_omega_values" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian._lapack_eig_decomposition">
+<span class="sig-name descname"><span class="pre">_lapack_eig_decomposition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hmatrix</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian._lapack_eig_decomposition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian._lapack_eig_decomposition" title="Permalink to this definition"></a></dt>
+<dd><p>Diagonilizes the Hamiltonian matrix with the scipy “eigh” procedure
+from the LAPACK package</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>hmatrix</strong> (<em>numpy.ndarray</em>) – The Hamiltonian matrix</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>evalues</strong> (<em>numpy.ndarray</em>) – The computed eigenvalues</p></li>
+<li><p><strong>evecs</strong> (<em>numpy.ndarray</em>) – The computed eigenvectors</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian._sort_output_energies">
+<span class="sig-name descname"><span class="pre">_sort_output_energies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian._sort_output_energies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian._sort_output_energies" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian._sort_predicted_energies">
+<span class="sig-name descname"><span class="pre">_sort_predicted_energies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian._sort_predicted_energies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian._sort_predicted_energies" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.arange_levels">
+<span class="sig-name descname"><span class="pre">arange_levels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iso</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evalues</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evecs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shiftE</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.0]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.arange_levels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.arange_levels" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.build_hamiltonian">
+<span class="sig-name descname"><span class="pre">build_hamiltonian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iso</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jrotn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tmatrix</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.build_hamiltonian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.build_hamiltonian" title="Permalink to this definition"></a></dt>
+<dd><p>Builds the Hamiltonian matrix by summing the block diagonal matrix
+of the kinetic energy, the diagonal matrix of potential energy
+and the coupling matrix with diagonal and off-diagonal blocks</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>iso</strong> (<em>bool0</em>) – Isotopologue number</p></li>
+<li><p><strong>par</strong> (<em>int</em>) – Symmetry label</p></li>
+<li><p><strong>jrotn</strong> (<em>float</em>) – The rotational quantum number</p></li>
+<li><p><strong>tmatrix</strong> (<em>numpy.ndarray</em>) – The kinetic energy matrix</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>hmatrix</strong> – The Hamiltonian matrix</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.calculate_stats">
+<span class="sig-name descname"><span class="pre">calculate_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">yobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ycal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yunc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_weighted</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.calculate_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.calculate_stats" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.eigh">
+<span class="sig-name descname"><span class="pre">eigh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.eigh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.eigh" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.eigsh">
+<span class="sig-name descname"><span class="pre">eigsh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.eigsh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.eigsh" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.extract_terms_in_range">
+<span class="sig-name descname"><span class="pre">extract_terms_in_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uenergy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lenergy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usymm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lsymm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uj</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lj</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ustate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lstate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.extract_terms_in_range"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.extract_terms_in_range" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.get_energy_levels">
+<span class="sig-name descname"><span class="pre">get_energy_levels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ident_option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.get_energy_levels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.get_energy_levels" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.get_hamiltonian">
+<span class="sig-name descname"><span class="pre">get_hamiltonian</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.get_hamiltonian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.get_hamiltonian" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the Hamiltonian matrix for the last computed J, symmetry
+and isotopologue</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>hamiltonian</strong> – The computed Hamiltonian matrix</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.get_output_data">
+<span class="sig-name descname"><span class="pre">get_output_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.get_output_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.get_output_data" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.get_predicted_data">
+<span class="sig-name descname"><span class="pre">get_predicted_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.get_predicted_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.get_predicted_data" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the complete list of computed energy levels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>calc_data</strong> – The computed energy levels</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.interpolate_functions">
+<span class="sig-name descname"><span class="pre">interpolate_functions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ypar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.interpolate_functions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.interpolate_functions" title="Permalink to this definition"></a></dt>
+<dd><p>Interpolates coupling and channel functions on the grid of points</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ypar</strong> (<em>numpy.ndarray</em>) – An array containing the corresponding parameters</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.save_output_data">
+<span class="sig-name descname"><span class="pre">save_output_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stats</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.save_output_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.save_output_data" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.save_predicted_energies">
+<span class="sig-name descname"><span class="pre">save_predicted_energies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calc_energies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.save_predicted_energies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.save_predicted_energies" title="Permalink to this definition"></a></dt>
+<dd><p>Stores the complete list of computed energy levels in external file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.solve">
+<span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energy_subset_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">energy_subset_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.solve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.solve" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.sort_output_energies">
+<span class="sig-name descname"><span class="pre">sort_output_energies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.sort_output_energies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.sort_output_energies" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.sort_predicted_energies">
+<span class="sig-name descname"><span class="pre">sort_predicted_energies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.sort_predicted_energies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.sort_predicted_energies" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hamiltonian.Hamiltonian.wrapper_calculate_diatomic_levels">
+<span class="sig-name descname"><span class="pre">wrapper_calculate_diatomic_levels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ypar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hamiltonian.html#Hamiltonian.wrapper_calculate_diatomic_levels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hamiltonian.Hamiltonian.wrapper_calculate_diatomic_levels" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="hamiltonian.html" class="btn btn-neutral float-left" title="Build the Hamiltonian Matrix" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="hamiltonian.Interaction.html" class="btn btn-neutral float-right" title="hamiltonian.Interaction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, ihavalyova.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

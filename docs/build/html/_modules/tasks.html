@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tasks &mdash; diatom  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> diatom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../instalation.html">Instalation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_doc.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">diatom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>tasks</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for tasks</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">invoke</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+
+<span class="c1"># invoke build-pybind11 cppfile ---&gt; build cppfile for binding</span>
+<span class="c1"># python pybind11_example.py ---&gt; run example program</span>
+
+
+<span class="nd">@invoke</span><span class="o">.</span><span class="n">task</span>
+<span class="k">def</span> <span class="nf">clean</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Remove any built objects&quot;&quot;&quot;</span>
+    <span class="n">file_patterns</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;*.o&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;*.so&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;*.obj&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;*.dll&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;*.exp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;*.lib&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;*.pyd&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;cffi_example*&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;cython_wrapper.cpp&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="k">for</span> <span class="n">file_pattern</span> <span class="ow">in</span> <span class="n">file_patterns</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">file_pattern</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+
+
+<span class="nd">@invoke</span><span class="o">.</span><span class="n">task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">build_cppcode</span><span class="p">(</span><span class="n">cpp_input</span><span class="p">,</span> <span class="n">cpp_output</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Build a shared library for C++ code&quot;&quot;&quot;</span>
+    <span class="n">invoke</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+        <span class="s2">&quot;g++ -O3 -Wall -Werror -shared -std=c++11 -fPIC </span><span class="si">{0}</span><span class="s2"> &quot;</span>
+        <span class="s2">&quot;-o </span><span class="si">{1}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cpp_input</span><span class="p">,</span> <span class="n">cpp_output</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;* Complete&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="compile_python_module"><a class="viewcode-back" href="../tasks.html#tasks.compile_python_module">[docs]</a><span class="k">def</span> <span class="nf">compile_python_module</span><span class="p">(</span><span class="n">cpp_name</span><span class="p">,</span> <span class="n">extension_name</span><span class="p">):</span>
+    <span class="n">invoke</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+        <span class="s2">&quot;g++ -O3 -shared -std=c++11 -fPIC &quot;</span>
+        <span class="s2">&quot;`python3 -m pybind11 --includes` &quot;</span>
+        <span class="s2">&quot;-I /usr/include/python3.7 -I .  &quot;</span>
+        <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> &quot;</span>
+        <span class="s2">&quot;-o </span><span class="si">{1}</span><span class="s2">`python3.8-config --extension-suffix` &quot;</span>
+        <span class="s2">&quot; -Wl,-rpath,.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cpp_name</span><span class="p">,</span> <span class="n">extension_name</span><span class="p">)</span>
+        <span class="c1"># &quot;-L. -lcppmult -Wl,-rpath,.&quot;.format(cpp_name, extension_name)</span>
+    <span class="p">)</span></div>
+
+
+<span class="nd">@invoke</span><span class="o">.</span><span class="n">task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">build_pybind11</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">cppfile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Build the pybind11 wrapper library&quot;&quot;&quot;</span>
+    <span class="c1"># provide cpp file name without extension</span>
+    <span class="n">compile_python_module</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cppfile</span><span class="si">}</span><span class="s2">.cpp&quot;</span><span class="p">,</span> <span class="n">cppfile</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;* Complete&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@invoke</span><span class="o">.</span><span class="n">task</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">test_pybind11</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">test_file</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Run the script to test PyBind11&quot;&quot;&quot;</span>
+    <span class="n">invoke</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;python3 </span><span class="si">{0}</span><span class="s2">.py&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test_file</span><span class="p">),</span> <span class="n">pty</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="nd">@invoke</span><span class="o">.</span><span class="n">task</span><span class="p">(</span>
+    <span class="n">clean</span><span class="p">,</span>
+    <span class="n">build_pybind11</span><span class="p">,</span>
+    <span class="n">test_pybind11</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">def</span> <span class="nf">all</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Build and run all tests&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, ihavalyova.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

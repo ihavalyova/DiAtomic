@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>plotter.Plotter &mdash; diatom  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Compute Spectral Quantities" href="spectrum.html" />
+    <link rel="prev" title="Plotting Functions" href="plotter.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> diatom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="instalation.html">Instalation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api_doc.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="optimizer.html">Optimize Function Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hamiltonian.html">Build the Hamiltonian Matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="grid.html">Construct the grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="identify.html">identify module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="interpolator.html">Interpolate Functions</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="plotter.html">Plotting Functions</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">plotter.Plotter</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="spectrum.html">Compute Spectral Quantities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tasks.html">tasks module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utility Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="wavenumbers.html">wavenumbers module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="wavenumbers_intens.html">wavenumbers_intens module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">diatom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="api_doc.html">API Reference</a> &raquo;</li>
+          <li><a href="plotter.html">Plotting Functions</a> &raquo;</li>
+      <li>plotter.Plotter</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/plotter.Plotter.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="plotter-plotter">
+<h1>plotter.Plotter<a class="headerlink" href="#plotter-plotter" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="plotter.Plotter">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">plotter.</span></span><span class="sig-name descname"><span class="pre">Plotter</span></span><a class="reference internal" href="_modules/plotter.html#Plotter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#plotter.Plotter._combine_props" title="plotter.Plotter._combine_props"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_combine_props</span></code></a>(props, props_def)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#plotter.Plotter._get_color" title="plotter.Plotter._get_color"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_color</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#plotter.Plotter._get_marker" title="plotter.Plotter._get_marker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_marker</span></code></a>([limit])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#plotter.Plotter._map_marker" title="plotter.Plotter._map_marker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_map_marker</span></code></a>(markers)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#plotter.Plotter.full_residuals_plot2" title="plotter.Plotter.full_residuals_plot2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">full_residuals_plot2</span></code></a>(ml[, path, fformat, show])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#plotter.Plotter.hcolormesh" title="plotter.Plotter.hcolormesh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hcolormesh</span></code></a>(mlevels[, rows, cols, path, …])</p></td>
+<td><p>create a colormesh of the Hamiltonian matrix</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#plotter.Plotter.plot_couplings_on_grid" title="plotter.Plotter.plot_couplings_on_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_couplings_on_grid</span></code></a>(mlevels[, which, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#plotter.Plotter.plot_potentials_on_grid" title="plotter.Plotter.plot_potentials_on_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_potentials_on_grid</span></code></a>(mlevels[, path, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#plotter.Plotter.plot_potentials_points" title="plotter.Plotter.plot_potentials_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_potentials_points</span></code></a>(files[, ninter, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#plotter.Plotter.plot_residuals_by_isotopes" title="plotter.Plotter.plot_residuals_by_isotopes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_residuals_by_isotopes</span></code></a>(ml[, path, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#plotter.Plotter.plot_residuals_by_parity_labels" title="plotter.Plotter.plot_residuals_by_parity_labels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_residuals_by_parity_labels</span></code></a>(ml[, path, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#plotter.Plotter.plot_residuals_by_states" title="plotter.Plotter.plot_residuals_by_states"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_residuals_by_states</span></code></a>(ml[, path, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#plotter.Plotter.plot_residuals_hist" title="plotter.Plotter.plot_residuals_hist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_residuals_hist</span></code></a>(ml[, path, fformat, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#plotter.Plotter.plot_residuals_level" title="plotter.Plotter.plot_residuals_level"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_residuals_level</span></code></a>(mlevels[, path, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#plotter.Plotter.plot_residuals_level_subplots" title="plotter.Plotter.plot_residuals_level_subplots"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_residuals_level_subplots</span></code></a>(mlevels[, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#plotter.Plotter.plot_wavefunctions" title="plotter.Plotter.plot_wavefunctions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_wavefunctions</span></code></a>(wffile[, props, path, …])</p></td>
+<td><p>Plot the interpolated wavefunction over the interpolation grid</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#plotter.Plotter.save_figure" title="plotter.Plotter.save_figure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_figure</span></code></a>(fig, path, fformat, bbox)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter._combine_props">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">_combine_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">props</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props_def</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter._combine_props"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter._combine_props" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter._get_color">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">_get_color</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter._get_color"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter._get_color" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter._get_marker">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">_get_marker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter._get_marker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter._get_marker" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter._map_marker">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">_map_marker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">markers</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter._map_marker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter._map_marker" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.full_residuals_plot2">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">full_residuals_plot2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ml</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.full_residuals_plot2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.full_residuals_plot2" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.hcolormesh">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">hcolormesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mlevels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.hcolormesh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.hcolormesh" title="Permalink to this definition"></a></dt>
+<dd><p>create a colormesh of the Hamiltonian matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mlevels</strong> (<em>object</em>) – MoleculeLevels object</p></li>
+<li><p><strong>rows</strong> (<em>tuple</em><em>, </em><em>optional</em>) – the row indecies. Defaults to None.</p></li>
+<li><p><strong>cols</strong> (<em>tuple</em><em>, </em><em>optional</em>) – the col indices. Defaults to None.</p></li>
+<li><p><strong>path</strong> (<em>str</em><em>, </em><em>optional</em>) – path where to save the created figure.</p></li>
+<li><p><strong>to None.</strong> (<em>Defaults</em>) – </p></li>
+<li><p><strong>fformat</strong> (<em>str</em><em>, </em><em>optional</em>) – File extension. Defaults to ‘png’.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to show the image.</p></li>
+<li><p><strong>to False.</strong> (<em>Defaults</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Remarks:</dt><dd><p>1. rows and cols should be tuples with two integer numbers -
+the first and the last row and the first and the last column
+of the submatrix whcih to be plotted
+2. cannot be called as option from plot()</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.plot_couplings_on_grid">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">plot_couplings_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mlevels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.plot_couplings_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.plot_couplings_on_grid" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.plot_potentials_on_grid">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">plot_potentials_on_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mlevels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.plot_potentials_on_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.plot_potentials_on_grid" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.plot_potentials_points">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">plot_potentials_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ninter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.plot_potentials_points"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.plot_potentials_points" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.plot_residuals_by_isotopes">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">plot_residuals_by_isotopes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ml</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.plot_residuals_by_isotopes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.plot_residuals_by_isotopes" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.plot_residuals_by_parity_labels">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">plot_residuals_by_parity_labels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ml</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.plot_residuals_by_parity_labels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.plot_residuals_by_parity_labels" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.plot_residuals_by_states">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">plot_residuals_by_states</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ml</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.plot_residuals_by_states"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.plot_residuals_by_states" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.plot_residuals_hist">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">plot_residuals_hist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ml</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_sns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.plot_residuals_hist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.plot_residuals_hist" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.plot_residuals_level">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">plot_residuals_level</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mlevels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.plot_residuals_level"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.plot_residuals_level" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.plot_residuals_level_subplots">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">plot_residuals_level_subplots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mlevels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nrows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isotope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.plot_residuals_level_subplots"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.plot_residuals_level_subplots" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.plot_wavefunctions">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">plot_wavefunctions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wffile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subplots</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'R'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'wavefunction'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">leg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.plot_wavefunctions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.plot_wavefunctions" title="Permalink to this definition"></a></dt>
+<dd><p>Plot the interpolated wavefunction over the interpolation grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wffile</strong> – file where the interpolated wavefunction is stored</p></li>
+<li><p><strong>props</strong> – various properties concerning the style of the figure</p></li>
+<li><p><strong>path</strong> – the directory path where the figure will be saved</p></li>
+<li><p><strong>fformat</strong> – the file format of the figure (e.g. png, eps,…)</p></li>
+<li><p><strong>title</strong> – the title of the figure</p></li>
+<li><p><strong>subplots</strong> – whether the wavefunctions to be plotted as subplots</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: None</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="plotter.Plotter.save_figure">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">save_figure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fformat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bbox</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotter.html#Plotter.save_figure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotter.Plotter.save_figure" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="plotter.html" class="btn btn-neutral float-left" title="Plotting Functions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="spectrum.html" class="btn btn-neutral float-right" title="Compute Spectral Quantities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, ihavalyova.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
