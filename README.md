@@ -1,4 +1,4 @@
-![](./doc/logo_new.png)
+<img src="https://github.com/ihavalyova/DiAtomic/doc/logo_new.png" width="48">
 
 ---
 
