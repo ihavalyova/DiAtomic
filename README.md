@@ -1,4 +1,4 @@
-<img src="https://github.com/ihavalyova/DiAtomic/blob/master/doc/logo_new.png" width="60%" height="60%">
+<img src="https://github.com/ihavalyova/DiAtomic/blob/master/doc/logo_new.png" width="70%" height="70%">
 
 ---
 
