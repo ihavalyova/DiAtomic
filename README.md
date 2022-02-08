@@ -1,4 +1,4 @@
-<img src="https://github.com/ihavalyova/DiAtomic/blob/master/doc/logo_new.png" width="80%" height="80%">
+<img src="https://github.com/ihavalyova/DiAtomic/blob/master/doc/logo_new.png" width="90%" height="90%">
 
 ---
 
@@ -9,11 +9,8 @@
 
 <!-- https://mybinder.org/v2/gh/ihavalyova/DiAtomic/master -->
 
-DiAtomic is an open-source library written in Python with useful routines for performing various computations of diatomic molecules. It supports object-oriented approach with easy to use functionality and efficiently vectorized code. It can be used to:
-- compute the energy eigenvalues and eigenvectors (by solving the radial Schrodinger equation) for
-  - single non-interacting electronic state
-  - system of arbitrary number of coupled electronic states
-
+DiAtomic is an open-source Python library that contains useful routines for performing various diatomic molecule computations. It supports an object-oriented approach providing simple functionality and efficiently vectorized code. It can be used to:
+- compute the energy eigenvalues and eigenvectors (by solving the radial Schrodinger equation) for a single electronic state or arbitrary number of coupled states
 - compute the transition frequencies when either PECs or term values are available
 - fit of the computed energy levels to the experimental data
 
