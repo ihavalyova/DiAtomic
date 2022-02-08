@@ -1,4 +1,4 @@
-![](./doc/logo.png)
+![](./doc/logo_new.png)
 
 ---
 
