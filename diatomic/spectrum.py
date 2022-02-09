@@ -5,6 +5,8 @@ import wavenumbers_intens
 
 from scipy.interpolate import CubicSpline
 from utils import C_bohr, C_boltzmannk
+from utils import Utils as _utils
+
 try:
     import py3nj
 except ModuleNotFoundError:
@@ -13,7 +15,7 @@ except ModuleNotFoundError:
 
 
 class Spectrum:
-    """[summary]
+    """Calculate spectral quantities
     """
 
     def __init__(self, H, dmfs=None, spec_type='absorption'):
@@ -66,8 +68,9 @@ class Spectrum:
         ujs, uje = ujrange[0], ujrange[1]
 
         # upper_jrots = np.arange(ujs, uje+1)
-        self.upper_levels = self.upper_levels[(self.upper_levels[:, jind] >= ujs) &
-                                              (self.upper_levels[:, jind] <= uje)]
+        self.upper_levels = self.upper_levels[
+            (self.upper_levels[:, jind] >= ujs) &
+            (self.upper_levels[:, jind] <= uje)]
 
         ljs, lje = ljrange[0], ljrange[1]
         # lower_jrots = np.arange(ljs, lje+1)
@@ -86,7 +89,8 @@ class Spectrum:
             (np.in1d(self.upper_levels[:, pind], usymm[1]))
         ]
 
-    def calculate_wavenumbers(self, ulevels, llevels, wrange=None, apply_rules=False):
+    def calculate_wavenumbers(self, ulevels, llevels, wrange=None,
+                              apply_rules=False):
 
         if self.H.wavens_data is None:
             return self._calculate_wavenumbers_without_observations(
@@ -95,7 +99,8 @@ class Spectrum:
             return self._calculate_wavenumber_with_observations(
                 ulevels, llevels, wrange, apply_rules)
 
-    def _calculate_wavenumbers_without_observations(self, ulevels, llevels, wrange, apply_rules):
+    def _calculate_wavenumbers_without_observations(self, ulevels, llevels,
+                                                    wrange, apply_rules):
 
         # id v J E p s iso lambda omega
         ulevels = ulevels[:, [0, -3, 2, 1, 3, -4, 4, -2, -1]]
@@ -108,7 +113,8 @@ class Spectrum:
         # uid uv uJ up us ucE ul uo lid lv lJ lp ls lcE ll lo cw branch
         out_wavens = wavenumbers.calculate_wavenumbers_list(ulevels, llevels)
 
-        # apply strict selection rules by J and symmetry through the branch label
+        # apply strict selection rules by J and symmetry
+        # through the branch label
         out_wavens = out_wavens[out_wavens[:, -1] != -1]
 
         # filter by wavenumber value
@@ -151,15 +157,14 @@ class Spectrum:
         ulevels = np.ascontiguousarray(ulevels)
         llevels = np.ascontiguousarray(llevels)
 
-        # uid uv uJ up us ucE ul uo lid lv lJ lp ls lcE ll lo cw ew dw uncw eint unci branch
+        # uid uv uJ up us ucE ul uo lid lv lJ lp ls lcE ll lo
+        # cw ew dw uncw eint unci branch
         out_wavens = wavenumbers_intens.calculate_wavenumbers_list(
             ulevels, llevels, self.H.wavens_data)
 
-        # apply strict selection rules by J and symmetry through the branch label
+        # apply strict selection rules by J and symmetry
+        # through the branch label
         out_wavens = out_wavens[out_wavens[:, -1] != -1]
-
-        # chi2, rms, rmsd = self.H.calculate_stats(out_wavens[:, 17], out_wavens[:, 16],
-        #                                          out_wavens[:, 19], is_weighted=False)
 
         # apply non-strict selection rules by computing the Honl-London factors
         if apply_rules:
@@ -191,15 +196,18 @@ class Spectrum:
         return self._compute_honl_london_factors(
             usymm, lsymm, ujq, ljq, uomega, lomega, ulambda, llambda)
 
-    def calculate_Einstein_coefficients(self, out_wavens, dmfs=None, ninter=1000):
+    def calculate_Einstein_coefficients(self, out_wavens, dmfs=None,
+                                        ninter=1000):
         # if self.hlf is None:
         #     self._apply_rules(out_wavens)
 
         if dmfs is None:
             dmfs = self.dmfs_init
 
-        # uid uv uJ up us ucE ul uo lid lv lJ lp ls lcE ll lo cw ew dw uncw eint unci branch
-        self.edipole_element = self._compute_line_strength(out_wavens, dmfs, ninter=ninter)
+        # uid uv uJ up us ucE ul uo lid lv lJ lp ls lcE ll lo
+        # cw ew dw uncw eint unci branch
+        self.edipole_element = self._compute_line_strength(
+            out_wavens, dmfs, ninter=ninter)
 
         # np.savetxt('dipole_element.dat', self.edipole_element, fmt='%14.8e')
         line_strength = self.edipole_element[:, -1] * self.hlf
@@ -207,7 +215,8 @@ class Spectrum:
         waven = self.edipole_element[:, 16]
         # statistical weight of the initial level
         self.gji = (2 * jinitial + 1)
-        self.acoef = self._calculate_Einstein_coeffcients(waven, line_strength, self.gji)
+        self.acoef = self._calculate_Einstein_coeffcients(
+            waven, line_strength, self.gji)
         acoef_result = np.c_[self.edipole_element[:, :-1], self.acoef]
         self.nonzero_ainds = np.where(self.acoef != 0.0)[0]
         self.acoef_final = acoef_result[self.nonzero_ainds, :]
@@ -289,14 +298,13 @@ class Spectrum:
 
     def _interpolate_dipole_moment(self, igrid, dmfs):
 
-        #dipole_matrix = np.zeros((self.H.nch, self.H.nch, igrid.shape[0]))
         dipole_matrix = np.ones((self.H.nch, self.H.nch, igrid.shape[0]))
 
         for n in range(1, self.H.nch+1):
             for k in range(1, self.H.nch+1):
                 is_interp = False
                 try:
-                    dmx, dmy = dmfs[(n,k)][:, 0], dmfs[(n,k)][:, 1]
+                    dmx, dmy = dmfs[(n, k)][:, 0], dmfs[(n, k)][:, 1]
                     cs = CubicSpline(dmx, dmy, bc_type='natural')
                     dmi = cs(igrid)
                     is_interp = True
@@ -482,37 +490,45 @@ class Spectrum:
 
     def _save_wavenumbers_with_obseravtions(self, out_wavens, filename):
 
+        stats = _utils.calculate_stats(out_wavens[:, 17], out_wavens[:, 16],
+                                       out_wavens[:, 19], is_weighted=False)
+
         filename = filename or self.fname_wavens
 
-        cols = list(range(1,8)) + list(range(9, out_wavens.shape[1]))
+        cols = list(range(1, 8)) + list(range(9, out_wavens.shape[1]))
         wavens = out_wavens[:, cols]
 
         labels = ("v'", "J'", "symm'", "state'", "E'", "Lambda'", "Omega'",
-                  'v', 'J', 'symm', 'state', 'E', 'Lambda', 'Omega', 'cfreq',
-                  'efreq', 'diff_freq', 'unc_freq', 'eintens', 'unc_int', 'branch')
+                  'v', 'J', 'symm', 'state', 'E', 'Lambda', 'Omega',
+                  'cfreq', 'efreq', 'diff_freq', 'unc_freq',
+                  'eintens', 'unc_int', 'branch')
 
-        header = (f'{labels[0]:^7}{labels[1]:<5}{labels[2]:<5}{labels[3]:<10}'
-                  f'{labels[4]:<6}{labels[5]:<8}{labels[6]:<7}{labels[7]:<6}'
-                  f'{labels[8]:<4}{labels[9]:<5}{labels[10]:<10}{labels[11]:<6}'
-                  f'{labels[12]:<7}{labels[13]:<8}{labels[14]:<10}{labels[15]:<9}'
-                  f'{labels[16]:<10}{labels[17]:<14}{labels[18]:<11}{labels[19]:<10}'
-                  f'{labels[20]}')
+        header = (f'{labels[0]:^7}{labels[1]:<5}{labels[2]:<5}'
+                  f'{labels[3]:<10}{labels[4]:<6}{labels[5]:<8}'
+                  f'{labels[6]:<7}{labels[7]:<6}{labels[8]:<4}'
+                  f'{labels[9]:<5}{labels[10]:<10}{labels[11]:<6}'
+                  f'{labels[12]:<7}{labels[13]:<8}{labels[14]:<10}'
+                  f'{labels[15]:<9}{labels[16]:<10}{labels[17]:<14}'
+                  f'{labels[18]:<11}{labels[19]:<10}{labels[20]}')
 
         fmt = ('%5.1d', '%6.1f',  '%4.1d', '%4.1d', '%12.5f', '%4.1d',
                '%5.1f', '%4.1d', '%5.1f', '%4.1d', '%4.1d', '%12.5f',
                '%4.1d', '%4.1f', '%15.8f', '%15.8f', '%11.3e', '%7.3f',
                '%14.5e', '%8.2f', '%6.1d')
 
-        np.savetxt(filename, wavens, header=header, fmt=fmt)
+        footer = _utils.print_stats(stats)
+
+        np.savetxt(filename, wavens, header=header, footer=footer, fmt=fmt)
 
     def _save_wavenumbers_without_observations(self, out_wavens, filename):
 
         filename = filename or self.fname_wavens
-        cols = list(range(1,8)) + list(range(9, out_wavens.shape[1]))
+        cols = list(range(1, 8)) + list(range(9, out_wavens.shape[1]))
         wavens = out_wavens[:, cols]
 
-        labels = ("v'", "J'", "symm'", "state'", "E'", "Lambda'", "Omega'",
-                  "v", "J", "symm", "state", "E", "Lambda", "Omega", "cfreq", "branch")
+        labels = ("v'", "J'", "symm'", "state'", "E'", "Lambda'",
+                  "Omega'", "v", "J", "symm", "state", "E", "Lambda",
+                  "Omega", "cfreq", "branch")
 
         header = (f'{labels[0]:^7}{labels[1]:<5}{labels[2]:<5}{labels[3]:<10}'
                   f'{labels[4]:<6}{labels[5]:<8}{labels[6]:<7}{labels[7]:<6}'
@@ -567,24 +583,26 @@ class Spectrum:
     def save_einstein_coeffcients(self, acoefs, filename=None):
 
         if self.H.wavens_data is None:
-            self._save_einstein_coeffcients_without_observations(acoefs, filename)
+            self._save_einstein_coeffcients_without_obs(acoefs, filename)
         else:
-            self._save_einstein_coeffcients_with_observations(acoefs, filename)
+            self._save_einstein_coeffcients_with_obs(acoefs, filename)
 
-    def _save_einstein_coeffcients_without_observations(self, acoefs, filename):
+    def _save_einstein_coeffcients_without_obs(self, acoefs, filename):
 
         filename = filename or self.fname_acoefs
 
-        cols = list(range(1,8)) + list(range(9, acoefs.shape[1]))
+        cols = list(range(1, 8)) + list(range(9, acoefs.shape[1]))
         acoefs_out = acoefs[:, cols]
 
-        labels = ("v'", "J'", "symm'", "state'", "E'", "Lambda'", "Omega'", "v",
-                  "J", "symm", "state", "E", "Lambda", "Omega", "cfreq", "branch", "A")
+        labels = ("v'", "J'", "symm'", "state'", "E'", "Lambda'",
+                  "Omega'", "v", "J", "symm", "state", "E", "Lambda",
+                  "Omega", "cfreq", "branch", "A")
 
         header = (f'{labels[0]:^7}{labels[1]:<6}{labels[2]:<6}{labels[3]:<10}'
                   f'{labels[4]:<7}{labels[5]:<8}{labels[6]:<7}{labels[7]:<6}'
-                  f'{labels[8]:<6}{labels[9]:<6}{labels[10]:<10}{labels[11]:<8}'
-                  f'{labels[12]:<7}{labels[13]:<8}{labels[14]:<14}{labels[15]}')
+                  f'{labels[8]:<6}{labels[9]:<6}{labels[10]:<10}'
+                  f'{labels[11]:<8}{labels[12]:<7}{labels[13]:<8}'
+                  f'{labels[14]:<14}{labels[15]}')
 
         fmt = ('%5.1d', '%6.1f',  '%5.1d', '%5.1d', '%12.5f', '%5.1d',
                '%5.1f', '%5.1d', '%5.1f', '%5.1d', '%5.1d', '%12.5f',
@@ -592,7 +610,7 @@ class Spectrum:
 
         np.savetxt(filename, acoefs_out, comments='#', header=header, fmt=fmt)
 
-    def _save_einstein_coeffcients_with_observations(self, acoefs, filename):
+    def _save_einstein_coeffcients_with_obs(self, acoefs, filename):
 
         filename = filename or self.fname_acoefs
 
@@ -600,26 +618,34 @@ class Spectrum:
         adiff = acoefs[:, -4] - acoefs[:, -1]
         acoefs_out = np.column_stack((acoefs, adiff))
 
-        cols = list(range(1,8)) + list(range(9, acoefs_out.shape[1]))
+        cols = list(range(1, 8)) + list(range(9, acoefs_out.shape[1]))
         acoefs_out = acoefs_out[:, cols]
 
-        labels = ("v'", "J'", "symm'", "state'", "E'", "Lambda'", "Omega'",
-                  "v", "J", "symm", "state", "E", "Lambda", "Omega", "cfreq", "efreq",
-                  "diff_freq", "unc_freq", "eintens", "unc_int", "branch", "A", "diff_A")
+        stats = _utils.calculate_stats(acoefs_out[:, -5], acoefs_out[:, -2],
+                                       acoefs_out[:, -4], is_weighted=False)
 
-        header = (f'{labels[0]:^7}{labels[1]:<5}{labels[2]:<5}{labels[3]:<10}'
-                  f'{labels[4]:<6}{labels[5]:<8}{labels[6]:<7}{labels[7]:<6}'
-                  f'{labels[8]:<4}{labels[9]:<5}{labels[10]:<10}{labels[11]:<6}'
-                  f'{labels[12]:<7}{labels[13]:<8}{labels[14]:<12}{labels[15]:<10}'
-                  f'{labels[16]:<10}{labels[17]:<10}{labels[18]:<11}{labels[19]:<9}'
-                  f'{labels[20]:<11}{labels[21]:<10}{labels[22]}')
+        labels = ("v'", "J'", "symm'", "state'", "E'", "Lambda'", "Omega'",
+                  "v", "J", "symm", "state", "E", "Lambda", "Omega",
+                  "cfreq", "efreq", "diff_freq", "unc_freq", "eintens",
+                  "unc_int", "branch", "A", "diff_A")
+
+        header = (f'{labels[0]:^7}{labels[1]:<5}{labels[2]:<5}'
+                  f'{labels[3]:<10}{labels[4]:<6}{labels[5]:<8}'
+                  f'{labels[6]:<7}{labels[7]:<6}{labels[8]:<4}'
+                  f'{labels[9]:<5}{labels[10]:<10}{labels[11]:<6}'
+                  f'{labels[12]:<7}{labels[13]:<8}{labels[14]:<12}'
+                  f'{labels[15]:<10}{labels[16]:<10}{labels[17]:<10}'
+                  f'{labels[18]:<11}{labels[19]:<9}{labels[20]:<11}'
+                  f'{labels[21]:<10}{labels[22]}')
 
         fmt = ('%5.1d', '%6.1f',  '%4.1d', '%4.1d', '%12.5f', '%4.1d',
                '%5.1f', '%4.1d', '%5.1f', '%4.1d', '%4.1d', '%12.5f',
                '%4.1d', '%4.1f', '%15.8f', '%15.8f', '%11.3e', '%7.3f',
                '%16.10e', '%8.2f', '%5.1d', '%16.10e', '%12.3e')
 
-        np.savetxt(filename, acoefs_out, comments='#', header=header, fmt=fmt)
+        footer = _utils.print_stats(stats)
+
+        np.savetxt(filename, acoefs_out, footer=footer, header=header, fmt=fmt)
 
     def save_lifetimes(self, lifetimes, filename=None):
 

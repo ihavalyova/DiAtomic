@@ -3,7 +3,7 @@ from os.path import join as _join
 import scipy as sp
 import numpy as np
 
-from utils import C_hartree
+from utils import Utils as _utils
 
 try:
     from iminuit import Minuit
@@ -15,7 +15,7 @@ __all__ = ['Optimizer']
 
 
 class Optimizer:
-    """[summary]
+    """Implement the optimization procedurese
     """
 
     def __init__(self, H, S=None, output_progress=False, is_weighted=False):
@@ -25,6 +25,8 @@ class Optimizer:
         self.progress = output_progress
         self.is_weighted = is_weighted
         self.progress_str = io.StringIO()
+        self.tot_ppts = H.tot_ppts
+        self.tot_cpts = H.tot_cpts
 
     def _calculate_levels(self, ypar):
 
@@ -34,7 +36,7 @@ class Optimizer:
         ydel = -out_levels[:, 9]  # / C_hartree
         yvar = out_levels[:, 10]  # / C_hartree
 
-        stats = self.H.calculate_stats(yobs, ycal, yvar, self.is_weighted)
+        stats = _utils.calculate_stats(yobs, ycal, yvar, self.is_weighted)
 
         return ycal, yobs, ydel, yvar, stats
 
@@ -50,7 +52,7 @@ class Optimizer:
         ydel = out_wavens[:, 18]  # / C_hartree
         yvar = out_wavens[:, 19]  # / C_hartree
 
-        stats = self.H.calculate_stats(yobs, ycal, yvar, self.is_weighted)
+        stats = _utils.calculate_stats(yobs, ycal, yvar, self.is_weighted)
 
         return ycal, yobs, ydel, yvar, stats
 
@@ -66,7 +68,7 @@ class Optimizer:
         ydel = yobs-ycal
         yvar = acoefs[:, 21]
 
-        stats = self.H.calculate_stats(yobs, ycal, yvar, self.is_weighted)
+        stats = _utils.calculate_stats(yobs, ycal, yvar, self.is_weighted)
 
         print('stats intensity', stats)
 
@@ -108,9 +110,9 @@ class Optimizer:
             # get the energies with the initial/updated parameters from
             # the first/previous iteration
             ycal, yobs, ydel, yvar, stats = calculate_data(ypar)
-            chisq_best, rms_best = stats[0], stats[1]
+            chisq_best, rms_best = stats['chi2'], stats['rms']
 
-            print(self.print_info(it, tol, chisq_best, rms_best))
+            print(self.print_info(it, tol, stats))
 
             # build the matrix of the derivatives w.r.t. parameters
             if derivative == 'n':
@@ -132,7 +134,7 @@ class Optimizer:
             # calculate new energies using the proposed corrections
 
             *_, stats_try = calculate_data(ypar+x)
-            chi2_try, rms_try = stats_try[0], stats_try[1]
+            chi2_try, rms_try = stats_try['chi2'], stats_try['rms']
 
             # try to change the corrections
             if chi2_try + eps < chisq_best:
@@ -150,7 +152,7 @@ class Optimizer:
                     ypar_try = ypar_try + x_try
 
                     *_, stats_new = calculate_data(ypar_try)
-                    chi2_new, rms_new = stats_new[0], stats_new[1]
+                    chi2_new, rms_new = stats_new['chi2'], stats_new['rms']
 
                     if chi2_new + eps < chisq_best:
                         chisq_best, rms_best = chi2_new, rms_new
@@ -166,9 +168,9 @@ class Optimizer:
                 tol /= 5.0
                 print(f'\nTol changed = {tol:.1e}')
 
-            # store final parameters
+            # write detailed fit progress
             if self.progress:
-                self._write_fit_info(rank, sv, tol, ypar, x, yfixed, it)
+                self._write_fit_progress(rank, sv, tol, ypar, x, yfixed, it)
                 print(self.progress_str.getvalue())
 
         self.singular_values = sv
@@ -193,7 +195,7 @@ class Optimizer:
             update_input (bool, optional): Update the input. Defaults to False.
 
         Returns:
-            [type]: [description]
+            array: The optimized parameters
         """
 
         # get initial parameters
@@ -222,7 +224,6 @@ class Optimizer:
                     elif c.model == 'custom':
                         pass
             # TODO: store the updated coupling parameters in new file
-            # TODO: to update the file with the energies
 
         # update the parameters in the input files
         if update_input:
@@ -238,11 +239,11 @@ class Optimizer:
                                     store_output=False, update_input=False):
 
         # get initial parameters
-        ypar, yfixed = self.H.ypar_init, self.H.yfixed_init
-        print(ypar*C_hartree)
+        ypar, yfixed = self.H.ypar_init, self.H.yfixed_inits
+
         ypar = self.optimize(ypar, yfixed, self._calculate_wavenumbers, niter,
                              derivative, tol, lapack_driver, step_size)
-        print(ypar*C_hartree)
+
         if store_output:
             pass
         if update_input:
@@ -364,25 +365,27 @@ class Optimizer:
 
     @staticmethod
     def _find_corrections(A, b, tol, lapack_driver):
-        """Find the corrections to the parameters by solving
-        the system of linear equations with SVD technique
+        """Find corrections to a set of parameters by solving
+           a linear system of equations with SVD algorithm
 
         Args:
-            A (array): matrix with the derivatives
-            b (array): rhs vector
-            tol (float): the tolerance value
-            lapack_driver (str): the lapack routine
+            A (array): The derivative matrix
+            b (array): RHS vector
+            tol (float): Tolerance value
+            lapack_driver (str): The lapack routine used for
+                nonliner least-squares fiitting
 
         Returns:
-            tuple: the corrections, the rank of the
-            matrix and the matrix with the singular values
+            tuple: the corrections to the parameters, the rank of the
+            matrix and an array containing the singular values
 
-        Remarks:
-            1. There are two similar procedures for SVD from numpy
-                and scipy. In their older versions the definitions of
-                the default tol value is different
-            2. Tol controls which and how many linear combinations of the
-                parameters will be ignored since the matrix is singular
+        Notes:
+            1. There are two similar procedures for SVD in numpy
+                and scipy libraries. In their older versions the definitions of
+                the default tol value was different.
+            2. Tol controls which and how many linear combinations of
+                parameters will be ignored because of the singularity of
+                the matrix.
         """
 
         x, _, rank, s = sp.linalg.lstsq(A, b, tol, lapack_driver)
@@ -390,50 +393,83 @@ class Optimizer:
 
         return x, rank, s
 
-    def print_info(self, it, tol, chisq, rms):
-        return (f'{14*"- "}Iteration {it} '
-                f'{14*"- "}\nTOL = {tol:.1e}\n'
-                f'Chi square = {chisq:.6f} | '
-                f'RMS = {rms:.6f} cm-1\n')
+    def print_info(self, it, tol, stats):
 
-    def _write_fit_info(self, rank, sv, tol, ypar, x, yfixed, it):
+        stats_str = _utils.print_stats(stats)
+        out_str = (f'{14*"- "}Iteration {it} '
+                   f'{14*"- "}\nTOL = {tol:.1e}\n')
+        out_str += stats_str
 
-        # singular values are sorted from the largest to the smallest one
-        # singular values smaller than tol*largest_singular_value are set to 0
+        return out_str
+
+    def _format_params_table(self, data):
+
+        out = ''
+        init_line = f'  {107*"-"}\n'
+        out += init_line
+        width = 15
+        title = (' | {0:^{width}} | {1:^{width}} | {2:^{width}} | {3:^{width}}'
+                 ' | {4:^{width}} | {5:^{width}} |\n').format(
+                    'id', 'Initial value', 'Correction', 'Final value',
+                    '% change', 'Fixed', width=width)
+        out += title
+        out += init_line
+        for row in data:
+            line = (' | {0:^{width}.0f} | {1:>{width}.{prec}f}'
+                    ' | {2:>{width}.{prec}f} | {3:>{width}.{prec}f}'
+                    ' | {4:>{width}.{prec}f} | {5:^{width}.0f} |\n').format(
+                        row[0], row[1], row[2], row[3], row[4], row[5],
+                        width=width, prec=6)
+            out += line
+        out += init_line
+
+        return out
+
+    def _write_fit_progress(self, rank, sv, tol, ypar, dypar, yfixed, it):
+        """Write formatted detailed information about the progress of the fit
+
+        Args:
+            rank (float): The rank of the SVD matrix
+            sv (array): Array with singular values
+            tol (float): Tolerance value
+            ypar (array): Fitting parameters
+            dypar (array): Corrections to the parameters
+            yfixed (array): Whether a parameter is fixed or free
+            it (int): Iteration count
+
+        Notes:
+            Singular values are sorted from the largest to the smallest one.
+            Singular values smaller than tol times the largest singular value
+            are set to 0.
+
+            The conditon number is the ratio of the largest to the smallest
+            singular value. The larger the condition number the closer to
+            singular is the matrix.
+        """
 
         self.progress_str.write(
-            f'\nTOL * max singular value{"":>2}= {tol*sv[0]:.3f}\n'
+            f'\nTOL * max singular value = {tol*sv[0]:.3f}\n'
             f'\nEffective rank = {rank}'
             f'\nThe first {rank} significant singular values:\n')
-
-        self.progress_str.write(
-            ' '.join(['{:.1e}'.format(i) for i in sv[:rank]]))
-
-        # the conditon number is the ratio of the largest to the smallest SV
-        # the larger the condition number the closer to singular is the matrix
+        self.progress_str.write(' '.join(
+            ['{:.1e}'.format(i) for i in sv[:rank]]))
 
         with np.errstate(divide='ignore', invalid='ignore'):
             cond_number = abs(sv[0] / sv[-1])
 
-        self.progress_str.write(
-            f'\nCondition number = {cond_number:.1e}'
-            f'\n{111*"-"}\n|{"":>8}|{"":>3}Initial value{"":>5}|'
-            f'{"":>4}Correction{"":>6}|{"":>4}Final value{"":>6}|'
-            f'{"":>1}Percent change{"":>1}|{"":>1}Fixed{"":>1}|'
-            f'\n{111*"-"}\n')
+        self.progress_str.write(f'\nCondition number = {cond_number:.1e}\n')
 
-        # TODO: what if some parameter has 0 value?
+        # TODO: check if there are parameters equal to zero
         nn = np.arange(1, ypar.shape[0]+1, 1, dtype=np.int64)
-        xypar = ypar + x
-        change = np.absolute(x/ypar) * 100
+        xypar = ypar + dypar
+        change = np.absolute(dypar / ypar) * 100
 
-        for i in range(1, nn.shape[0]):
-            self.progress_str.write(
-                f'|{"":>1}{i:4d}{"":>3}|{"":>2}{ypar[i]:>16.8f}{"":>3}|'
-                f'{"":>2}{x[i]:>16.8f}{"":>2}|{"":>3}'
-                f'{xypar[i]:>16.8f}{"":>2}|'
-                f'{"":>2}{change[i]:>12.8f}{"":>2}|'
-                f'{"":>1}{int(yfixed[i]):>3d}{"":>3}|\n')
+        iypar = ypar / self.H.yunits
+        corr = dypar / self.H.yunits
+        fypar = xypar / self.H.yunits
+        data_out = np.column_stack((nn, iypar, corr, fypar, change, yfixed))
+
+        self.progress_str.write(self._format_params_table(data_out))
 
     def calculate_covariance_matrix(self):
         # find covariance matrix

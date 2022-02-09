@@ -260,6 +260,10 @@ class DiatomicData:
             [c.upoints for i, c in enumerate(channels) if i in self.unq_chind])
         pfixed = np.concatenate(
             [c.fixed for i, c in enumerate(channels) if i in self.unq_chind])
+        pxunits = np.concatenate(
+            [c.xunits for i, c in enumerate(channels) if i in self.unq_chind])
+        pyunits = np.concatenate(
+            [c.yunits for i, c in enumerate(channels) if i in self.unq_chind])
 
         # pregular = np.concatenate([c.pregular for c in channels])
         # plambda = np.concatenate([c.plambda for c in channels])
@@ -267,7 +271,7 @@ class DiatomicData:
         # the total number of potential parameters
         self.tot_npts = ppar.shape[0]
 
-        return ppar, pfixed
+        return ppar, pfixed, pxunits, pyunits
 
     def get_coupling_parameters(self, couplings):
 
@@ -278,16 +282,18 @@ class DiatomicData:
             count_pnts += cp.npnts
             cp.end_index = count_pnts
 
-        # for cp in couplings:
         try:
             cpar = np.concatenate([c.yc for c in couplings])
             cfixed = np.concatenate([c.fixed for c in couplings])
+            cxunits = np.concatenate([c.xunits for c in couplings])
+            cyunits = np.concatenate([c.yunits for c in couplings])
             # self.cregular = np.concatenate([c.cregular for c in couplings])
             # self.clambda = np.concatenate([c.clambda for c in couplings])
         except ValueError:
-            cpar, cfixed = [], []
+            cpar, cfixed = np.array([]), np.array([])
+            cxunits, cyunits = np.array([]), np.array([])
 
-        return cpar, cfixed
+        return cpar, cfixed, cxunits, cyunits
 
     @classmethod
     def set_couplings_data(cls, file_name):
@@ -410,6 +416,8 @@ class Channel:
 
         if self.model == 'pointwise' or self.model == 'cspline':
             rpoints, upoints, fixed = self._read_pointwise_data(self.filep)
+            self.xunits = np.full(rpoints.shape[0], self.xunits)
+            self.yunits = np.full(upoints.shape[0], self.yunits)
             self.rpoints = rpoints * self.xunits
             self.upoints = upoints * self.yunits
             self.fixed = fixed

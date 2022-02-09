@@ -4,6 +4,7 @@ import numpy as np
 from scipy.constants import atomic_mass as _atomic_mass, angstrom as _angstrom
 from scipy.constants import physical_constants as _physical_constants
 from shutil import copy2 as _copy2
+from math import sqrt as _sqrt
 
 __all__ = ['Utils']
 
@@ -21,6 +22,77 @@ C_boltzmannk = _physical_constants[c_boltzmank_str][0] * 0.01
 
 
 class Utils:
+
+    @classmethod
+    def calculate_stats(cls, yobs, ycal, yunc, is_weighted):
+
+        ndata = yobs.shape[0]
+        diff_square = np.square(yobs - ycal)
+
+        # calculate chi square
+        if not is_weighted:
+            weights = 1.0 / np.square(yunc)
+        else:
+            weights = 1.0 / (np.square(yunc) + 0.33 * (diff_square))
+
+        chi2 = np.sum(diff_square * weights) / ndata
+
+        # calculate rms
+        rms = _sqrt(np.sum(diff_square) / ndata)
+
+        # calculate dimensionless rms
+        rmsd = _sqrt(chi2)
+
+        # calculate mean error
+        mean_error = np.sum(np.abs(diff_square)) / ndata
+
+        # calculate the average deviation
+        avrg = np.mean(yobs)
+        avrg_dev = np.sum(np.abs(ycal - avrg)) / ndata
+
+        # calculate standard deviation
+        std_dev = _sqrt(np.sum(np.square(ycal - avrg)) / ndata)
+
+        # calculate the median value - the half values are
+        # before and the other halfs after it
+
+        median = np.median(ycal)
+
+        stats = {
+            'ndata': ndata,
+            'chi2': chi2,
+            'rms': rms,
+            'rmsd': rmsd,
+            'mean_error': mean_error,
+            'average_dev': avrg_dev,
+            'std_dev': std_dev,
+            'median': median
+        }
+
+        return stats
+
+    @classmethod
+    def print_stats(cls, stats):
+
+        out = ''
+        init_line = f'  {39*"-"}\n'
+
+        def make_table_row(key, value):
+            out_row = ''
+            out_row += init_line
+            line = ' | {0:^{width1}} | {1:{width2}.{prec}f} |\n'.format(
+                key, value, width1=12, width2=22, prec=5)
+            out_row += line
+
+            return out_row
+
+        for key in stats.keys():
+            out_row = make_table_row(key, stats[key])
+            out += out_row
+
+        out += init_line
+
+        return '\n' + out
 
     @classmethod
     def create_backup_file(cls, ref_file):

@@ -7,48 +7,39 @@ from scipy.interpolate import CubicSpline as _CubicSpline
 from os.path import splitext as _splitext
 from interpolator import CSpline
 from utils import C_hartree
+from utils import Utils as _utils
 
 __all__ = ['Hamiltonian']
 
 
 class Hamiltonian:
-    """Constructs the Hamiltonian operator, solves the time-independant coupled
-    system of radial Shrodinger equations and builds a list of energy levels
+    """Construct the Hamiltonian operator, solve the time-independant coupled
+    system of radial Shrodinger equations and build a list of energy levels
     """
 
     def __init__(self, grid, diatomic_data, channels, couplings=[],
                  eig_decomp='lapack', lapack_driver='evr',
                  arpack_options=('LM', 6, None), is_weighted=False):
-        """Initilizes the Hamiltonian object
+        """Initilize the Hamiltonian object
 
-        Parameters
-        ----------
-            grid : Grid object
-                The defined Grid object which has information about the grid
-                parameters like number of grid points, the required range of
-                internuclear distancies and the chosen solving method.
-            diatomic_data : DiatomicData object
-                The defined DiatomicData object which contains information
-                about the specific molecule.
-            channels : list
-                Contains the list of the defined channel objects.
-            couplings : list, optional
-                Contains the list of the defined coupling objects.
-                Defaults to [].
-            eig_decomp : str, optional
-                The package LAPACK or ARPACK which to be used for eigen
-                decomposition. Defaults to 'lapack'.
-            lapack_driver : str, optional
-                 Defines which LAPACK driver should be used when eig_decomp is
-                 set to "lapack". Valid options are "ev", "evd", "evr", "evx".
-                 Defaults to 'evr'.
-            arpack_options : tuple, optional
-                [description]. Defaults to ('LM', 6, None).
-            is_weighted : bool, optional
-                [description]. Defaults to False.
-
-        Notes
-        ----------
+        Args:
+            grid (object): The Grid object containing the grid parameters
+            diatomic_data (object): a DiatomicData object containing the
+                parameters about the specfied molecule.
+            channels (list): The list of the defined channel objects.
+            couplings (list, optional) The list of the defined coupling
+                objects. Defaults to [].
+            eig_decomp (str, optional): Which package to be used for eigen
+                decomposition, LAPACK or ARPACK. Defaults to 'lapack'.
+            lapack_driver (str, optional) Defines which LAPACK driver should be
+                used when eig_decomp is set to "lapack". Valid options are:
+                "ev", "evd", "evr", "evx". syevr() procedure is called by
+                default. Defaults to 'evr'.
+            arpack_options (tuple, optional)
+                A list of optional parameters about the arpack diagonalization.
+                Defaults to ('LM', 6, None).
+            is_weighted : (bool, optional). whether to apply Watson's weighting
+                procedure. Defaults to False.
         """
 
         self.ngrid = grid.ngrid
@@ -77,24 +68,13 @@ class Hamiltonian:
         self.nch = len(self.channels)
         self.ncp = len(self.couplings)
 
-        # energy ranges when extracting term values
-        # self.uenergy_range = None
-        # self.lenergy_range = None
-
         # mapping arrays
         self.Fy = grid.Fy
         self.Gy = grid.Gy
 
-        # determine matrix size
         self.msize = self.nch * self.ngrid
-
-        # store diagonal indices
         self.dd = np.diag_indices(self.ngrid)
-
-        # which module to be used for eigen decomposition
         self.eig_decomp = eig_decomp
-
-        # the lapack procedure syevr() is used by default
         self.lapack_driver = lapack_driver
 
         # which eigenvalues to use in the arpack procedure
@@ -112,14 +92,17 @@ class Hamiltonian:
             'arpack': self._arpack_eig_decomposition
         }
 
-        # Watson's weighting method
         self.is_weighted = is_weighted
 
-        # max number of fit parameters
+        # maximum number of fit parameters
         nmax_params = 200
 
-        # max number of computed levels
+        # maximum number of computed levels
         self.nmax_levels = 10000
+
+        # energy ranges when extracting term values
+        # self.uenergy_range = None
+        # self.lenergy_range = None
 
         self.kin_enr = KineticEnergy(self)
         self.pot_enr = PotentialEnergy(self)
@@ -130,9 +113,15 @@ class Hamiltonian:
 
         # used in the fit for initilization of the parameters
         channel_pars = diatomic_data.get_channel_parameters(channels)
+        self.tot_ppts = channel_pars[0].shape[0]
+
         coupling_pars = diatomic_data.get_coupling_parameters(couplings)
+        self.tot_cpts = coupling_pars[0].shape[0]
+
         self.ypar_init = np.concatenate((channel_pars[0], coupling_pars[0]))
         self.yfixed_init = np.concatenate((channel_pars[1], coupling_pars[1]))
+        self.xunits = np.concatenate((channel_pars[2], coupling_pars[2]))
+        self.yunits = np.concatenate((channel_pars[3], coupling_pars[3]))
 
         # get other parameters and functions used in the fit
         self.unq_channel_inds = diatomic_data.unq_chind
@@ -144,18 +133,14 @@ class Hamiltonian:
         self.file_energies = f'energies_{self.mol_name}.dat'
 
     def interpolate_functions(self, ypar):
-        """Interpolates coupling and channel functions on the grid of points
+        """Interpolate coupling and channel functions on the grid
 
-        Parameters
-        ----------
-            ypar : numpy.ndarray
-                An array containing the corresponding parameters
+        Args:
+            ypar (array): An array containing the channel/coupling parameters
         """
 
         self.pot_enr.calculate_channels_on_grid(ypar=ypar)
         self.ugrid = self.pot_enr.ugrid
-
-        # self.fgrid = np.zeros(self.ncp * self.ngrid)
 
         if self.ncp != 0:
             self.interact.calculate_couplings_on_grid(ypar=ypar)
@@ -168,23 +153,32 @@ class Hamiltonian:
         self.ident_option = ident_option if ident_option in [0, 1] else 1
 
         if self.exp_data is not None:
-            self.out_data = identify.identify_levels(
-                self.calc_data, self.exp_data, self.nch, ident_option)
-
-            if store_output:
-                stats = self.calculate_stats(
-                    self.out_data[:, 8], self.out_data[:, 7],
-                    self.out_data[:, 10], self.is_weighted)
-
-                self.energy_out_file = out_file or self.file_energies
-                self.save_predicted_energies(self.calc_data)
-                self.save_output_data(stats)
+            self.out_data = identify.identify_levels(self.calc_data,
+                                                     self.exp_data,
+                                                     self.nch,
+                                                     ident_option)
+            # self.save_full_energy_list(self.calc_data)
+            # self.save_energy_list(stats)
         else:
-            raise AttributeError('Experimental energy terms should be provided.')
+            raise AttributeError(
+                'Experimental energy terms should be provided.')
 
         return self.out_data
 
     def solve(self, energy_subset_index=None, energy_subset_value=None):
+        """A general function which solves the coupled system of Shcrodinger equations
+
+        Args:
+            energy_subset_index (tuple, optional): Specifies a subset of
+                energies by providing two indices: the initial and the final
+                index of the coumputed eigenvalues. Defaults to None.
+            energy_subset_value (tuple, optional): Specifies a subset of
+                energies by providing two energy values: the start and the end
+                value of the coumputed eigenvalues. Defaults to None.
+
+        Returns:
+            tuple: A tuple of the computed eigenvalues and eigenvectors
+        """
 
         self.energy_subset_value = energy_subset_value
         self.energy_subset_index = energy_subset_index
@@ -206,7 +200,7 @@ class Hamiltonian:
                     hmatrix = self.build_hamiltonian(iso, par, jrotn, tmatrix)
                     evalues, evecs = self.diagonilize[self.eig_decomp](hmatrix)
 
-                    # arange and store quantum numbers and labels for levels
+                    # arange and store the quantum numbers & labels for levels
                     nevalues = evalues.shape[0]
                     levels = self._arange_levels(
                         jrotn, par, iso, evalues, evecs, shiftE=shiftE)
@@ -223,18 +217,26 @@ class Hamiltonian:
         return evalues_all, evecs_all
 
     def wrapper_calculate_diatomic_levels(self, ypar):
+        """A wrapper procedure for calculating the energy levels
+           which is called through the fitting routine
 
-        # call this function trough the fitting routine
+        Args:
+            ypar (array): The fitting parameters
+
+        Returns:
+            array: The computed energy levels
+        """
 
         self.interpolate_functions(ypar)
         self.solve(energy_subset_index=self.energy_subset_index,
                    energy_subset_value=self.energy_subset_value)
-        return self.get_energy_levels(self.ident_option, store_output=False)
+        return self.get_energy_levels(self.ident_option)
 
-    def extract_terms_in_range(self, uenergy=None, lenergy=None, usymm=None, lsymm=None,
-                               uj=None, lj=None, ustate=None, lstate=None):
+    def extract_terms_in_range(self, uenergy=None, lenergy=None, usymm=None,
+                               lsymm=None, uj=None, lj=None, ustate=None,
+                               lstate=None):
 
-        # TODO: it may happen that the number of levels within these
+        # TODO: it may happen that the number of levels within the specified
         # ranges will vary during the fit
 
         eind, jind, pind, sind = 1, 2, 3, -4
@@ -242,28 +244,36 @@ class Hamiltonian:
         # filter by energy
         self.uenergy = uenergy
         self.lenergy = lenergy
-        calc_uterms = self.calc_data[(self.calc_data[:, eind] >= self.uenergy[0]) &
-                                     (self.calc_data[:, eind] <= self.uenergy[1])]
-        calc_lterms = self.calc_data[(self.calc_data[:, eind] >= self.lenergy[0]) &
-                                     (self.calc_data[:, eind] <= self.lenergy[1])]
+        calc_uterms = self.calc_data[
+            (self.calc_data[:, eind] >= self.uenergy[0]) &
+            (self.calc_data[:, eind] <= self.uenergy[1])]
+        calc_lterms = self.calc_data[
+            (self.calc_data[:, eind] >= self.lenergy[0]) &
+            (self.calc_data[:, eind] <= self.lenergy[1])]
 
         # filter by J
-        self.uj = uj or (np.amin(calc_uterms[:, jind]), np.amax(calc_uterms[:, jind]))
-        self.lj = lj or (np.amin(calc_lterms[:, jind]), np.amax(calc_lterms[:, jind]))
-        calc_uterms = calc_uterms[(calc_uterms[:, jind] >= self.uj[0]) &
-                                  (calc_uterms[:, jind] <= self.uj[1])]
-        calc_lterms = calc_lterms[(calc_lterms[:, jind] >= self.lj[0]) &
-                                  (calc_lterms[:, jind] <= self.lj[1])]
+        self.uj = uj or (np.amin(calc_uterms[:, jind]),
+                         np.amax(calc_uterms[:, jind]))
+        self.lj = lj or (np.amin(calc_lterms[:, jind]),
+                         np.amax(calc_lterms[:, jind]))
+        calc_uterms = calc_uterms[
+            (calc_uterms[:, jind] >= self.uj[0]) &
+            (calc_uterms[:, jind] <= self.uj[1])]
+        calc_lterms = calc_lterms[
+            (calc_lterms[:, jind] >= self.lj[0]) &
+            (calc_lterms[:, jind] <= self.lj[1])]
 
         # filter by symmetry
         self.usymm = usymm or (0, 1)
         self.lsymm = lsymm or (0, 1)
-        calc_uterms = calc_uterms[(np.in1d(calc_uterms[:, pind], self.usymm[0])) |
-                                  (np.in1d(calc_uterms[:, pind], self.usymm[1]))]
-        calc_lterms = calc_lterms[(np.in1d(calc_lterms[:, pind], self.lsymm[0])) |
-                                  (np.in1d(calc_lterms[:, pind], self.lsymm[1]))]
+        calc_uterms = calc_uterms[
+            (np.in1d(calc_uterms[:, pind], self.usymm[0])) |
+            (np.in1d(calc_uterms[:, pind], self.usymm[1]))]
+        calc_lterms = calc_lterms[
+            (np.in1d(calc_lterms[:, pind], self.lsymm[0])) |
+            (np.in1d(calc_lterms[:, pind], self.lsymm[1]))]
 
-        # filter by state - use only for single states
+        # filter by state - use only for the case of single state
         self.ustate = ustate
         self.lstate = lstate
         if self.ustate is not None:
@@ -274,27 +284,18 @@ class Hamiltonian:
         return calc_uterms, calc_lterms
 
     def build_hamiltonian(self, iso, par, jrotn, tmatrix):
-        """Builds the Hamiltonian matrix by summing the block diagonal matrix
-        of the kinetic energy, the diagonal matrix of potential energy
-        and the coupling matrix with diagonal and off-diagonal blocks
+        """Builds the Hamiltonian matrix as a sum of three matricies:
+        the kinetic energy, the potential energy and the couplings
 
-        Parameters
-        ----------
-            iso : bool0
-                Isotopologue number
-            par : int
-                Symmetry label
-            jrotn : float
-                The rotational quantum number
-            tmatrix : numpy.ndarray
-                The kinetic energy matrix
+        Args:
+            iso (int): isotopologue number
+            par (int): e- or f-symmetry
+            jrotn (float): the rotational quantum number
+            tmatrix (array): the kinetic energy matrix
 
-        Returns
-        ----------
-            hmatrix : numpy.ndarray
-                The Hamiltonian matrix
+        Returns:
+            array: the final constructed Hamiltonian matrix
         """
-
         vmatrix = self.pot_enr.calculate_potential_energy(jrotn, par, iso)
         imatrix = self.interact.calculate_coupling_matrix(jrotn, par, iso)
         hmatrix = tmatrix + vmatrix + imatrix
@@ -303,23 +304,14 @@ class Hamiltonian:
         return hmatrix
 
     def _lapack_eig_decomposition(self, hmatrix):
-        """Diagonilizes the Hamiltonian matrix with the scipy "eigh" procedure
-        from the LAPACK package
+        """Diagonilizes the Hamiltonian matrix through the scipy
+        eigh() procedure from the LAPACK package
 
-        Parameters
-        ----------
-            hmatrix : numpy.ndarray
-                The Hamiltonian matrix
+        Args:
+            hmatrix (array): The Hamiltonian
 
-        Returns
-        ----------
-            evalues : numpy.ndarray
-                The computed eigenvalues
-            evecs : numpy.ndarray
-                The computed eigenvectors
-
-        Notes
-        ----------
+        Returns:
+            tuple: A tuple of eigenvalues and eigenvectors
         """
 
         subset_value, subset_index = None, None
@@ -349,32 +341,25 @@ class Hamiltonian:
         return evalues, evecs
 
     def eigsh(self):
-        pass
+        raise NotImplementedError()
 
     def eigh(self):
-        pass
+        raise NotImplementedError()
 
     def _arpack_eig_decomposition(self, hmatrix):
-        """Diagonilizes the Hamiltonian matrix with the scipy sparse eigsh() procedure
-        from the ARPACK package
+        """Diagonilizes the Hamiltonian matrix through the scipy sparse eigsh()
+        procedure from the ARPACK package
 
-        Parameters
-        ----------
-            hmatrix : numpy.ndarray
-                The Hamiltonian matrix
+        Args:
+            hmatrix (array): The Hamiltonian matrix
 
-        Returns
-        ----------
-            evalues : numpy.ndarray
-                The coumputed eiegenvalues
-            evecs : numpy.ndarray
-                The computed eigenvectors
+        Returns:
+            tuple: A tuple of eigenvalues and eigenvectors
 
-        Notes
-        ----------
-            ARAPCK procedure is the most efficient and suitable for finding
+        Notes:
+            ARAPCK procedure is the most efficient and approppriate for finding
             the largest eigenvalues of a sparse matrix. If the smallest
-            eigenvalues are desired then it is recommended to use a
+            eigenvalues are required then it is recommended to use a
             shift-invert mode. It transforms the eigenvalue problem to
             an eqivalent problem with shifted eigenvalues in which the
             small eigenvalues u become the large eigenvalues v: v = 1 / u
@@ -400,30 +385,22 @@ class Hamiltonian:
         pass
 
     def _arange_levels(self, jrotn, par, iso, evalues, evecs, shiftE=[0.0]):
-        """Given the good quantum numbers, labels and the computed eigenvalues this
-        function will find and compute additional quantum numbers and labels
-        and will arange the full information for each level in one matrix
+        """ Given a set of good quantum numbers, labels and the computed
+            eigenvalues, this function will compute additional information
+            about the energy levels and arange the entire information for
+            each level in one matrix
 
-        Parameters
-        ----------
-            jrotn : float
-                The rotational quantum number
-            par : int
-                Symmetry label, 0 for f- and 1 for e-symmetry
-            iso : int
-                The isotopolgue number
-            evalues : numpy.ndarray
-                The array with the computed eigenvalues
-            evecs : numpy.ndarray
-                The array with the computed eigenvectors
-            shiftE : list, optional
-                The value of the energy to shift the levels. Defaults to [0.0].
+        Args:
+            jrotn (float): The rotational quantum number
+            par (int): e- or f-symmetry
+            iso (int): isotopolgue number
+            evalues (array): The array of computed eigenvalues
+            evecs (array): The computed eigenvectors
+            shiftE (list, optional): The shift energy. Defaults to [0.0].
 
-        Returns
-        ----------
-            levels : numpy.ndarray
-                An array containing all levels i.e. energy, quantum numbers
-                and labels
+        Returns:
+            array: The energy levels with the corresponding information
+            aranged by columns
         """
 
         ids = np.arange(self.ecount+1, evalues.shape[0]+self.ecount+1)
@@ -442,18 +419,25 @@ class Hamiltonian:
         omegas = self._get_omega_values(states)
 
         levels = np.column_stack((
-                ids, evalues_shifted,
-                np.full((evalues_shifted.shape[0],), jrotn),
-                np.full((evalues_shifted.shape[0],), par),
-                np.full((evalues_shifted.shape[0],), iso),
-                ccoefs, states, vibnums, lambdas, omegas
-        ))
+            ids, evalues_shifted,
+            np.full((evalues_shifted.shape[0],), jrotn),
+            np.full((evalues_shifted.shape[0],), par),
+            np.full((evalues_shifted.shape[0],), iso),
+            ccoefs, states, vibnums, lambdas, omegas))
 
         return levels
 
     def _get_coupling_coefficients(self, evecs):
+        """Compute the coupling coeffcients which can be further use
+           for assigning a state based on the largest coefficient
 
-        # assign state based on the largest coupling coefficient
+        Args:
+            evecs (array): The eigenvectors array
+
+        Returns:
+            array: The computed coeffcients
+        """
+
         ccoefs = np.zeros((evecs.shape[1], self.nch))
         evecs = np.power(evecs, 2)
 
@@ -478,40 +462,22 @@ class Hamiltonian:
 
         return np.fromiter(
             map(lambda x: self.channels[x-1].nlambda, np.int64(states)),
-            dtype=np.int64
-        )
+            dtype=np.int64)
 
     def _get_omega_values(self, states):
 
         return np.fromiter(
             map(lambda x: self.channels[x-1].omega, np.int64(states)),
-            dtype=np.float64
-        )
+            dtype=np.float64)
 
-    def calculate_stats(self, yobs, ycal, yunc, is_weighted):
+    def save_energy_list(self, stats=None):
 
-        diff_square = np.square(yobs - ycal)
-
-        # calculate chi square
-        if not is_weighted:
-            weights = 1.0 / np.square(yunc)
-        else:
-            weights = 1.0 / (np.square(yunc) + 0.33 * (diff_square))
-
-        chi2 = np.sum(diff_square * weights) / yobs.shape[0]
-
-        # calculate rms
-        s = np.sum(diff_square) / yobs.shape[0]
-        rms = _sqrt(s)
-
-        # calculate dimensionless rms
-        rmsd = _sqrt(chi2)
-
-        return chi2, rms, rmsd
-
-    def save_output_data(self, stats):
-
-        # add numbering
+        if stats is None:
+            stats = _utils.calculate_stats(self.out_data[:, 8],
+                                           self.out_data[:, 7],
+                                           self.out_data[:, 10],
+                                           self.is_weighted)
+        # add id column
         outdata_num = np.c_[np.arange(1, self.out_data.shape[0]+1),
                             self.out_data]
 
@@ -532,15 +498,17 @@ class Hamiltonian:
                '%6d', '%15.6f', '%14.6f', '%12.6f', '%9.4f']
         fmt += self.nch*['%7.3f'] + ['%5d']
 
-        footer = (f'\nChi Square = {stats[0]:.8f}\n'
-                  f'RMS = {stats[1]:.8f} cm-1\n'
-                  f'RMSD = {stats[2]:.8f}')
+        footer = _utils.print_stats(stats)
 
         np.savetxt(self.energy_out_file, outdata_num, header=header,
                    footer=footer, fmt=fmt)
 
-    def save_predicted_energies(self, calc_energies, filename=None):
+    def save_full_energy_list(self, calc_energies, filename=None):
         """Stores the complete list of computed energy levels in external file
+
+        Args:
+            calc_energies (array): the array containing the energy levels
+            filename (str, optional): The name of the file. Defaults to None.
         """
 
         nrows = self.calc_data.shape[1]
@@ -576,7 +544,7 @@ class Hamiltonian:
     def sort_predicted_energies(self, cols=[]):
 
         self._sort_predicted_energies(cols)
-        self.save_predicted_energies()
+        self.save_full_energy_list()
 
     def _sort_output_energies(self, cols=[]):
 
@@ -587,15 +555,13 @@ class Hamiltonian:
     def sort_output_energies(self, cols=[]):
 
         self._sort_output(cols)
-        self._save_output_data()
+        self.save_energy_list()
 
     def get_predicted_data(self):
-        """Gets the complete list of computed energy levels
+        """Get the complete list of computed energy levels
 
-        Returns
-        ----------
-            calc_data: numpy.ndarray
-                The computed energy levels
+        Returns:
+            array: the computed energy levels
         """
 
         return self.calc_data
@@ -605,15 +571,13 @@ class Hamiltonian:
         return self.out_data
 
     def get_hamiltonian(self):
-        """Gets the Hamiltonian matrix for the last computed J, symmetry
+        """Get the Hamiltonian matrix for the last computed J, symmetry
         and isotopologue
 
-        Returns
-        ----------
-            hamiltonian : numpy.ndarray
-                The computed Hamiltonian matrix
+        Returns:
+            array: The Hamiltonian matrix
         """
-        # will get the matrix for the last comupted J, e/f-level and isotope
+
         return self.hamiltonian
 
 
@@ -633,24 +597,18 @@ class KineticEnergy:
         self.T = np.zeros((H.msize, H.msize))
 
     def calculate_kinetic_energy(self, iso):
-        """Calls a specific function for the calculation of the kinetic energy
-        depending on the solver method
+        """Call a specific function for the calculation of the kinetic
+           energy operator depending on the chosen solver method
 
-        Parameters
-        ----------
-            iso : int
-                Isotopologue number
+        Args:
+            iso (int): The isotopologue number
 
-        Raises
-        ----------
-            ValueError:
-                If the name of the solver method is not correct,
-                an error occurrs
+        Raises:
+            ValueError: If the name of the chosen solver method is not
+            present in the list of allowed values
 
-        Returns
-        ----------
-            T : numpy.ndarray
-                The calculated matrix of the kinetic energy
+        Returns:
+            array: The computed kinetic energy matrix
         """
 
         mass = self.masses[iso-1]
@@ -1047,7 +1005,8 @@ class Interaction:
     def _calculate_pointwise_coupling_on_grid(self, cp, ypar):
 
         xpnts = self.couplings[cp].xc
-        ypnts = ypar[self.couplings[cp].start_index:self.couplings[cp].end_index]
+        ypnts = \
+            ypar[self.couplings[cp].start_index:self.couplings[cp].end_index]
 
         cs = _CubicSpline(xpnts, ypnts, bc_type='natural', extrapolate=True)
         self.fgrid[cp*self.ngrid:(cp+1)*self.ngrid] = cs(self.rgrid)
