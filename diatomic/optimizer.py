@@ -3,7 +3,7 @@ from os.path import join as _join
 import scipy as sp
 import numpy as np
 
-from utils import Utils as _utils
+from .utils import Utils as _utils
 
 try:
     from iminuit import Minuit
@@ -15,10 +15,20 @@ __all__ = ['Optimizer']
 
 
 class Optimizer:
-    """Implement the optimization procedurese
-    """
 
     def __init__(self, H, S=None, output_progress=False, is_weighted=False):
+        """Implement procedures for the optimization of the channel, coupling
+        and dipole moment parameters using input observations data for the
+        energy levels, transition frequencies or transition intensities
+
+        Args:
+            H (object): The Hamiltonian object
+            S (object, optional): The Spectrum object. Defaults to None.
+            output_progress (bool, optional): Whether detailed information for
+                the fit to be outputed on every iteration. Defaults to False.
+            is_weighted (bool, optional): Wotson's weighting procedure.
+                Defaults to False.
+        """
 
         self.H = H
         self.S = S
@@ -377,15 +387,15 @@ class Optimizer:
 
         Returns:
             tuple: the corrections to the parameters, the rank of the
-            matrix and an array containing the singular values
+                matrix and an array containing the singular values
 
         Notes:
-            1. There are two similar procedures for SVD in numpy
-                and scipy libraries. In their older versions the definitions of
-                the default tol value was different.
+            1. There are two similar procedures for SVD in numpy and
+            scipy libraries. In their older versions the definitions of
+            the default tol value was different.
             2. Tol controls which and how many linear combinations of
-                parameters will be ignored because of the singularity of
-                the matrix.
+            parameters will be ignored because of the singularity of
+            the matrix.
         """
 
         x, _, rank, s = sp.linalg.lstsq(A, b, tol, lapack_driver)
@@ -515,8 +525,9 @@ class Optimizer:
         Returns:
             float: Chi Square value
 
-        Remarks:
-            1. Minuit requires this procedure to accept a single argument
+        Notes:
+            Minuit requires only one single argument to be passed
+            to this function
         """
         ycal, yobs, ydel, yvar, stats = self._calculate_levels(ypar)
 
@@ -532,12 +543,12 @@ class Optimizer:
         Args:
             niter (int, optional): The number of iterations. Defaults to 0.
             step_size (float, optional): the initial change in the parameters.
-            Defaults to 1.0e-4.
+                Defaults to 1.0e-4.
             set_limits (array, optional): limit the possible values of
-            the parameters. Defaults to None.
+                the parameters. Defaults to None.
             uncert (bool, optional): whether to compute the covariance and the
-            correlations matrices and the uncertanties in the parameters.
-            Defaults to False.
+                correlations matrices and the uncertanties in the parameters.
+                Defaults to False.
         """
 
         print_level = int(self.progress) + 1

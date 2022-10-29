@@ -8,20 +8,21 @@ from math import sqrt as _sqrt
 
 __all__ = ['Utils']
 
-# convert from m^-1 to cm^-1
-C_hartree = _physical_constants['hartree-inverse meter relationship'][0]/100.0
-
-# convert from m to angstrom
-C_bohr = _physical_constants['Bohr radius'][0] / _angstrom
-
-# devide by m_e to convert from amu to au
-C_massau = _atomic_mass / _physical_constants['electron mass'][0]
-
-c_boltzmank_str = 'Boltzmann constant in inverse meter per kelvin'
-C_boltzmannk = _physical_constants[c_boltzmank_str][0] * 0.01
-
 
 class Utils:
+
+    # convert from m^-1 to cm^-1
+    C_hartree = _physical_constants[
+        'hartree-inverse meter relationship'][0]/100.0
+
+    # convert from m to angstrom
+    C_bohr = _physical_constants['Bohr radius'][0] / _angstrom
+
+    # devide by m_e to convert from amu to au
+    C_massau = _atomic_mass / _physical_constants['electron mass'][0]
+
+    c_boltzmank_str = 'Boltzmann constant in inverse meter per kelvin'
+    C_boltzmannk = _physical_constants[c_boltzmank_str][0] * 0.01
 
     @classmethod
     def calculate_stats(cls, yobs, ycal, yunc, is_weighted):
@@ -55,7 +56,6 @@ class Utils:
 
         # calculate the median value - the half values are
         # before and the other halfs after it
-
         median = np.median(ycal)
 
         stats = {
@@ -166,7 +166,7 @@ class Utils:
             mass_str += (
                 f'{s:>4}Isotopologue {nisotope}: '
                 f'Reduced Mass = {mass:>15.9} au = '
-                f'{mass / C_massau:>15.9} amu\n')
+                f'{mass / Utils.C_massau:>15.9} amu\n')
 
         jqnum_str = ' '.join(map(str, H.jqnumbers))
         pars_str = ', '.join(map(lambda x: 'e' if x else 'f', H.pars))
@@ -193,16 +193,16 @@ class Utils:
         grid_points_str = ''
         for point in H.rgrid:
             grid_points_str += (
-                f'{s:<4}{point*C_bohr:>20.8f};'
+                f'{s:<4}{point*Utils.C_bohr:>20.8f};'
                 f'{point:>20.8f}\n')
 
         output_grid = (
             f'{nsymb*"#"} Grid {nsymb*"#"}\n\n'
             f'{s:>4}Method of Solution: {H.solver}\n\n'
             f'{s:>4}Number of Grid Points = {H.ngrid:<5d}\n\n'
-            f'{s:>4}Rmin = {H.rmin*C_bohr:>12.10f} '
+            f'{s:>4}Rmin = {H.rmin*Utils.C_bohr:>12.10f} '
             f'Angstrom = {H.rmin:>12.10f} Bohr\n'
-            f'{s:>4}Rmax = {H.rmax*C_bohr:>12.10f} '
+            f'{s:>4}Rmax = {H.rmax*Utils.C_bohr:>12.10f} '
             f'Angstrom = {H.rmax:>12.10f} Bohr\n\n'
             f'{s:>4}Hamiltonian Matrix Size = '
             f'{s:>4}{H.nch*H.ngrid} x {H.nch*H.ngrid}\n'
@@ -226,16 +226,16 @@ class Utils:
                 f'{s:<13}Rot correction: {ch.rot_correction}\n'
                 f'{s:<13}Equilibrium distance point = {eq_pos+1}\n'
                 f'{s:<13}Equilibrium distance: '
-                f'Rmin = {ch.rpoints[eq_pos]*C_bohr}, '
-                f'Umin = {ch.upoints[eq_pos]*C_hartree}\n'
+                f'Rmin = {ch.rpoints[eq_pos]*Utils.C_bohr}, '
+                f'Umin = {ch.upoints[eq_pos]*Utils.C_hartree}\n'
                 f'{s:<13}Number of parameters: {ch.npnts}\n'
                 f'{s:<13}Parameters (Angstrom/cm-1; Bohr/Hartree):\n\n')
 
             if ch.model == 'pointwise':
                 for i in range(0, len(ch.rpoints)):
                     channels_str += (
-                        f'{s:<4}{ch.rpoints[i]*C_bohr:>20.8f}'
-                        f'{ch.upoints[i]*C_hartree:>20.8f};'
+                        f'{s:<4}{ch.rpoints[i]*Utils.C_bohr:>20.8f}'
+                        f'{ch.upoints[i]*Utils.C_hartree:>20.8f};'
                         f'{ch.rpoints[i]:>20.8f}'
                         f'{ch.upoints[i]:>20.8f}\n')
 
@@ -245,8 +245,8 @@ class Utils:
             f'{channels_str}')
 
         ugrid_cols = np.hstack((
-            H.rgrid[:, np.newaxis] * C_bohr,
-            H.ugrid.reshape(H.nch, H.ngrid).T * C_hartree))
+            H.rgrid[:, np.newaxis] * Utils.C_bohr,
+            H.ugrid.reshape(H.nch, H.ngrid).T * Utils.C_hartree))
 
         output_channels_funcs = (
             f'\n{nsymb*"#"} Channel Functions on Grid {nsymb*"#"}\n\n'
@@ -275,7 +275,7 @@ class Utils:
             f'{couplings_str}')
 
         fgrid_cols = np.hstack((
-            H.rgrid[:, np.newaxis] * C_bohr,
+            H.rgrid[:, np.newaxis] * Utils.C_bohr,
             H.fgrid.reshape(H.ncp, H.ngrid).T))
 
         output_couplings_funcs = (

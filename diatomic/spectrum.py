@@ -1,11 +1,9 @@
 import io
 import numpy as np
-import wavenumbers
-import wavenumbers_intens
+from .wavenumbers import calculate_wavenumbers_list, calculate_wavenumbers_list_with_obs
 
 from scipy.interpolate import CubicSpline
-from utils import C_bohr, C_boltzmannk
-from utils import Utils as _utils
+from .utils import Utils as _utils
 
 try:
     import py3nj
@@ -15,10 +13,17 @@ except ModuleNotFoundError:
 
 
 class Spectrum:
-    """Calculate spectral quantities
-    """
 
     def __init__(self, H, dmfs=None, spec_type='absorption'):
+        """Calculate the spectral quantities
+
+        Args:
+            H (object): The Hamiltonian object
+            dmfs (dict, optional): The transition dipole moment functions.
+                Defaults to None.
+            spec_type (str, optional): Whether absorption or emission is
+                considered. Defaults to 'absorption'.
+        """
 
         self.H = H
         self.rgrid = self.H.rgrid
@@ -31,7 +36,11 @@ class Spectrum:
         if dmfs is not None:
             self.dmfs_init = {}
             for (n, k) in dmfs:
-                self.dmfs_init[(n, k)] = np.loadtxt(io.StringIO(dmfs[(n, k)]).getvalue())
+                dmf_str = io.StringIO(dmfs[(n, k)]).getvalue()
+                self.dmfs_init[(n, k)] = np.loadtxt(dmf_str)
+
+            # add initial dmf parameters to ypar
+            self.H.fpars.set_dmf_parameters(self.dmfs_init)
 
         self.wavens = None
         self.hlf = None
@@ -46,40 +55,45 @@ class Spectrum:
         self.fname_compare = 'compared_wavenumbers.dat'
 
     def set_constraints(self, uenr_range=None, lenr_range=None, lsymm=None,
-                        usymm=None, ujrange=None, ljrange=None, wrange=None):
-
-        # set default constraints
-        self.freq_range = wrange or (0, 1e5)
-        usymm = usymm or (0, 1)
-        lsymm = lsymm or (0, 1)
-
-        evalues = self.H.calc_data
+                        usymm=None, ujrange=None, ljrange=None, wrange=None,
+                        ithreshold=None):
 
         eind, jind, pind = 1, 2, 3
 
         # constraints by energy
-        self.lower_levels = evalues[(evalues[:, eind] >= lenr_range[0]) &
-                                    (evalues[:, eind] <= lenr_range[1])]
+        evalues = self.H.calc_data
+        enr_min, enr_max = np.amin(evalues[:, eind]), np.amax(evalues[:, eind])
 
-        self.upper_levels = evalues[(evalues[:, eind] >= uenr_range[0]) &
-                                    (evalues[:, eind] <= uenr_range[1])]
+        if uenr_range is None:
+            uenr_min, uenr_max = enr_min, enr_max
+            self.upper_levels = evalues[(evalues[:, eind] >= uenr_min) &
+                                        (evalues[:, eind] <= uenr_max)]
+        if lenr_range is None:
+            lenr_min, lenr_max = enr_min, enr_max
+            self.lower_levels = evalues[(evalues[:, eind] >= lenr_min) &
+                                        (evalues[:, eind] <= lenr_max)]
 
         # constraints by J
-        ujs, uje = ujrange[0], ujrange[1]
+        if ujrange is None:
+            ujmin = np.amin(self.upper_levels[:, jind])
+            ujmax = np.amax(self.upper_levels[:, jind])
 
-        # upper_jrots = np.arange(ujs, uje+1)
-        self.upper_levels = self.upper_levels[
-            (self.upper_levels[:, jind] >= ujs) &
-            (self.upper_levels[:, jind] <= uje)]
+            ujs, uje = ujmin, ujmax
+            self.upper_levels = self.upper_levels[
+                (self.upper_levels[:, jind] >= ujs) &
+                (self.upper_levels[:, jind] <= uje)]
 
-        ljs, lje = ljrange[0], ljrange[1]
-        # lower_jrots = np.arange(ljs, lje+1)
-        self.lower_levels = self.lower_levels[
-            (self.lower_levels[:, jind] >= ljs) &
-            (self.lower_levels[:, jind] <= lje)
-        ]
+        if ljrange is None:
+            ljmin = np.amin(self.lower_levels[:, jind])
+            ljmax = np.amax(self.lower_levels[:, jind])
+            ljs, lje = ljmin, ljmax
+            self.lower_levels = self.lower_levels[
+                (self.lower_levels[:, jind] >= ljs) &
+                (self.lower_levels[:, jind] <= lje)]
 
         # constarints by symmetry
+        usymm = usymm or (0, 1)
+        lsymm = lsymm or (0, 1)
         self.lower_levels = self.lower_levels[
             (np.in1d(self.lower_levels[:, pind], lsymm[0])) |
             (np.in1d(self.lower_levels[:, pind], lsymm[1]))
@@ -110,9 +124,11 @@ class Spectrum:
         ulevels = np.ascontiguousarray(ulevels)
         llevels = np.ascontiguousarray(llevels)
 
-        # uid uv uJ up us ucE ul uo lid lv lJ lp ls lcE ll lo cw branch
-        out_wavens = wavenumbers.calculate_wavenumbers_list(ulevels, llevels)
+        print(ulevels.shape, llevels.shape)
 
+        # uid uv uJ up us ucE ul uo lid lv lJ lp ls lcE ll lo cw branch
+        out_wavens = calculate_wavenumbers_list(ulevels, llevels)
+        print(out_wavens.shape)
         # apply strict selection rules by J and symmetry
         # through the branch label
         out_wavens = out_wavens[out_wavens[:, -1] != -1]
@@ -127,7 +143,7 @@ class Spectrum:
             self.hlf = self._apply_rules(out_wavens)
             out_wavens = out_wavens[np.where(self.hlf != 0.0)[0], :]
             self.hlf = self.hlf[np.where(self.hlf != 0.0)[0]]
-
+        print('WWWWW', out_wavens.shape)
         return out_wavens
 
     def _calculate_wavenumber_with_observations(self, ulevels, llevels, wrange=None,
@@ -159,7 +175,7 @@ class Spectrum:
 
         # uid uv uJ up us ucE ul uo lid lv lJ lp ls lcE ll lo
         # cw ew dw uncw eint unci branch
-        out_wavens = wavenumbers_intens.calculate_wavenumbers_list(
+        out_wavens = calculate_wavenumbers_list_with_obs(
             ulevels, llevels, self.H.wavens_data)
 
         # apply strict selection rules by J and symmetry
@@ -193,13 +209,37 @@ class Spectrum:
         ulambda, llambda = out_wavens[:, 6], out_wavens[:, 14]
         uomega, lomega = out_wavens[:, 7], out_wavens[:, 15]
 
+        print('QN')
+        print(usymm)
+        print(lsymm)
+        print(ujq)
+        print(ljq)
+        print(uomega)
+        print(lomega)
+        print(ulambda)
+        print(llambda)
+
         return self._compute_honl_london_factors(
             usymm, lsymm, ujq, ljq, uomega, lomega, ulambda, llambda)
 
-    def calculate_Einstein_coefficients(self, out_wavens, dmfs=None,
-                                        ninter=1000):
+    def calculate_Einstein_coefficients(self, wavens, dmfs=None, ninter=1000,
+                                        freq_range=None, ithreshold=None):
         # if self.hlf is None:
         #     self._apply_rules(out_wavens)
+
+        # set constraints by OBSERVED frequency
+        out_wavens = np.copy(wavens)
+        if freq_range is not None:
+            out_wavens = out_wavens[(out_wavens[:, 17] > freq_range[0]) &
+                                    (out_wavens[:, 17] < freq_range[1])]
+
+        # set intensity threshold for the EXPERIMENTAL intensities
+        # the threshold is measured in precents of the most intense line
+        # if ithreshold is not None:
+        #     max_intensity = np.amax(out_wavens[:, 20])
+        #     ithresh_value = (ithreshold * max_intensity) / 100
+        #     ithresh_inds = np.where(out_wavens[:, 20] > ithresh_value)[0]
+        #     out_wavens = out_wavens[ithresh_inds, :]
 
         if dmfs is None:
             dmfs = self.dmfs_init
@@ -209,19 +249,36 @@ class Spectrum:
         self.edipole_element = self._compute_line_strength(
             out_wavens, dmfs, ninter=ninter)
 
-        # np.savetxt('dipole_element.dat', self.edipole_element, fmt='%14.8e')
-        line_strength = self.edipole_element[:, -1] * self.hlf
+        # self.hlf = self._apply_rules(out_wavens)
+        # out_wavens = out_wavens[np.where(self.hlf != 0.0)[0], :]
+        # self.hlf = self.hlf[np.where(self.hlf != 0.0)[0]]
+
         jinitial = self.edipole_element[:, 2]
-        waven = self.edipole_element[:, 16]
-        # statistical weight of the initial level
+        jfinal = self.edipole_element[:, 10]
+
+        # the statistical weight of the initial level
         self.gji = (2 * jinitial + 1)
+
+        # print('HLF')
+        # print(self.hlf)
+
+        # edm = np.copy(self.edipole_element)
+        # edm[:, -1] = edm[:, -1] #/ (2 * jfinal + 1)
+        # self._save_line_strength(edm, 'line_strength.dat')
+
+        line_strength = self.edipole_element[:, -1] #* self.hlf  # self.hlf[ithresh_inds]
+
+        waven = self.edipole_element[:, 16]
+
         self.acoef = self._calculate_Einstein_coeffcients(
             waven, line_strength, self.gji)
         acoef_result = np.c_[self.edipole_element[:, :-1], self.acoef]
-        self.nonzero_ainds = np.where(self.acoef != 0.0)[0]
-        self.acoef_final = acoef_result[self.nonzero_ainds, :]
+        # self.nonzero_ainds = np.where(self.acoef != 0.0)[0]
+        # self.acoef_final = acoef_result[self.nonzero_ainds, :]
 
-        return self.acoef_final
+        #return self.acoef_final
+
+        return acoef_result
 
     def wrapper_calculate_Einstein_coefficients(self, ypar):
 
@@ -235,16 +292,28 @@ class Spectrum:
             ustate=self.H.ustate, lstate=self.H.lstate)
         out_wavens = self.calculate_wavenumbers(ulevels, llevels)
 
+        # the dmf parameters should be updated since the function
+        # calculate_Einstein_coefficients expects dict as input
         dmfs = None
         if self.dmfs_init is not None:
-            dmfs = {}
-            ypar_shape = self.H.ypar_init.shape[0]
-            for (n, k) in self.dmfs_init:
-                dmf_params = ypar[ypar_shape:self.dmfs_init[(n, k)].shape[0]+ypar_shape]
-                dmfs[(n, k)] = np.column_stack((self.dmfs_init[(n, k)][:, 0], dmf_params,
-                                                self.dmfs_init[(n, k)][:, 2]))
+            dmfs = self._update_dmf_parameters(ypar)
 
         return self.calculate_Einstein_coefficients(out_wavens, dmfs=dmfs)
+
+    def _update_dmf_parameters(self, ypar):
+
+        dmfs = {}
+        npars = self.H.fpars.tot_pars
+
+        for (n, k) in self.dmfs_init:
+            dmf_shape = self.dmfs_init[(n, k)].shape[0]
+            ypoints = ypar[npars:npars+dmf_shape]
+            npars += dmf_shape
+            xpoints = self.dmfs_init[(n, k)][:, 0]
+            yfixed = self.dmfs_init[(n, k)][:, 2]
+            dmfs[(n, k)] = np.column_stack((xpoints, ypoints, yfixed))
+
+        return dmfs
 
     def _calculate_Einstein_coeffcients(self, wavenumber, line_strength, gji):
 
@@ -261,36 +330,64 @@ class Spectrum:
         ivec_inds = out_wavens[:, 0].astype(np.int)
         fvec_inds = out_wavens[:, 8].astype(np.int)
 
-        rgrid, rstep = self.rgrid * C_bohr, self.rstep * C_bohr
-        igrid, istep = np.linspace(self.rmin, self.rmax, num=ninter, endpoint=True, retstep=True)
-        igrid, istep = igrid * C_bohr, istep * C_bohr
+        print(ivec_inds, fvec_inds)
+
+        rgrid, rstep = self.rgrid * _utils.C_bohr, self.rstep * _utils.C_bohr
+        igrid, istep = np.linspace(self.rmin, self.rmax, num=ninter,
+                                   endpoint=True, retstep=True)
+
+        # convert from bohr to angstrom
+        igrid, istep = igrid * _utils.C_bohr, istep * _utils.C_bohr
 
         sinc_matrix = self._calculate_sinc_matrix(rgrid, igrid, rstep)
         dipole_matrix = self._interpolate_dipole_moment(igrid, dmfs)
 
         # np.savetxt('sinc_matrix.dat', sinc_matrix, fmt='%14.11e')
-        # np.savetxt('evecs_all.dat', self.H.evecs_matrix, fmt='%12.11e')
-        # np.savetxt('dipole_matrix.dat', dipole_matrix[0, 1, :], fmt='%14.8e')
-        result = np.zeros((ivec_inds.shape[0], out_wavens.shape[1]+1))
+        # np.savetxt('evecs_all_wodwCC.dat', self.H.evecs_matrix, fmt='%12.11e')
+        # np.savetxt('dipole_matrix_EX_wodwCC.dat', dipole_matrix[0, 2, :], fmt='%14.8e')
+        # np.savetxt('dipole_matrix_Ea_wodwCC.dat', dipole_matrix[1, 2, :], fmt='%14.8e')
 
+        result = np.zeros((ivec_inds.shape[0], out_wavens.shape[1]+1))
+        cmult = 1.0
         ii = 0
         for (i, j) in zip(ivec_inds, fvec_inds):
             dme = 0.0
+
+            # get quantum numbers
+            inds = np.where((out_wavens[:, 0] == i) & (out_wavens[:, 8] == j))[0]
+            # linds = np.where(out_wavens[:, 8] == j)
+            # print(i, j, inds)
+            uj = out_wavens[inds, 2]
+            up = out_wavens[inds, 3]
+            ul = out_wavens[inds, 6]
+            uo = out_wavens[inds, 7]
+            lj = out_wavens[inds, 10]
+            lp = out_wavens[inds, 11]
+            ll = out_wavens[inds, 14]
+            lo = out_wavens[inds, 15]
+
+            # print(i, j, uj, up, ul, uo, lj, lp, ll, lo)
+            # hlf = self._compute_honl_london_factors(up, lp, uj, lj, uo, lo, ul, ll)
+            rot_factor = self._compute_rot_factors(up, lp, uj, lj, uo, lo, ul, ll)
+
             for n in range(self.H.nch):
                 for m in range(self.H.nch):
                     ncoefs = self.H.evecs_matrix[n*self.H.ngrid:(n+1)*self.H.ngrid, i-1]
                     kcoefs = self.H.evecs_matrix[m*self.H.ngrid:(m+1)*self.H.ngrid, j-1]
-                    # for l in range(ngrid):
-                    #     for p in range(ngrid):
+
+                    # for l in range(self.H.ngrid):
+                    #     for p in range(self.H.ngrid):
                     #         sincl = sinc_matrix[l, :]
                     #         sincp = sinc_matrix[p, :]
                     #         sumq = np.sum(sincl*dipole_matrix[n, m, :]*sincp)
-                    #         dme += kcoefs[l] * ncoefs[p] * sumq * istep
-                    # res = dme / rstep
-                    # res = dme / rstep # this should be outside n, m loops
+                    #         dme += kcoefs[l] * ncoefs[p] * sumq * istep * np.sqrt(hlf)
+                    # res = dme / rstep  # this should be outside n, m loops
+
                     sumq = np.dot(sinc_matrix, (dipole_matrix[n, m, :]*sinc_matrix).T)
-                    dme += np.dot(kcoefs, ncoefs * sumq) * istep
+                    dme += np.dot(kcoefs, ncoefs * sumq) * istep * rot_factor #* (-1) #**(lj)
             res = np.sum(dme) / rstep
+            # print('HLF', hlf)
+            # print("RES", res**2)
             result[ii, :] = np.hstack((out_wavens[ii, :], res**2))
             ii += 1
 
@@ -298,7 +395,8 @@ class Spectrum:
 
     def _interpolate_dipole_moment(self, igrid, dmfs):
 
-        dipole_matrix = np.ones((self.H.nch, self.H.nch, igrid.shape[0]))
+        # dipole_matrix = np.ones((self.H.nch, self.H.nch, igrid.shape[0]))
+        dipole_matrix = np.zeros((self.H.nch, self.H.nch, igrid.shape[0]))
 
         for n in range(1, self.H.nch+1):
             for k in range(1, self.H.nch+1):
@@ -334,7 +432,7 @@ class Spectrum:
         if self.spec_type.lower().startswith('a'):
 
             # TODO: check if Einstein coefs have already been calculated
-            kt = C_boltzmannk * T
+            kt = _utils.C_boltzmannk * T
 
             # TODO check column numbers
             intensity = self.acoef * self.gji * wavens[:, -1] * np.exp(-wavens[:, 10]/kt)
@@ -395,7 +493,7 @@ class Spectrum:
         else:
             gns = (2*Ia+1)*(2*Ib+1)
 
-        kt = C_boltzmannk * T
+        kt = _utils.C_boltzmannk * T
         # qpart = gns *
 
     def calculate_absolute_intensity(self):
@@ -421,6 +519,7 @@ class Spectrum:
                                      lomega, ulambda, llambda):
 
         # n' E' J' p' iso' st' v' l' o' n E J p iso st v l o freq
+        # print(usymm, lsymm, uj, uomega, lomega, ulambda, llambda)
 
         ueps = self._map_parity_to_epsilon(usymm)
         leps = self._map_parity_to_epsilon(lsymm)
@@ -439,6 +538,7 @@ class Spectrum:
         two_l3 = np.int64(2*lj)
         two_m1 = np.int64(-2*uomega)
         two_m2 = np.int64(2*(ulambda-llambda))
+        # two_m2 = np.int64(2*(uomega-lomega))
         two_m3 = np.int64(2*lomega)
 
         # allows the ambiguous sign in the 3j symbol when one of the Lambda
@@ -447,7 +547,13 @@ class Spectrum:
         if (ulambda.any() == 0 and llambda.any() != 0) or \
            (ulambda.any() != 0 and llambda.any() == 0):
             two_m2 = np.int64(2*(ulambda+llambda))
+            # two_m2 = np.int64(2*(uomega+lomega))
             two_m3 = np.int64(-2*lomega)
+
+        # if (ulambda == 0 and llambda != 0) or (ulambda != 0 and llambda == 0):
+        #     two_m2 = np.int64(2*(ulambda+llambda))
+        #     # two_m2 = np.int64(2*(uomega+lomega))
+        #     two_m3 = np.int64(-2*lomega)
 
         # qunatum numbers that do not satisfy the following
         # conditions should be set to zero
@@ -464,13 +570,17 @@ class Spectrum:
             valid = 1*~(two_l3 < np.abs(two_m3))
             two_m3 *= valid
 
+        # try:
         wigner_3j = py3nj.wigner3j(
-            two_l1, two_l2, two_l3, two_m1, two_m2, two_m3
-        )
+            two_l1, two_l2, two_l3, two_m1, two_m2, two_m3)
+        # except ValueError:
+        # wigner_3j = 0.0
+
         wigner_3j_square = wigner_3j ** 2
+        #print(two_l1, two_l2, two_l3, two_m1, two_m2, two_m3, wigner_3j)
 
         hlf = 0.5 * eps_expr * delta_expr * j_expr * wigner_3j_square
-
+        #print(hlf)
         return hlf
 
     def _map_parity_to_epsilon(self, pars):
@@ -602,7 +712,7 @@ class Spectrum:
                   f'{labels[4]:<7}{labels[5]:<8}{labels[6]:<7}{labels[7]:<6}'
                   f'{labels[8]:<6}{labels[9]:<6}{labels[10]:<10}'
                   f'{labels[11]:<8}{labels[12]:<7}{labels[13]:<8}'
-                  f'{labels[14]:<14}{labels[15]}')
+                  f'{labels[14]:<10}{labels[15]:<14}{labels[16]}')
 
         fmt = ('%5.1d', '%6.1f',  '%5.1d', '%5.1d', '%12.5f', '%5.1d',
                '%5.1f', '%5.1d', '%5.1f', '%5.1d', '%5.1d', '%12.5f',
@@ -658,6 +768,27 @@ class Spectrum:
 
         np.savetxt(filename, lifetimes, comments='#', header=header, fmt=fmt)
 
+    def _save_line_strength(self, line_strength, filename):
+
+        cols = list(range(1, 8)) + list(range(9, line_strength.shape[1]))
+        acoefs_out = line_strength[:, cols]
+
+        labels = ("v'", "J'", "symm'", "state'", "E'", "Lambda'",
+                  "Omega'", "v", "J", "symm", "state", "E", "Lambda",
+                  "Omega", "cfreq", "branch", "A")
+
+        header = (f'{labels[0]:^7}{labels[1]:<6}{labels[2]:<6}{labels[3]:<10}'
+                  f'{labels[4]:<7}{labels[5]:<8}{labels[6]:<7}{labels[7]:<6}'
+                  f'{labels[8]:<6}{labels[9]:<6}{labels[10]:<10}'
+                  f'{labels[11]:<8}{labels[12]:<7}{labels[13]:<8}'
+                  f'{labels[14]:<10}{labels[15]:<14}{labels[16]}')
+
+        fmt = ('%5.1d', '%6.1f',  '%5.1d', '%5.1d', '%12.5f', '%5.1d',
+               '%5.1f', '%5.1d', '%5.1f', '%5.1d', '%5.1d', '%12.5f',
+               '%5.1d', '%5.1f', '%12.5f', '%8.1d', '%12.5e')
+
+        np.savetxt(filename, acoefs_out, comments='#', header=header, fmt=fmt)
+
     def _get_default_jrange(self, uterms, uj, lterms, lj):
 
         js = min(np.amin(uterms[:, uj]), np.amin(lterms[:, lj]))
@@ -685,3 +816,48 @@ class Spectrum:
             'Ree': 5,
             'Rff': 6
         }
+
+    def _compute_rot_factors(self, usymm, lsymm, uj, lj, uomega,
+                             lomega, ulambda, llambda):
+
+        # n' E' J' p' iso' st' v' l' o' n E J p iso st v l o freq
+        # print(usymm, lsymm, uj, uomega, lomega, ulambda, llambda)
+
+        j_expr = np.sqrt(((2.0 * uj) + 1.0) * ((2.0 * lj) + 1.0))
+
+        two_l1 = np.int64(2*uj)
+        two_l2 = 2*np.ones(uj.shape[0], dtype=np.int64)
+        two_l3 = np.int64(2*lj)
+        two_m1 = np.int64(-2*uomega)
+        # two_m2 = np.int64(2*(ulambda-llambda))
+        # two_m2 = np.int64(2*(uomega-lomega))
+        two_m2 = np.int64(2*(lomega-uomega))
+        two_m3 = np.int64(-2*lomega)
+
+        # qunatum numbers that do not satisfy the following
+        # conditions should be set to zero
+
+        if (two_l1 < np.abs(two_m1)).any():
+            valid = 1*~(two_l1 < np.abs(two_m1))
+            two_m1 *= valid
+
+        if (two_l2 < np.abs(two_m2)).any():
+            valid = 1*~(two_l2 < np.abs(two_m2))
+            two_m2 *= valid
+
+        if (two_l3 < np.abs(two_m3)).any():
+            valid = 1*~(two_l3 < np.abs(two_m3))
+            two_m3 *= valid
+
+        # try:
+        wigner_3j = py3nj.wigner3j(
+            two_l1, two_l2, two_l3, two_m1, two_m2, two_m3)
+        # except ValueError:
+        # wigner_3j = 0.0
+
+        # wigner_3j_square = wigner_3j ** 2
+        # print(two_l1, two_l2, two_l3, two_m1, two_m2, two_m3, wigner_3j)
+
+        hlf = j_expr * wigner_3j
+
+        return hlf

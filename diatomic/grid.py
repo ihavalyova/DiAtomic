@@ -1,5 +1,5 @@
 import numpy as np
-from utils import C_bohr
+from .utils import Utils as _utils
 
 __all__ = ['Grid']
 
@@ -9,9 +9,9 @@ class Grid:
     def __init__(self, npoints, rgrid, solver='sinc', alpha=0.0, rbar=0.0):
 
         self.ngrid = npoints
-        self.rmin = rgrid[0] / C_bohr
-        self.rmax = rgrid[1] / C_bohr
-        rbar = rbar / C_bohr
+        self.rmin = rgrid[0] / _utils.C_bohr
+        self.rmax = rgrid[1] / _utils.C_bohr
+        rbar = rbar / _utils.C_bohr
         self.solver = solver.lower()
 
         self.Gy = np.ones(self.ngrid)
@@ -47,7 +47,7 @@ class Grid:
 
     def get_grid_points(self):
 
-        return self.rgrid * C_bohr
+        return self.rgrid * _utils.C_bohr
 
     def get_grid_bounding_values(self, rlimit, rbar, alpha):
 
