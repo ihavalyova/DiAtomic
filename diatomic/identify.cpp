@@ -15,13 +15,101 @@ py::array_t<double> identify_by_largest_contribution(double **clevels, double **
     if (eshapex > cshapex)
         result_size = eshapex;
 
-    int ncols = 12+nch;  // number of columns in the output array
+    int ncols = 12 + nch;  // number of columns in the output array
     py::array_t<double> result = py::array_t<double>(result_size*ncols);
     py::buffer_info result_buf = result.request();
     double *result_ptr = (double *) result_buf.ptr;
 
     int count = 0;
     int nrows = 0;
+
+    int maxv = 0;
+    for (int m = 0 ; m < eshapex ; m++)
+    {
+        auto elevel = elevels[m];
+        if (elevel[1] > maxv)
+            maxv = elevel[1];
+    }
+    
+    for(int j = 0; j < cshapex; j++)
+    {
+        auto clevel = clevels[j];
+
+        int cind = (int) clevel[0];
+        double cenrg = clevel[1];
+        double cj = clevel[2];
+        int cp = (int) clevel[3];
+        int ci = (int) clevel[4];
+        int cs = (int) clevel[5+nch];
+        int cv = (int) clevel[6+nch];
+        int cl = (int) clevel[7+nch];
+        double co = clevel[8+nch];
+
+        if(cv <= maxv)
+        {
+            for(int i = 0; i < eshapex; i++)
+            {
+                auto elevel = elevels[i];
+
+                int eind = (int)elevel[0];
+                int ev = (int) elevel[1];
+                double ej = elevel[2];
+                double eenrg = elevel[3];
+                int ep = (int) elevel[4];
+                double eunc = elevel[5];
+                int em = (int) elevel[6];
+                int es = (int) elevel[7];
+
+                if (cv == ev && cj == ej && cp == ep && 
+                    cs == es && ci == ((em / 10) + 1))
+                {
+                    result_ptr[count++] = cv;
+                    result_ptr[count++] = cj;
+                    result_ptr[count++] = co;
+                    result_ptr[count++] = co - cl;  // sigma 
+                    result_ptr[count++] = cl;
+                    result_ptr[count++] = cp;
+                    result_ptr[count++] = em;
+                    result_ptr[count++] = cenrg;
+                    result_ptr[count++] = eenrg;
+                    result_ptr[count++] = cenrg - eenrg;
+                    result_ptr[count++] = eunc;
+                    for (int k = 0; k < nch; k++)
+                    {
+                        result_ptr[count++] = clevel[5+k];
+                    }
+                    result_ptr[count++] = cs;
+                    nrows++;
+                    break;
+                }
+            }
+        }
+    }
+
+    /* reshape result */
+    result.resize({nrows, ncols});
+
+    return result;
+}
+
+
+
+py::array_t<double> identify_by_largest_contribution1(double **clevels, double **elevels,
+                                                     int &nch, int &cshapex, int &eshapex)
+{
+    /* allocate the output buffer */
+    int result_size = cshapex;
+    if (eshapex > cshapex)
+        result_size = eshapex;
+
+    int ncols = 12 + nch;  // number of columns in the output array
+    py::array_t<double> result = py::array_t<double>(result_size*ncols);
+    py::buffer_info result_buf = result.request();
+    double *result_ptr = (double *) result_buf.ptr;
+
+    int count = 0;
+    int nrows = 0;
+
     for(int i = 0; i < eshapex; i++)
     {
         auto elevel = elevels[i];
@@ -65,7 +153,7 @@ py::array_t<double> identify_by_largest_contribution(double **clevels, double **
                 result_ptr[count++] = eunc;
                 for (int k = 0; k < nch; k++)
                 {
-                    result_ptr[count++] = clevel[4+nch+k];
+                    result_ptr[count++] = clevel[5+k];
                 }
                 result_ptr[count++] = cs;
                 nrows++;
@@ -83,6 +171,9 @@ py::array_t<double> identify_by_largest_contribution(double **clevels, double **
 py::array_t<double> identify_by_closest_energy(double **clevels, double **elevels,
                                                int &nch, int &cshapex, int &eshapex)
 {
+    // This algorithm works correctly if the calculated 
+    // levels are sorted by energy in ascending order
+
     /* allocate the output buffer */
     int result_size = cshapex;
     if (eshapex > cshapex)
@@ -100,9 +191,6 @@ py::array_t<double> identify_by_closest_energy(double **clevels, double **elevel
     double cenrg_tmp = 0.0, eenrg_tmp = 0.0;
     double diff_enrg_tmp = 0.0, unc_tmp = 0.0;
     double ccoefs_tmp [nch] = {0.0};
-
-    // This algorithm works correctly if the calculated 
-    // levels are sorted by energy in ascending order
 
     for(int i = 0; i < eshapex; i++)
     {
