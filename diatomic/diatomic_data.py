@@ -887,20 +887,20 @@ class Coupling:
 
         self.npnts = params.shape[0]
 
-    @classmethod
-    def set_couplings_file(cls, fname):
+    # @classmethod
+    # def set_couplings_file(cls, fname):
 
-        cls.cpl_file = fname
+    #     cls.cpl_file = fname
 
-        try:
-            with open(cls.cpl_file, 'r') as inps:
-                try:
-                    cls.cpl_data = yaml.safe_load(inps)
-                except yaml.YAMLError as ye:
-                    # TODO: fails with YAML object has no attribute YAMLError
-                    raise SystemExit(ye)
-        except IOError as e:
-            raise SystemExit(e)
+    #     try:
+    #         with open(cls.cpl_file, 'r') as inps:
+    #             try:
+    #                 cls.cpl_data = yaml.safe_load(inps)
+    #             except yaml.YAMLError as ye:
+    #                 # TODO: fails with YAML object has no attribute YAMLError
+    #                 raise SystemExit(ye)
+    #     except IOError as e:
+    #         raise SystemExit(e)
 
     @classmethod
     def edit_coupling_parameters(cls, ypar, couplings):
@@ -942,5 +942,5 @@ class Coupling:
                     cpar += 1
             cpl_data[cp.label] = new_item
 
-        with _open(Diatomic.cpl_file, 'w', encoding='utf8') as stream:
-            yaml.dump(cpl_data, stream=stream)
+        # with _open(Diatomic.cpl_file, 'w', encoding='utf8') as stream:
+        #     yaml.dump(cpl_data, stream=stream)
