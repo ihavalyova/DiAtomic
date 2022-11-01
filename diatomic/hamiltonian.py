@@ -1,13 +1,11 @@
+import os
 import numpy as np
 import scipy as sp
-import os
 import matplotlib.pyplot as plt
-import scipy.stats as st
-from .identify import identify_levels
 
-from math import sqrt as _sqrt
 from scipy.interpolate import CubicSpline as _CubicSpline
 
+from .identify import identify_levels
 from .utils import Utils as _utils
 from .interpolator import CSpline
 from .operator import Operator
@@ -17,20 +15,20 @@ __all__ = ['Hamiltonian', 'PotEnr']
 
 
 class Hamiltonian(Operator):
+    """Construct the Hamiltonian operator, solve the radial
+    Shrodinger equation and build a list of energy levels.
+
+    Args:
+        Operator (object): The parent Operator class
+    """
 
     def __init__(self, objs, eig_decomp='lapack', lapack_driver='evr',
                  arpack_options=('LM', 6, None), is_weighted=False):
-        """Construct the Hamiltonian operator, solve the time-independant
-        coupled system of radial Shrodinger equations and build a list
-        of energy levels
+
+        """Construct the Hamiltonian object.
 
         Args:
-            grid (object): The Grid object containing the grid parameters
-            diatomic_data (object): a DiatomicData object containing the
-                parameters about the specfied molecule.
-            channels (list): The list of the defined channel objects.
-            couplings (list, optional): The list of the defined coupling
-                objects. Defaults to [].
+            objs (list): List of objects
             eig_decomp (str, optional): Which package to be used for eigen
                 decomposition, LAPACK or ARPACK. Defaults to 'lapack'.
             lapack_driver (str, optional): Defines which LAPACK driver
@@ -46,12 +44,12 @@ class Hamiltonian(Operator):
         Operator.__init__(self, objs)
 
         pars, jnums = set(), set()
-        for ch in self.states:
-            for symm in ch.symmetry:
+        for state in self.states:
+            for symm in state.symmetry:
                 pars.add(symm)
 
-            for jn in ch.jqnumbers:
-                jnums.add(jn)
+            for jrn in state.jqnumbers:
+                jnums.add(jrn)
 
         self.pars = np.array(list(pars))
         self.jnums = np.array(list(jnums))
@@ -80,60 +78,48 @@ class Hamiltonian(Operator):
         }
 
         self.is_weighted = is_weighted
-
         # maximum number of fit parameters
         nmax_params = 200
-
         # maximum number of computed levels
         self.nmax_levels = 80000
-
         # matrix with the spline S functions
         self.sk_grid = np.zeros((self.msize, nmax_params))
 
         self.kin_enr = KinEnr(objs)
-        # self.fpars = Parameters(channels, couplings)
-        # self.interpolate_functions(self.fpars.ypar_init)
-
-        self.file_energies = f'energies_{self.mol_name}.dat'
 
     def _arange_jnums(self):
 
         self.jnums = np.delete(self.jnums, np.where(self.jnums == self.refj))
         self.jnums = np.insert(self.jnums, 0, self.refj)
 
-    def interpolate_functions(self, ypar):
-        """Interpolate coupling and channel functions on the grid
+    def get_energy_levels(self, ident_option=1):
+        """Generate a list of identified energy levels
 
         Args:
-            ypar (array): An array containing the channel/coupling parameters
+            ident_option (int, optional): What method for identification
+            to use. Defaults to 1.
+
+        Raises:
+            AttributeError: In case of missing observations
+
+        Returns:
+            array: The generated list of levels
         """
-        # ypar_hartree = ypar * self.fpars.yunits
-        ypar_hartree = ypar * self.fpars.yunits
-        self.pot_enr.calculate_channels_on_grid(ypar=ypar_hartree)
-
-        self.ugrid = self.pot_enr.ugrid
-
-        if self.ncp != 0:
-            self.interact.calculate_couplings_on_grid(ypar=ypar_hartree)
-
-        self.fgrid = self.interact.fgrid
-
-    def get_energy_levels(self, ident_option=1):
 
         self.ident_option = ident_option if ident_option in [0, 1] else 1
 
         if self.exp_data is not None:
-            # sorted_edata = self.exp_data[self.exp_data[:, 7].argsort()]
-            # sorted_cdata = self.calc_data[self.calc_data[:, -4].argsort()]
-            # sorted_cdata = self.calc_data[self.calc_data[:, 1].argsort()]
-            # sorted_cdata = self.calc_data[self.calc_data[:, -3].argsort(kind='mergesort')]
-            # sorted_cdata = self.calc_data[self.calc_data[:, 2].argsort(kind='mergesort')]
-            # sorted_cdata = self.calc_data[self.calc_data[:, -4].argsort(kind='mergesort')]
+            # edatas = self.exp_data[self.exp_data[:, 7].argsort()]
+            # cdatas = self.calc_data[self.calc_data[:, -4].argsort()]
+            # cdatas = self.calc_data[self.calc_data[:, 1].argsort()]
+            # cdatas = self.calc_data[self.calc_data[:, -3].argsort()]
+            # cdatas = self.calc_data[self.calc_data[:, 2].argsort()]
+            # cdatas = self.calc_data[self.calc_data[:, -4].argsort()]
 
-            # sorted_edata = self.exp_data[self.exp_data[:, 3].argsort()]
-            # sorted_edata = self.exp_data[self.exp_data[:, 1].argsort(kind='mergesort')]
-            # sorted_edata = self.exp_data[self.exp_data[:, 2].argsort(kind='mergesort')]
-            # sorted_edata = self.exp_data[self.exp_data[:, 7].argsort(kind='mergesort')]
+            # edatas = self.exp_data[self.exp_data[:, 3].argsort()]
+            # edatas = self.exp_data[self.exp_data[:, 1].argsort()]
+            # edatas = self.exp_data[self.exp_data[:, 2].argsort()]
+            # edatas = self.exp_data[self.exp_data[:, 7].argsort()]
 
             self.out_data = identify_levels(
                 np.ascontiguousarray(self.calc_data),
@@ -146,7 +132,7 @@ class Hamiltonian(Operator):
 
         return self.out_data
 
-    def solve(self, ops, energy_range_index=None, energy_range_value=None):
+    def solve(self, ops, ypar=None, energy_range_index=None, energy_range_value=None):
         """A general function which solves the coupled system of Shcrodinger equations
 
         Args:
@@ -164,18 +150,25 @@ class Hamiltonian(Operator):
         self.energy_range_value = energy_range_value
         self.energy_range_index = energy_range_index
 
+        if ypar is None:
+            for operator in self.ops:
+                operator.calculate_radial_function_on_grid(self.params)
+        else:
+            for operator in self.ops:
+                operator.calculate_radial_function_on_grid(ypar)
+
         # count the total number of eigenvalues
         self.ecount = 0
 
         evalues_all = np.zeros((self.nmax_levels, 9+self.nch))
         evecs_all = np.zeros((self.msize, self.nmax_levels))
 
-        for niso, iso in enumerate(self.niso):
+        for _, iso in enumerate(self.niso):
             tmatrix = self.kin_enr.calculate_kinetic_energy(iso)
 
             for par in self.pars:
 
-                shiftE = [0.0]  # pass by reference; make it self?
+                shift_enr = [0.0]  # pass by reference; make it self?
                 for jrotn in self.jnums:
 
                     # build and diagonalize the hamiltonian matrix
@@ -185,7 +178,7 @@ class Hamiltonian(Operator):
 
                     # arange and store the quantum numbers & labels for levels
                     levels = self._arange_levels(
-                        jrotn, par, iso, evalues, evecs, shiftE=shiftE)
+                        jrotn, par, iso, evalues, evecs, shift_enr=shift_enr)
                     evalues_all[self.ecount:nevalues+self.ecount, :] = levels
 
                     evecs_all[:, self.ecount:nevalues+self.ecount] = evecs
@@ -210,8 +203,8 @@ class Hamiltonian(Operator):
         Returns:
             array: The computed energy levels
         """
-        self.interpolate_functions(ypar)
-        self.solve(energy_range_index=self.energy_range_index,
+        # self.interpolate_functions(ypar)
+        self.solve(self.ops, ypar=ypar, energy_range_index=self.energy_range_index,
                    energy_range_value=self.energy_range_value)
         return self.get_energy_levels(self.ident_option)
 
@@ -283,16 +276,16 @@ class Hamiltonian(Operator):
         hmatrix = np.zeros((self.msize, self.msize))
         hmatrix += tmatrix
 
-        for op in self.ops:
-            ch1, ch2 = op.istate1, op.istate2
-            rind1, rind2 = (ch1-1)*self.ngrid, ch1*self.ngrid
-            cind1, cind2 = (ch2-1)*self.ngrid, ch2*self.ngrid
+        for opr in self.ops:
+            ch1, ch2 = opr.istate1, opr.istate2
+            ri1, ri2 = (ch1-1)*self.ngrid, ch1*self.ngrid  # row indices
+            ci1, ci2 = (ch2-1)*self.ngrid, ch2*self.ngrid  # col indices
 
-            if par in op.state1.symmetry or par in op.state2.symmetry:
-                matrix_block = op.calculate_matrix_elements(jrotn, par, iso)
-                hmatrix[rind1:rind2, cind1:cind2] += matrix_block
+            if par in opr.state1.symmetry or par in opr.state2.symmetry:
+                matrix_block = opr.calculate_matrix_elements(jrotn, par, iso)
+                hmatrix[ri1:ri2, ci1:ci2] += matrix_block
             else:
-                hmatrix[rind1:rind2, cind1:cind2] = np.zeros((self.ngrid, self.ngrid))
+                hmatrix[ri1:ri2, ci1:ci2] = np.zeros((self.ngrid, self.ngrid))
 
         return hmatrix
 
@@ -364,21 +357,11 @@ class Hamiltonian(Operator):
             k=self.arpack_k,
             which=self.arpack_which.upper(),
             sigma=self.arpack_sigma,
-            return_eigenvectors=True
-        )
+            return_eigenvectors=True)
 
         return evalues, evecs
 
-    def arange_levels(self, jrotn, par, iso, evalues, evecs, shiftE=[0.0]):
-        # nevalues = evalues.shape[0]
-        # levels = self._arange_levels(
-        #   jrotn, par, iso, evalues, evecs, shiftE=shiftE)
-        # self.calc_data[self.ecount:nevalues+self.ecount, :] = levels
-        # self.evecs_matrix[:, self.ecount:nevalues+self.ecount] = evecs
-        # self.ecount += nevalues
-        pass
-
-    def _arange_levels(self, jrotn, par, iso, evalues, evecs, shiftE=[0.0]):
+    def _arange_levels(self, jrotn, par, iso, evalues, evecs, shift_enr=[0.0]):
         """ Given a set of good quantum numbers, labels and the computed
         eigenvalues, this function will compute additional information
         about the energy levels and arange the entire information for
@@ -390,7 +373,7 @@ class Hamiltonian(Operator):
             iso (int): isotopolgue number
             evalues (array): The array of computed eigenvalues
             evecs (array): The computed eigenvectors
-            shiftE (list, optional): The shift energy. Defaults to [0.0].
+            shift_enr (list, optional): The shift energy. Defaults to [0.0].
 
         Returns:
             array: The energy levels with the corresponding information
@@ -400,11 +383,11 @@ class Hamiltonian(Operator):
         ids = np.arange(self.ecount+1, evalues.shape[0]+self.ecount+1)
 
         if self.refj and jrotn == self.jnums[0]:
-            shiftE[0] = evalues[0]
-        elif self.refE:
-            shiftE[0] = self.refE
+            shift_enr[0] = evalues[0]
+        elif self.ref_enr:
+            shift_enr[0] = self.ref_enr
 
-        evalues_shifted = (evalues - shiftE[0]) * _utils.C_hartree
+        evalues_shifted = (evalues - shift_enr[0]) * _utils.C_hartree
 
         ccoefs = self._get_coupling_coefficients(evecs)
         states = np.argmax(ccoefs, axis=1) + 1
@@ -516,9 +499,11 @@ class Hamiltonian(Operator):
 
         footer = _utils.print_stats(stats)
 
-        out_fname = filename or self.energy_out_file
+        file_energies = f'{self.mol_name}_energy_levels.dat'
+        out_fname = filename or file_energies
 
-        np.savetxt(out_fname, out_levels, header=header, footer=footer, fmt=fmt)
+        np.savetxt(
+            out_fname, out_levels, header=header, footer=footer, fmt=fmt)
 
     def save_full_energy_list(self, calc_energies=None, filename=None):
         """Stores the complete list of computed energy levels in external file
@@ -552,31 +537,29 @@ class Hamiltonian(Operator):
         fmt = ['%7.1d', '%5.1d', '%16.6f', '%7.1f', '%5.1d', '%7.1d']
         fmt += self.nch*['%9.3f'] + 2*['%6.1d'] + ['%8.1f']
 
-        fname_def, fext_def = os.path.splitext(self.file_energies)
-        output_file = fname_def + '_predicted' + fext_def
-        output_file = filename or output_file
-
+        file_energies = f'{self.mol_name}_eigenenergies.dat'
+        output_file = filename or file_energies
         np.savetxt(output_file, cal_data, header=header, fmt=fmt)
 
-    def _sort_predicted_energies(self, cols=[]):
+    def _sort_full_energy_list(self, cols):
 
         out = [self.calc_data[:, col] for col in reversed(cols)]
         self.calc_data = self.calc_data[np.lexsort(tuple(out))]
 
-    def sort_predicted_energies(self, cols=[]):
+    def sort_full_energy_list(self, cols=[]):
 
-        self._sort_predicted_energies(cols)
+        self._sort_full_energy_list(cols)
         self.save_full_energy_list()
 
-    def _sort_output_energies(self, cols=[]):
+    def _sort_energy_levels(self, cols):
 
         cols = [i-2 for i in cols]
         out = [self.out_data[:, col] for col in reversed(cols)]
         self.out_data = self.out_data[np.lexsort(tuple(out))]
 
-    def sort_output_energies(self, cols=[]):
+    def sort_energy_levels(self, cols=[]):
 
-        self._sort_output(cols)
+        self._sort_energy_levels(cols)
         self.save_energy_list()
 
     def get_predicted_data(self):
@@ -589,6 +572,11 @@ class Hamiltonian(Operator):
         return self.calc_data
 
     def get_output_data(self):
+        """Get the full list of energy levels
+
+        Returns:
+            array: The computed list of energy levels
+        """
 
         return np.c_[np.arange(1, self.out_data.shape[0]+1), self.out_data]
 
@@ -609,7 +597,7 @@ class Hamiltonian(Operator):
         igrid, istep = np.linspace(self.rmin, self.rmax, num=ninter,
                                    endpoint=True, retstep=True)
 
-        sinc_matrix = np.zeros((self.ngrid, igrid.shape[0]))
+        # sinc_matrix = np.zeros((self.ngrid, igrid.shape[0]))
         res = np.zeros(ninter)
 
         ncoefs = self.evecs_matrix[:2*self.ngrid, 0]
@@ -627,15 +615,16 @@ class Hamiltonian(Operator):
 
         return igrid, res
 
-    def plot_radial_functions(self, ops, show=False, fname=None, subplots=None, 
+    def plot_radial_functions(self, ops, show=False, fname=None, subplots=None,
                               fsize=None, xlim=None, ylim=None):
         """Plot the radial functions on grid
 
         Args:
-            ops (list): The list of operators whose radial functions to be plotted
+            ops (list): List of operators whose radial functions to be plotted
             show (bool, optional): Thether to show the plot. Defaults to False.
             fname (str, optional): The file name of the plot. Defaults to None.
-            subplots (tuple, optional): The number of subplots in x and y dim. Defaults to None.
+            subplots (tuple, optional): The number of subplots in x and y dim.
+            Defaults to None.
 
         Raises:
             ValueError: If the subplots format is incorrect.
@@ -643,16 +632,15 @@ class Hamiltonian(Operator):
 
         plt.style.use('seaborn-paper')
         plt.style.context('seaborn-paper')
-        fs = 11
         fsize = fsize or (6, 5)
 
         if not subplots:
             fig, ax = plt.subplots(1, 1, figsize=fsize, constrained_layout=True)
 
-            for op in ops:
-                ax.plot(op.rgrid, op.ygrid, lw=1.2, label=op.label)
-                ax.tick_params(axis='both', direction="in", which='major', labelsize=fs)
-                ax.legend(loc='best', fontsize=fs)
+            for opr in ops:
+                ax.plot(opr.rgrid, opr.ygrid, lw=1.2, label=opr.label)
+                ax.tick_params(axis='both', direction="in", which='major', labelsize=11)
+                ax.legend(loc='best', fontsize=11)
                 if xlim is not None:
                     ax.set_xlim(xlim[0], xlim[1])
                 if ylim is not None:
@@ -660,30 +648,32 @@ class Hamiltonian(Operator):
         else:
             try:
                 nrows, ncols = subplots[0], subplots[1]
-            except (ValueError, TypeError):
-                raise ValueError('The parameter subplots should be a tuple of two values.')
+            except (ValueError, TypeError) as exc:
+                raise ValueError('Subplots should be a tuple of 2 values.') from exc
 
-            fig, axs = plt.subplots(nrows, ncols, figsize=fsize, constrained_layout=True)
+            fig, axs = plt.subplots(nrows, ncols, figsize=fsize,
+                                    constrained_layout=True)
             axs = axs.flatten()
-            for ax, op in zip(axs, ops):
-                ax.plot(op.rgrid, op.ygrid, lw=1.2)
-                ax.set_title(label=op.label)
+            for ax, opr in zip(axs, ops):
+                ax.plot(opr.rgrid, opr.ygrid, lw=1.2)
+                ax.set_title(label=opr.label)
                 ax.tick_params(axis='both', direction="in", which='major', labelsize=10)
                 if xlim is not None:
                     ax.set_xlim(xlim[0], xlim[1])
                 if ylim is not None:
                     ax.set_ylim(ylim[0], ylim[1])
 
-        fig.supxlabel('R ' + '(Angstrom)', fontsize=fs)
-        fig.supylabel('Radial function', fontsize=fs)
+        fig.supxlabel('R ' + '(Angstrom)', fontsize=11)
+        fig.supylabel('Radial function', fontsize=11)
 
         if show:
             plt.show()
-        
-        if fname is not None:
-            self.save_plot(fname)
 
-    def plot_H_colormesh(self, rows=None, cols=None, show=False, fname=None, fsize=None):
+        if fname is not None:
+            self._save_plot(fig, fname)
+
+    def plot_hamiltonian_colormesh(self, rows=None, cols=None, show=False,
+                                   fname=None, fsize=None):
         """Create a colormesh of the Hamiltonian matrix
 
         Args:
@@ -695,9 +685,9 @@ class Hamiltonian(Operator):
 
         Remarks:
             1. The parameters rows and cols are defined by two integer numbers -
-            the first and the last row and column, respectively of the submatrix 
+            the first and the last row and column, respectively of the submatrix
             whcih should be plotted.
-            2. vmin and vmax set the normalization range. 
+            2. vmin and vmax set the normalization range.
             By default scale scalar data to [0, 1] range.
         """
 
@@ -713,41 +703,45 @@ class Hamiltonian(Operator):
         # im = ax.pcolormesh(hmat[rows[0]:rows[1], cols[0]:cols[1]],
         # vmin=1.0e-8, vmax=0.01, cmap='RdBu_r')
 
-        im = ax.matshow(hmat[rows[0]:rows[1], cols[0]:cols[1]], 
+        img = ax.matshow(hmat[rows[0]:rows[1], cols[0]:cols[1]],
                         vmin=1.0e-8, vmax=0.01, cmap='RdBu_r',
                         aspect='auto', interpolation=None)
 
-        fig.colorbar(im)
-        ax.set_title(f'Hamiltonian matrix, rows={rows[0]}:{rows[1]}, cols={cols[0]}:{cols[1]}')
-        
+        fig.colorbar(img)
+        ax.set_title(
+            f'Hamiltonian matrix, rows={rows[0]}:{rows[1]}, '
+            f'cols={cols[0]}:{cols[1]}')
+
         if show:
             plt.show()
 
         if fname is not None:
-            self.save_plot(fname)
+            self._save_plot(fig, fname)
 
-    def plot_eigenfunctions(self, nlevels, show=False, fname=None, subplots=None, fsize=None):
-        
+    def plot_eigenfunctions(self, nlevels, show=False, fname=None,
+                            subplots=None, fsize=None):
+
         plt.style.use('seaborn-paper')
         plt.style.context('seaborn-paper')
 
         fsize = fsize or (6, 5)
         subplots = subplots or (1, 1)
         try:
-            iterable = iter(nlevels)
+            _ = iter(nlevels)
         except TypeError:
             nlevels = list(nlevels)
 
-        fs = 12
+        fontsize = 12
         try:
             nrows, ncols = subplots[0], subplots[1]
-        except (ValueError, TypeError):
-            raise ValueError('The parameter subplots should be a tuple of two values.')
+        except (ValueError, TypeError) as exc:
+            raise ValueError('Subplots should be a tuple of 2 values.') from exc
 
-        fig, axs = plt.subplots(nrows, ncols, figsize=fsize, sharex=True, constrained_layout=True)
+        fig, axs = plt.subplots(nrows, ncols, figsize=fsize, sharex=True,
+                                constrained_layout=True)
 
         try:
-            iterable = iter(axs)
+            _ = iter(axs)
             for ax, nlevel in zip(axs, nlevels):
                 evec = self.evecs_matrix[:, nlevel-1]  # substrct 1 since the counting starts from 0
                 ax.plot(self.rgrid, evec, lw=1.2, label=str(nlevel))
@@ -758,57 +752,56 @@ class Hamiltonian(Operator):
                 evec = self.evecs_matrix[:, nlevel-1]  # substrct 1 since the counting starts from 0
                 axs.plot(self.rgrid, evec, lw=1.2, label=str(nlevel))
                 axs.tick_params(axis='both', direction="in", which='major', labelsize=10)
-                axs.legend(loc='best', fontsize=fs)
-        
-        fig.supxlabel('R ' + '(Angstrom)', fontsize=fs)
-        fig.supylabel('Wavefunction', fontsize=fs)
+                axs.legend(loc='best', fontsize=fontsize)
+
+        fig.supxlabel('R ' + '(Angstrom)', fontsize=fontsize)
+        fig.supylabel('Wavefunction', fontsize=fontsize)
 
         if show:
             plt.show()
-        
-        if fname is not None:
-            self.save_plot(fname)
 
-    def plot_levels_hist(self, data=None, show=False, fname=None, fsize=None, bins=30, sns=False):
+        if fname is not None:
+            self._save_plot(fig, fname)
+
+    def plot_levels_hist(self, data=None, show=False, fname=None,
+                         fsize=None, bins=30, sns=False):
 
         plt.style.use('seaborn-paper')
         plt.style.context('seaborn-paper')
         fsize = fsize or (6, 5)
         fig, ax = plt.subplots(1, 1, figsize=fsize, constrained_layout=True)
 
-        x = data
         if data is None:
-            x = self.out_data[:, 9]
+            data = self.out_data[:, 9]
 
         if sns:
             try:
                 import seaborn as sns
                 sns.set_style("white")
-                sns.histplot(x, kde=True)
+                sns.histplot(data, kde=True)
             except ModuleNotFoundError:
                 print('Seaborn package is not installed.')
         else:
-            n, bins, patches = ax.hist(x, density=True, bins=bins, label='Data')
-            mn, mx = plt.xlim()
-            ax.set_xlim(mn, mx)
-            kde_xs = np.linspace(mn, mx, 301)
-            kde = st.gaussian_kde(x)
+            n, bins, patches = ax.hist(data, density=True, bins=bins)
+            xmin, xmax = plt.xlim()
+            ax.set_xlim(xmin, xmax)
+            kde_xs = np.linspace(xmin, xmax, 301)
+            kde = sp.stats.gaussian_kde(data)
             ax.plot(kde_xs, kde.pdf(kde_xs), label='PDF')
 
         fig.supxlabel('Energy', fontsize=12)
         fig.supylabel('Count', fontsize=12)
 
         if fname is not None:
-            self.save_plot(fname)
+            self._save_plot(fig, fname)
 
         if show:
             plt.show()
-        
-    
-    def save_plot(self, fname):
+
+    def _save_plot(self, fig, fname):
 
         try:
-            frmt = os.basename(fname).split('.')[1]
+            frmt = os.path.basename(fname).split('.')[1]
         except IndexError:
             frmt = 'pdf'
         fig.savefig(fname, format=frmt, dpi=300)
@@ -847,7 +840,7 @@ class KinEnr(Operator):
             return self._calculate_kinetic_energy_fourier(mass)
 
         elif self.solver == 'fd5':
-            return self._calculate_kinetic_energy_FD5(mass)
+            return self._calculate_kinetic_energy_fd5(mass)
 
         else:
             raise ValueError(
@@ -866,26 +859,25 @@ class KinEnr(Operator):
 
         length = self.rmax - self.rmin
         n2 = (self.ngrid**2 + 2.0) / 6.0
-        pc = 1.0
-        h = 2.0 * np.pi * pc
+        planck_const = 1.0  # in au
         ml = 4.0 * mass * length**2
-        h2 = h**2
+        h2 = (2.0 * np.pi * planck_const)**2
 
         ij_grid = np.mgrid[:self.ngrid, :self.ngrid]
         ij_mtx = ij_grid[0] - ij_grid[1]  # TODO: check this
-        di = np.diag_indices(self.ngrid)
+        diag_inds = np.diag_indices(self.ngrid)
         sinf_mtx = np.sin((ij_mtx * np.pi) / self.ngrid)
 
         # set diagonal to some temporary nonzero value
-        sinf_mtx[di] = 1.0
+        sinf_mtx[diag_inds] = 1.0
 
         T[:self.ngrid, :self.ngrid] = \
             (np.power(-1.0, ij_mtx) * h2) / (ml * np.power(sinf_mtx, 2))
 
-        T[di] = (h2 / ml) * n2
+        T[diag_inds] = (h2 / ml) * n2
 
-        for ch in range(2, self.nch+1):
-            ind1, ind2 = (ch-1)*self.ngrid, ch*self.ngrid
+        for chn in range(2, self.nch+1):
+            ind1, ind2 = (chn-1)*self.ngrid, chn*self.ngrid
             T[ind1:ind2, ind1:ind2] = T[:self.ngrid, :self.ngrid]
 
         self.T = T
@@ -903,26 +895,26 @@ class KinEnr(Operator):
         """
         T = np.zeros((self.msize, self.msize))
 
-        pc = 1.0
+        planck_const = 1.0  # in au
         pi2 = np.pi ** 2
-        h = (self.rmax - self.rmin) / (self.ngrid-1)
-        h2 = (pc ** 2) / (2.0 * mass)
+        hstep = (self.rmax - self.rmin) / (self.ngrid-1)
+        h2 = (planck_const ** 2) / (2.0 * mass)
 
         ij_grid = np.mgrid[:self.ngrid, :self.ngrid]
         ij_diff = ij_grid[0] - ij_grid[1]
         ij_sum = ij_grid[0] + ij_grid[1]
-        di = np.diag_indices(self.ngrid)
+        diag_inds = np.diag_indices(self.ngrid)
 
         # set diagonal to some temporary nonzero value
-        ij_diff[di] = 1.0
+        ij_diff[diag_inds] = 1.0
 
         T[:self.ngrid, :self.ngrid] = \
             (2.0 * np.power(-1.0, ij_sum)) / np.power(ij_diff, 2)
-        T[di] = pi2 / 3.0
-        T = T * (h2 / h**2)
+        T[diag_inds] = pi2 / 3.0
+        T = T * (h2 / hstep**2)
 
-        for ch in range(2, self.nch+1):
-            ind1, ind2 = (ch-1)*self.ngrid, ch*self.ngrid
+        for chn in range(2, self.nch+1):
+            ind1, ind2 = (chn-1)*self.ngrid, chn*self.ngrid
             T[ind1:ind2, ind1:ind2] = T[:self.ngrid, :self.ngrid]
 
         # T[di] = T[di] - (h2 * self.Fy)
@@ -931,7 +923,7 @@ class KinEnr(Operator):
 
         return T
 
-    def _calculate_kinetic_energy_FD5(self, mass):
+    def _calculate_kinetic_energy_fd5(self, mass):
         """Calculate the kinetic energy operator using the finite difference method
 
         Args:
@@ -944,28 +936,28 @@ class KinEnr(Operator):
         T = np.zeros((self.msize, self.msize))
 
         # the first and last 2 eigenvalues are wrong
-        pc = 1.0
-        h2 = (pc ** 2) / (2.0 * mass)
+        planck_const = 1.0  # in au
+        h2 = (planck_const ** 2) / (2.0 * mass)
         step = (self.rmax - self.rmin) / (self.ngrid-1)
 
-        d0 = np.empty(self.ngrid)
-        d0.fill(5.0/2.0)
+        diag0 = np.empty(self.ngrid)
+        diag0.fill(5.0/2.0)
 
-        d1 = np.empty(self.ngrid-1)
-        d1.fill(-4.0/3.0)
+        diag1 = np.empty(self.ngrid-1)
+        diag1.fill(-4.0/3.0)
 
-        d2 = np.empty(self.ngrid-2)
-        d2.fill(1.0/12.0)
+        diag2 = np.empty(self.ngrid-2)
+        diag2.fill(1.0/12.0)
 
         T[:self.ngrid, :self.ngrid] = \
-            (h2/(step**2)) * self._five_diagonal_matrix(d0, d1, d2)
+            (h2/(step**2)) * self._five_diagonal_matrix(diag0, diag1, diag2)
 
         corner_coef = 29.0 / 12.0
         T[0, 0] = corner_coef
         T[self.ngrid-1, self.ngrid-1] = corner_coef
 
-        for ch in range(2, self.nch+1):
-            ind1, ind2 = (ch-1)*self.ngrid, ch*self.ngrid
+        for chn in range(2, self.nch+1):
+            ind1, ind2 = (chn-1)*self.ngrid, chn*self.ngrid
             T[ind1:ind2, ind1:ind2] = T[:self.ngrid, :self.ngrid]
 
         self.T = T
@@ -980,6 +972,11 @@ class KinEnr(Operator):
 
 
 class PotEnr(Operator):
+    """Calculate the Potential energy operator
+
+    Args:
+        Operator (object): The parent class
+    """
 
     def __init__(self, objs, pair_states, label, model='pointwise', rotc=0.0,
                  multiplier=1, custom_func=None, shift_by=0.0):
@@ -1005,7 +1002,7 @@ class PotEnr(Operator):
         self.ypoints = self.init_params[:, 1]
         self.fixed = self.init_params[:, 2]
 
-        self.calculate_radial_function_on_grid(self.params)
+        # self.calculate_radial_function_on_grid(self.params)
 
     def calculate_matrix_elements(self, jrotn, par, iso):
 
@@ -1015,18 +1012,21 @@ class PotEnr(Operator):
         sigma = self.state1.sigma
         omega = self.state1.omega
         spin = self.state1.spin
-
         num = (jrotn * (jrotn + 1.0) + spin * (spin + 1.0)) - (omega**2) - \
               (sigma**2) - (lam**2) + self.rot_correction
 
         # diag_values = self.Gy2 * (self.ugrid + (num / denom))
         diag_values = self.ygrid + (num / denom)
-
         np.fill_diagonal(self.matrix, diag_values)
 
         return self.matrix
 
     def calculate_radial_function_on_grid(self, ypar):
+        """Calculate the radial function on a grid of points
+
+        Args:
+            ypar (array): The list of radial parameters
+        """
 
         if self.model in ['pw', 'pointwise']:
             self._calculate_pointwise_pec_on_grid(ypar)
@@ -1056,9 +1056,9 @@ class PotEnr(Operator):
         xpnts = self.xpoints * self.xunits
         ypnts = ypar[self.sind:self.eind] * self.yunits
         cs = CSpline(xpnts, ypnts)
-        self.ygrid, sk = cs(self.rgrid, return_deriv=True)
+        self.ygrid, sk_func = cs(self.rgrid, return_deriv=True)
         # stp, enp = (ch-1)*npnts, ch*npnts
-        # self.sk_grid[(ch-1)*self.ngrid:ch*self.ngrid, stp:enp] = sk
+        self.sk_grid[self.sind:self.eind, :] = sk_func
 
     def _calculate_morse_pec_on_grid(self, ypar):
 
@@ -1068,12 +1068,13 @@ class PotEnr(Operator):
         ypnts[1] = ypnts[1] * self.yunits[1]
         ypnts[2] = ypnts[2] * _utils.C_bohr
         ypnts[3] = ypnts[3] / _utils.C_bohr
-        self.ygrid = self._VMorse(ypnts)
+        self.ygrid = self._morse_potential(ypnts)
 
-    def _VMorse(self, params):
+    def _morse_potential(self, params):
 
-        Te, De, a, re = params
-        morse_func = Te + De*np.power((1.0 - np.exp(-a*(self.rgrid-re))), 2.0)
+        term_enr, diss_enr, aexp, req = params
+        pwr = np.power((1.0 - np.exp(-aexp*(self.rgrid-req))), 2.0)
+        morse_func = term_enr + (diss_enr * pwr)
         return morse_func
 
     def _calculate_custom_pec_on_grid(self, ypar):
@@ -1082,67 +1083,62 @@ class PotEnr(Operator):
         ypnts = ypar[self.sind:self.eind] * self.yunits
         self.ygrid = self.custom_func(ypnts, self.rgrid)
 
-    def _calculate_EMO_pec_on_grid(self, ch, ypar, ci):
+    def _calculate_emo_pec_on_grid(self, ypar):
 
-        ypnts = self.channels[ch-1].U
-        self.ugrid[(ch-1)*self.ngrid:ch*self.ngrid] = self._VEMO(ypnts)
+        ypnts = ypar[self.sind:self.eind]
+        # TODO: convert to au
+        self.ygrid = self._emo_potential(ypnts)
 
-    def _VEMO(self, params):
+    def _emo_potential(self, params):
 
-        Te, De, p, re = params[:4]
+        term_enr, diss_enr, pexp, req = params[:4]
         bparams = np.array(params[4:])[::-1]
 
-        yr = self.calculate_emo_power_expression(re, p)
+        yr_expr = self._calculate_emo_power_expression(req, pexp)
 
-        bemo = np.polyval(bparams, yr)
-        pwr = np.power((1.0 - np.exp((-1.0*bemo)*(self.rgrid-re))), 2.0)
-        vemo = Te + De * pwr
+        bemo = np.polyval(bparams, yr_expr)
+        pwr = np.power((1.0 - np.exp((-1.0*bemo)*(self.rgrid-req))), 2.0)
+        vemo = term_enr + (diss_enr * pwr)
 
         return vemo
 
-    def _calculate_MLR_pec_on_grid(self, ch, ypar, ci):
+    def _calculate_mlr_pec_on_grid(self, ypar):
 
-        ni = self.channels[ch-1].ni
-        nb = self.channels[ch-1].nb
-        nc = self.channels[ch-1].nc
-        nd = self.channels[ch-1].nd
+        ypnts = ypar[self.sind:self.eind]
+        # TODO: convert to au
+        self.ygrid = self._morse_long_range_potnetial(ypnts)
 
-        nall = (ni, nb, nc, nd)
+    def _morse_long_range_potnetial(self, params):
 
-        ypnts = self.channels[ch-1].U
-        self.ugrid[ch*self.ngrid:(ch+1)*self.ngrid] = self._VMLR(ypnts, nall)
+        nic, nbc, ncc, ndc = params[0:4]
+        term_enr, diss_enr, pexp, qexp, rref, req, binf = params[:nic]
 
-    def _VMLR(self, params, nparams):
+        bparams = np.array(params[nic:nic+nbc])[::-1]
+        cparams = np.array(params[nic+nbc:nic+nbc+ncc])[::-1]
+        dparams = np.array(params[nic+nbc+ncc:nic+nbc+ncc+ndc])[::-1]
 
-        ni, nb, nc, nd = nparams
-        Te, De, p, q, rref, re, binf = params[:ni]
-
-        bparams = np.array(params[ni:ni+nb])[::-1]
-        cparams = np.array(params[ni+nb:ni+nb+nc])[::-1]
-        dparams = np.array(params[ni+nb+nc:ni+nb+nc+nd])[::-1]
-
-        yrp = self.calculate_emo_power_expression(rref, p)
-        yrq = self.calculate_emo_power_expression(rref, q)
+        yrp = self._calculate_emo_power_expression(rref, pexp)
+        yrq = self._calculate_emo_power_expression(rref, qexp)
 
         bmlj = yrp * binf + (1.0 - yrp) * np.polyval(bparams, yrq)
         ulrr = self._long_range_function(self.rgrid, cparams, dparams)
-        ulrre = self._long_range_function(re, cparams, dparams)
+        ulrre = self._long_range_function(req, cparams, dparams)
         ulr = ulrr / ulrre
-        vmlj = Te + De * np.power(1.0 - ulr * np.exp((-1.0*bmlj)*yrp), 2.0)
+        vmlj = term_enr + diss_enr * np.power(1.0 - ulr * np.exp((-1.0*bmlj)*yrp), 2.0)
 
         return vmlj
 
-    def calculate_emo_power_expression(self, rr, power):
+    def _calculate_emo_power_expression(self, rref, power):
 
-        numer = np.power(self.rgrid, power) - rr**power
-        denom = np.power(self.rgrid, power) + rr**power
+        numer = np.power(self.rgrid, power) - rref**power
+        denom = np.power(self.rgrid, power) + rref**power
 
         return numer / denom
 
-    def _long_range_function(self, r, cparams, dparams):
+    def _long_range_function(self, rdist, cparams, dparams):
 
         # TODO: rewrite using numpy
         ulr = 0
         for i in range(0, cparams.shape[0]):
-            ulr += dparams[i] * (cparams[i] / np.power(r, i+1))
+            ulr += dparams[i] * (cparams[i] / np.power(rdist, i+1))
         return ulr

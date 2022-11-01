@@ -1,18 +1,19 @@
 from re import compile as _compile, search as _search, findall as _findall
-from io import open as _open
-import numpy as np
 from collections import OrderedDict
+import numpy as np
+
 from .data.atomic_database import AtomicDatabase
 from .utils import Utils as _utils
 
 
-__all__ = ['Diatomic', 'Basis', 'Potential', 'Parameters']
+__all__ = ['Diatomic', 'Basis']
 
 
 class Diatomic:
+    """The Diatomic class for setting the general molecule and input data
+    """
 
-    def __init__(self, molecule, masses=None, niso=None,
-                 referencej=None, refE=None):
+    def __init__(self, molecule, masses=None, niso=None, refj=None, ref_enr=None):
 
         self.molecule = molecule
         self.masses = None
@@ -20,25 +21,28 @@ class Diatomic:
         self.reduced_masses = []
         self.atomic_symbols = []
         self.atomic_mass_nums = []
-        self.referencej = referencej
+        self.referencej = refj
 
         if molecule:
             for mname in self.molecule:
                 rmass = self._calculate_reduced_mass(mname) * _utils.C_massau
                 self.reduced_masses.append(rmass)
-            ni = len(self.molecule)
+            nisot = len(self.molecule)
         elif masses:
             self.masses = [m * _utils.C_massau for m in masses]
-            ni = len(masses)
+            nisot = len(masses)
         else:
             raise ValueError(
                 "Error: either 'molecule' or 'masses' should be provided!")
 
-        self.niso = niso or list(range(1, ni+1))
-        self.refE = refE / _utils.C_hartree if refE else None
+        self.niso = niso or list(range(1, nisot+1))
+        self.ref_enr = ref_enr / _utils.C_hartree if ref_enr else None
         self.exp_file = None
         self.exp_data = None
         self.wavens_data = None
+        self.params_by_labels = {}
+        self.labels_inds = {}
+        self.fname_data_params = ''
         self.uterms_file = None
         self.uterms_data = None
         self.lterms_file = None
@@ -93,12 +97,21 @@ class Diatomic:
         return float(atom_data[0].split('\n')[-1].split('=')[-1].strip())
 
     def set_data_parameters(self, fname):
+        """Set the input data parameters
 
-        self.params_by_labels = {}
+        Args:
+            fname (str): The name of the file containing the values
+            of the parameters
+
+        Raises:
+            ValueError: If the expected format of the data is wrong
+        """
+        self.fname_data_params = fname
         labels_pcount = {}
         xparams, yparams, fparams = [], [], []
         label = ''
-        with open(fname) as fstream:
+
+        with open(fname, encoding='utf-8') as fstream:
             for line in fstream:
                 if line.startswith('@'):
                     if label != '':
@@ -127,40 +140,52 @@ class Diatomic:
             self.params_by_labels[label] = np.column_stack((
                 xparams, yparams, fparams))
 
-        self.labels_inds = {}
         vstart = 0
-        self.params = np.zeros(sum(labels_pcount.values()))
+        npar = sum(labels_pcount.values())
+        self.params = np.zeros(npar)
+        self.fixed = np.zeros(npar)
         for key, value in labels_pcount.items():
             vend = vstart + value
             self.labels_inds[key] = (vstart, vend)
             self.params[vstart:vend] = self.params_by_labels[key][:, 1]
+            self.fixed[vstart:vend] = self.params_by_labels[key][:, 2]
             vstart += value
 
     def get_observed_energies(self):
 
         return self.exp_data
 
-    def set_observed_energies(self, fname, ndata=None, markers=None,
-                              apply_filters=False):
+    def set_observed_energies(self, fname, ndata=None, markers=None):
+        """Set the observed energies
+
+        Args:
+            fname (str): The input file name
+            ndata (int, optional): The number of data lines to read. Defaults to None.
+            markers (list, optional): A set of markers. Defaults to None.
+            apply_filters (bool, optional): _description_. Defaults to False.
+
+        Raises:
+            SystemExit: _description_
+            ValueError: _description_
+        """
 
         self.exp_file = fname
 
         try:
             data = np.genfromtxt(self.exp_file, comments='#', autostrip=True)
             ndata = ndata or data.shape[0]
-        except Exception as e:
-            raise SystemExit(e)
+        except Exception as exc:
+            raise SystemExit(exc) from exc
 
         self.exp_data = self._apply_filter_to_observed_energies(
-            ndata, data, markers, apply_filters)
+            ndata, data, markers)
 
         if self.exp_data.shape[0] == 0 or self.exp_data.shape[1] != 8:
             raise ValueError(
                 f'Zero #levels or wrong format of exp energies in file {fname}'
                 f'{self.exp_data.shape[0]} x {self.exp_data.shape[1]}\n')
 
-    def _apply_filter_to_observed_energies(self, ndata, data, markers,
-                                           apply_filters):
+    def _apply_filter_to_observed_energies(self, ndata, data, markers):
 
         # if data contains only a single line
         if data.ndim == 1:
@@ -174,22 +199,21 @@ class Diatomic:
             marker_mask = np.in1d(data[:, 6], markers)
             data = data[marker_mask]
 
-        if apply_filters:
-            # filter by symmetry
-            parity_mask = np.in1d(data[:, 4], self.symmetry)
-            data = data[parity_mask]
+        # if apply_filters:
+        #     # filter by symmetry
+        #     parity_mask = np.in1d(data[:, 4], self.symmetry)
+        #     data = data[parity_mask]
 
-            # filter by J
-            rot_mask = np.in1d(data[:, 2], self.jqnumbers)
-            data = data[rot_mask]
+        #     # filter by J
+        #     rot_mask = np.in1d(data[:, 2], self.jqnumbers)
+        #     data = data[rot_mask]
 
-            # change numbering
-            data[:, 0] = np.arange(1.0, data.shape[0]+1)
+        #     # change numbering
+        #     data[:, 0] = np.arange(1.0, data.shape[0]+1)
 
         return data
 
-    def set_observed_transitions(self, fname, markers=None,
-                                 ithreshold=None):
+    def set_observed_transitions(self, fname, markers=None, ithresh=None):
         """Read the observed transitions data in specific format
 
         Args:
@@ -213,8 +237,8 @@ class Diatomic:
             self.wavens_data = np.loadtxt(fname)
             # self.euterms = np.unique(self.H.wavens_data[:, :4], axis=0)
             # self.elterms = np.unique(self.H.wavens_data[:, 4:8], axis=0)
-        except IOError:
-            raise IOError(f'Error: The file {fname} does not exist.')
+        except IOError as exc:
+            raise IOError(f'Error: The file {fname} does not exist.') from exc
 
         # if the data contains one line
         if self.wavens_data.ndim == 1:
@@ -242,22 +266,19 @@ class Diatomic:
             self.wavens_data = self.wavens_data[:, :-1]
 
         # filter by intensity threshold
-        if ithreshold is not None:
+        if ithresh is not None:
             max_intensity = np.amax(self.wavens_data[:, -2])
-            ithresh_value = (ithreshold * max_intensity) / 100
+            ithresh_value = (ithresh * max_intensity) / 100
             ithresh_inds = np.where(self.wavens_data[:, -2] > ithresh_value)[0]
             self.wavens_data = self.wavens_data[ithresh_inds, :]
 
-    def set_uppper_term_energies(self, fname, markers=None,
-                                 apply_filters=False):
+    def set_uppper_term_energies(self, fname, markers=None):
 
         self.uterms_file = fname
-
         try:
-            self.uterms_data = self._read_observed_energies(
-                markers, apply_filters)
-        except IOError:
-            raise IOError(f'Error: The file {fname} does not exist.')
+            self.uterms_data = self._read_observed_energies(markers)
+        except IOError as exc:
+            raise IOError(f'Error: The file {fname} does not exist.') from exc
 
         if self.uterms_data.shape[0] == 0 or self.uterms_data.shape[1] != 8:
             raise ValueError(
@@ -265,16 +286,13 @@ class Diatomic:
                 f'{self.uterms_data.shape[0]} x {self.uterms_data.shape[1]}\n'
                 f'Check markers, Js, the format of the data and so on...')
 
-    def set_lower_term_energies(self, fname, markers=None,
-                                apply_filters=False):
+    def set_lower_term_energies(self, fname, markers=None):
 
         self.lterms_file = fname
-
         try:
-            self.lterms_data = self._read_observed_energies(
-                markers, apply_filters)
-        except IOError:
-            raise IOError(f'Error: The file {fname} does not exist.')
+            self.lterms_data = self._read_observed_energies(markers)
+        except IOError as exc:
+            raise IOError(f'Error: The file {fname} does not exist.') from exc
 
         if self.lterms_data.shape[0] == 0 or self.lterms_data.shape[1] != 8:
             raise ValueError(
@@ -282,16 +300,21 @@ class Diatomic:
                 f'{self.lterms_data.shape[0]} x {self.lterms_data.shape[1]}\n'
                 f'Check markers, Js, the format of the data and so on...')
 
+    def _read_observed_energies(self, markers):
+
+        data = np.zeros(10, 10)
+        return data
+
 
 class Basis:
 
     def __init__(self, nstate, Js=None, Je=None, Jvalues=None, symmetry=(0,),
-                 _lambda=0, spin=0, sigma=0.0, inuc1=None, inuc2=None, F=None):
+                 _lambda=0, spin=0, sigma=0.0, inuc1=None, inuc2=None, ftot=None):
 
         self.nstate = nstate
 
         if Js is None and Je is None and Jvalues is None:
-            raise ValueError('Error: Missing range/values for J quantum number')
+            raise ValueError('Error: Missing range/value for J quantum number')
 
         if Js is not None and Je is None:
             Je = Js + 1.0
@@ -319,7 +342,7 @@ class Basis:
         self.mult = 2 * self.spin + 1
         self.inuc1 = inuc1
         self.inuc2 = inuc2
-        self.ftot = F
+        self.ftot = ftot
 
     def _format_basis_line(self, j, symm):
 
@@ -363,7 +386,6 @@ class Potential():
         # regularization parameters
         self.pregular = 0
         self.plambda = 0
-        self.id = id(self)
 
         if self.model == 'pointwise' or self.model == 'cspline':
             rpoints, upoints, fixed = self._read_pointwise_data(self.filep)
@@ -385,8 +407,8 @@ class Potential():
         elif self.model == 'custom':
             try:
                 self.upoints, self.fixed = self._read_custom_data(self.filep)
-            except TypeError as te:
-                print(te)
+            except TypeError as exc:
+                print(exc)
         else:
             raise ValueError(f'Invalid potential model {self.model}')
 
@@ -405,20 +427,17 @@ class Potential():
 
     def _read_morse_data(self, filep):
 
-        # TODO: ignore comments and empty lines
-        with open(filep) as fps:
+        with open(filep, 'r', encoding='utf8') as fps:
             morse_data = fps.read().strip().split('\n')
 
         morse_data = dict(map(str.strip, s.split('=')) for s in morse_data)
         npt = len(morse_data)
-        for md in morse_data.items():
-            morse_data[md[0]] = md[1].split()
+        for item in morse_data.items():
+            morse_data[item[0]] = item[1].split()
 
         def_fixed = False
         if len(list(morse_data.values())[0]) >= 2:
             def_fixed = True
-
-        # TODO: check for key error
 
         mapp = {0: 'Te', 1: 'De', 2: 'a', 3: 're'}
         upoints, fixed = np.zeros(npt), np.zeros(npt, dtype=np.int64)
@@ -436,15 +455,13 @@ class Potential():
 
     def _read_emo_data(self, filep):
 
-        # TODO: ignore comments and empty lines
-
-        with open(filep) as fps:
+        with open(filep, 'r', encoding='utf8') as fps:
             emo_data = fps.read().strip().split('\n')
 
         emo_data = dict(map(str.strip, s.split('=')) for s in emo_data)
         npt = len(emo_data)
-        for md in emo_data.items():
-            emo_data[md[0]] = md[1].split()
+        for item in emo_data.items():
+            emo_data[item[0]] = item[1].split()
 
         def_fixed = False
         if len(list(emo_data.values())[0]) >= 2:
@@ -452,8 +469,6 @@ class Potential():
 
         bparams = dict(
             filter(lambda x: x[0].lower().startswith('b'), emo_data.items()))
-
-        # TODO: check for key error
 
         mapp = {0: 'Te', 1: 'De', 2: 'p', 3: 're'}
 
@@ -467,17 +482,17 @@ class Potential():
         # all beta coefficients have dimentions 1/distance
         bvalues = list(
             map(lambda x: float(x[0]) * _utils.C_bohr, bparams.values()))
-        ni, nb = 4, len(bvalues)
+        nic, nbc = 4, len(bvalues)
 
-        upoints[ni:ni+nb] = bvalues
+        upoints[nic:nic+nbc] = bvalues
 
         if def_fixed:
             bfixed = list(map(lambda x: int(x[1]), bparams.values()))
 
-            for i in range(0, ni):
+            for i in range(0, nic):
                 fixed[i] = int(emo_data[mapp[i]][1])
 
-            fixed[ni:ni+nb] = bfixed
+            fixed[nic:nic+nbc] = bfixed
 
         return upoints, fixed
 
@@ -496,15 +511,14 @@ class Potential():
             2. The number of C and D coefficients should be the same
             3. The beta coefficients have dimentions 1/distance
         """
-        # TODO: to ignore comments and empty lines
 
-        with open(filep) as fps:
+        with open(filep, 'r', encoding='utf8') as fps:
             mlr_data = fps.read().strip().split('\n')
 
         mlr_data = dict(map(str.strip, s.split('=')) for s in mlr_data)
         npt = len(mlr_data)
-        for md in mlr_data.items():
-            mlr_data[md[0]] = md[1].split()
+        for item in mlr_data.items():
+            mlr_data[item[0]] = item[1].split()
 
         def_fixed = False
         if len(list(mlr_data.values())[0]) >= 2:
@@ -522,12 +536,9 @@ class Potential():
         # remove binf
         bparams = dict(
             filter(lambda x: x[0].lower() != 'binf', bparams.items()))
-        # TODO: check for key error
 
-        mapp = {
-            0: 'Te', 1: 'De', 2: 'p', 3: 'q',
-            4: 'rref', 5: 're', 6: 'binf'
-        }
+        mapp = {0: 'Te', 1: 'De', 2: 'p', 3: 'q',
+                4: 'rref', 5: 're', 6: 'binf'}
 
         upoints, fixed = np.zeros(npt), np.zeros(npt, dtype=np.int64)
         upoints[0] = float(mlr_data[mapp[0]][0]) / _utils.C_hartree
@@ -587,360 +598,153 @@ class Potential():
             6. The order in which the parameters are defined does not matter-
             they will be ordered by the number after the keyword 'param'!
         """
-        # TODO: ignore comments and empty lines
-
-        with open(filep, 'r') as fps:
+        with open(filep, 'r', encoding='utf8') as fps:
             data = fps.read().strip().split('\n')
 
         data = OrderedDict(map(str.strip, s.split('=')) for s in data)
         data = OrderedDict(sorted(data.items()))
 
-        for md in data.items():
-            data[md[0]] = md[1].split()
+        for item in data.items():
+            data[item[0]] = item[1].split()
 
         npt = len(data)
-
         upoints, fixed = np.zeros(npt), np.zeros(npt, dtype=np.int64)
 
-        for i, v in enumerate(data.values()):
-            upoints[i] = float(v[0])
-            fixed[i] = int(v[1])
-        
+        for ind, value in enumerate(data.values()):
+            upoints[ind] = float(value[0])
+            fixed[ind] = int(value[1])
+
         return upoints, fixed
 
         # rpp, upoints, fixed = np.loadtxt(filep)
         # return upoints, fixed
 
+# class Parameters:
+#     """A class setting and processing the fitting parameters
+#     """
 
-class Channel:
-
-    def __init__(self, id, basis, potential):
-
-        self.basis = basis
-        self.potential = potential
-        self.upoints = self.potential.upoints
-        self.fixed = self.potential.fixed
-        self.cfunc = self.potential.cfunc
-
-        # channels with the same poten file have the same id
-        self.id = id
-        self.refs = None
-
-        # regularization parameters
-        self.pregular = 0
-        self.plambda = 0
-
-    def write_pointwise_data(self, file_name, x, y, z):
-
-        data = np.column_stack((x, y, z))
-        fmt = ['%20.10f', '%25.10f', '%6d']
-        np.savetxt(file_name, data, fmt=fmt)
-
-    def write_morse_data(self, file_name, y, z):
-
-        with open(file_name, 'w') as fs:
-            fs.write(f'Te = {y[0]:>17.8e}{z[0]:>9}\n')
-            fs.write(f'De = {y[1]:>17.8e}{z[1]:>9}\n')
-            fs.write(f'a  = {y[2]:>17.8f}{z[2]:>9}\n')
-            fs.write(f're = {y[3]:>17.8f}{z[3]:>9}\n')
-
-    def write_emo_data(self, file_name, y, z):
-        pass
-
-    def write_mlr_data(self, file_name, y, z):
-        pass
-
-    def write_custom_data(self, file_name, y, z):
-
-        with open(file_name, 'w') as f:
-            for i in range(0, len(y)):
-                f.write(f'param{i+1} = {y[i]:>17.8e}'
-                        f'{z[i]:>10}\n')
-
-    @classmethod
-    def edit_channel_parameters(cls, ypar, channels):
-
-        onpnts = 0
-
-        for i, c in enumerate(channels):
-            if i in c.id:
-                npnts = c.upoints.shape[0]
-                if c.model == 'pointwise' or c.model == 'cspline':
-                    st, en = onpnts, onpnts + npnts
-                    x = c.rpoints*_utils.C_bohr
-                    y = ypar[st:en]*_utils.C_hartree
-                    z = c.fixed
-                    c.write_pointwise_data(c.filep, x, y, z)
-                    onpnts = en
-                elif c.model == 'morse':
-                    st, en = onpnts, onpnts + npnts
-                    Te, De, a, re = ypar[st:en]
-                    y = [Te*_utils.C_hartree, De*_utils.C_hartree,
-                         a, re*_utils.C_bohr]
-                    c.write_morse_data(c.filep, y, c.fixed)
-                    onpnts = en
-                elif c.model == 'emo':
-                    pass
-                elif c.model == 'mlr':
-                    pass
-                elif c.model == 'custom':
-                    st, en = onpnts, onpnts + npnts
-                    params = ypar[st:en]
-                    c.write_custom_data(c.filep, params, c.fixed)
-                    onpnts = en
-
-
-class Parameters:
-    """A class setting and processing the fitting parameters
-    """
-
-    def __init__(self, params):
-
-        # self.set_channels_refs(channels)
-        # channel_pars = self.merge_channel_parameters(channels)
-
-        # self.set_couplings_refs(couplings)
-        # coupling_pars = self.merge_coupling_parameters(couplings)
-
-        self.set_initial_parameters(channel_pars, coupling_pars)
-
-        # total number of channels and coupling parameters
-        self.tot_pars = self.tot_chnls_params + self.tot_cpls_params
-
-    def set_initial_parameters(self, channel_pars, coupling_pars):
-
-        self.ypar_init = np.concatenate((channel_pars[0], coupling_pars[0]))
-        self.yfixed_init = np.concatenate((channel_pars[1], coupling_pars[1]))
-        self.xunits = np.concatenate((channel_pars[2], coupling_pars[2]))
-        self.yunits = np.concatenate((channel_pars[3], coupling_pars[3]))
-        self.refs = np.concatenate((channel_pars[4], coupling_pars[4]))
-        # self.refs = channel_pars[4]
+#     def __init__(self, params):
 
-        # this array will change during the fit
-        self.ypar = np.copy(self.ypar_init)
-        self.yfixed = np.copy(self.yfixed_init)
+#         # self.set_channels_refs(channels)
+#         # channel_pars = self.merge_channel_parameters(channels)
 
-    def set_channels_refs(self, channels):
+#         # self.set_couplings_refs(couplings)
+#         # coupling_pars = self.merge_coupling_parameters(couplings)
 
-        ids = {}
-        sind, eind = 0, 0
-        for ch in channels:
-            eind += ch.potential.npnts
-            if ch.potential.id in ids:
-                ch.refs = ids[ch.potential.id].refs
-                ch.fixed = np.zeros(ch.potential.npnts)
-            else:
-                ch.refs = np.arange(sind, eind)
-                ids[ch.potential.id] = ch
-            sind = eind
+#         self.set_initial_parameters(channel_pars, coupling_pars)
 
-    def set_couplings_refs(self, couplings):
+#         # total number of channels and coupling parameters
+#         self.tot_pars = self.tot_chnls_params + self.tot_cpls_params
 
-        sind, eind = self.tot_chnls_params, self.tot_chnls_params
+#     def set_initial_parameters(self, channel_pars, coupling_pars):
 
-        for cp in couplings:
-            cp.refs = np.zeros(len(cp.interact)*cp.npnts, dtype=int)
-            cp.refs[0:cp.npnts] = np.arange(sind, sind+cp.npnts)
-            cp.yfixed = np.zeros(len(cp.interact)*cp.npnts, dtype=int)
-            cp.yfixed[0:cp.fixed.shape[0]] = cp.fixed
-            eind += cp.npnts
+#         self.ypar_init = np.concatenate((channel_pars[0], coupling_pars[0]))
+#         self.yfixed_init = np.concatenate((channel_pars[1], coupling_pars[1]))
+#         self.xunits = np.concatenate((channel_pars[2], coupling_pars[2]))
+#         self.yunits = np.concatenate((channel_pars[3], coupling_pars[3]))
+#         self.refs = np.concatenate((channel_pars[4], coupling_pars[4]))
+#         # self.refs = channel_pars[4]
 
-            for i in range(1, len(cp.interact)):
-                cp.refs[i*cp.npnts:(i+1)*cp.npnts] = np.arange(sind, eind)
-                cp.yfixed[i*cp.npnts:(i+1)*cp.npnts] = np.zeros(cp.npnts, dtype=int)
+#         # this array will change during the fit
+#         self.ypar = np.copy(self.ypar_init)
+#         self.yfixed = np.copy(self.yfixed_init)
 
-            sind += len(cp.interact)*cp.npnts
-            eind = sind
+#     def set_channels_refs(self, channels):
 
-    def merge_channel_parameters(self, channels):
-
-        ppar = np.concatenate([c.upoints for c in channels])
-        pfixed = np.concatenate([c.fixed for c in channels])
-
-        pxunits = np.concatenate([c.potential.xunits for c in channels])
-        pyunits = np.concatenate([c.potential.yunits for c in channels])
+#         ids = {}
+#         sind, eind = 0, 0
+#         for ch in channels:
+#             eind += ch.potential.npnts
+#             if ch.potential.id in ids:
+#                 ch.refs = ids[ch.potential.id].refs
+#                 ch.fixed = np.zeros(ch.potential.npnts)
+#             else:
+#                 ch.refs = np.arange(sind, eind)
+#                 ids[ch.potential.id] = ch
+#             sind = eind
 
-        refs = np.concatenate([c.refs for c in channels])
-        # pregular = np.concatenate([c.pregular for c in channels])
-        # plambda = np.concatenate([c.plambda for c in channels])
+#     def set_couplings_refs(self, couplings):
 
-        self.tot_chnls_params = ppar.shape[0]
+#         sind, eind = self.tot_chnls_params, self.tot_chnls_params
 
-        return ppar, pfixed, pxunits, pyunits, refs
+#         for cp in couplings:
+#             cp.refs = np.zeros(len(cp.interact)*cp.npnts, dtype=int)
+#             cp.refs[0:cp.npnts] = np.arange(sind, sind+cp.npnts)
+#             cp.yfixed = np.zeros(len(cp.interact)*cp.npnts, dtype=int)
+#             cp.yfixed[0:cp.fixed.shape[0]] = cp.fixed
+#             eind += cp.npnts
 
-    def merge_coupling_parameters(self, couplings):
-
-        self.tot_cpls_params = 0
+#             for i in range(1, len(cp.interact)):
+#                 cp.refs[i*cp.npnts:(i+1)*cp.npnts] = np.arange(sind, eind)
+#                 cp.yfixed[i*cp.npnts:(i+1)*cp.npnts] = np.zeros(cp.npnts, dtype=int)
 
-        try:
-            cpar = np.concatenate(
-                [c.yc for c in couplings for i in c.interact])
-            cfixed = np.concatenate(
-                [c.yfixed for c in couplings])
-            cxunits = np.concatenate(
-                [c.xunits for c in couplings for i in c.interact])
-            cyunits = np.concatenate(
-                [c.yunits for c in couplings for i in c.interact])
-            crefs = np.concatenate(
-                [c.refs for c in couplings])
-            # self.cregular = np.concatenate([c.cregular for c in couplings])
-            # self.clambda = np.concatenate([c.clambda for c in couplings])
-            self.tot_cpls_params = cpar.shape[0]
-        except ValueError:
-            cpar, cfixed = np.array([]), np.array([], dtype=np.int64)
-            cxunits, cyunits = np.array([]), np.array([])
-            crefs = np.array([], dtype=np.int64)
-
-        return cpar, cfixed, cxunits, cyunits, crefs
-
-    def set_dmf_parameters(self, dmfs_init):
-
-        self.tot_dmfs_params = self.tot_pars
-
-        for (n, k) in dmfs_init:
-            ypar_shape_old = self.ypar.shape[0]
-            dmf_shape = dmfs_init[(n, k)].shape[0]
-
-            self.ypar_init = np.concatenate(
-                (self.ypar_init, dmfs_init[(n, k)][:, 1]))
-
-            self.yfixed_init = np.concatenate(
-                (self.yfixed_init, dmfs_init[(n, k)][:, 2]))
-
-            self.ypar = np.concatenate((self.ypar, dmfs_init[(n, k)][:, 1]))
-
-            ypar_shape_new = self.ypar.shape[0]
-
-            self.yfixed = np.concatenate((self.ypar, dmfs_init[(n, k)][:, 2]))
-            self.xunits = np.concatenate((self.xunits, np.full(dmf_shape, 1)))
-            self.yunits = np.concatenate((self.yunits, np.full(dmf_shape, 1)))
-
-            self.refs = np.concatenate(
-                (self.refs, np.arange(ypar_shape_old, ypar_shape_new)))
-
-            self.tot_dmfs_params += dmf_shape
-
-
-class Coupling:
-
-    def __init__(self, interact, coupling, model, label, multiplier=1,
-                 custom_func=None):
-
-        self.interact = interact
-        self.coupling = coupling
-        self.model = model.lower()
-        self.label = label
-        self.multiplier = multiplier
-        self.cfunc = custom_func
-        self.xunits = 1.0 / _utils.C_bohr
-        self.yunits = 1
-        self.npnts = 0
-        self.fixed = 0
-        self.xc = None
-        self.yc = None
-        self.refs = None
-
-        # regularization parameters
-        self.cregular = 0
-        self.clambda = 0
-
-        # parse input parameters
-        parstr = list(map(str.split, Coupling.cpl_data[self.label]))
-        params = np.array([list(map(float, i)) for i in parstr])
-
-        # if string convert to tuples
-        if isinstance(self.coupling, str):
-            self.coupling = (self.coupling,)
-            self.interact = (self.interact,)
-            self.multiplier = (self.multiplier,)
-
-        # convert to lowercase
-        self.coupling = tuple(map(str.lower, self.coupling))
-
-        # set units
-        if 'spin-orbit' in self.coupling or 'dbobc' in self.coupling:
-            self.yunits = 1.0 / _utils.C_hartree
-
-        if all(item.startswith('lambdad') for item in self.coupling):
-            self.yunits = _utils.C_hartree
-
-        # set parameters by checking the model
-        if self.model == 'pointwise' or self.model == 'cspline':
-            self.xunits = np.full(params[:, 0].shape[0], self.xunits)
-            self.yunits = np.full(params[:, 1].shape[0], self.yunits)
-            self.xc = params[:, 0]
-            self.yc = params[:, 1]
-
-            if params.shape[1] >= 3:
-                self.fixed = params[:, 2]
-            if params.shape[1] >= 4:
-                self.cregular = params[:, 3]
-                self.clambda = params[:, 4]
-
-        if self.model == 'custom':
-            self.yc = params[:, 0]
-            if params.shape[1] >= 2:
-                self.fixed = params[:, 1]
-            if params.shape[1] >= 3:
-                self.cregular = params[:, 2]
-                self.clambda = params[:, 3]
-
-        self.npnts = params.shape[0]
-
-    # @classmethod
-    # def set_couplings_file(cls, fname):
-
-    #     cls.cpl_file = fname
-
-    #     try:
-    #         with open(cls.cpl_file, 'r') as inps:
-    #             try:
-    #                 cls.cpl_data = yaml.safe_load(inps)
-    #             except yaml.YAMLError as ye:
-    #                 # TODO: fails with YAML object has no attribute YAMLError
-    #                 raise SystemExit(ye)
-    #     except IOError as e:
-    #         raise SystemExit(e)
-
-    @classmethod
-    def edit_coupling_parameters(cls, ypar, couplings):
-
-        cpl_data = Diatomic._read_couplings_data()
-        # cpar = tot_npts
-        cpar = 1
-
-        for cp in couplings:
-            new_item = []
-            if cp.model == 'pointwise' or cp.model == 'cspline':
-                for item in cpl_data[cp.label]:
-                    sitem = item.split()
-                    if len(sitem) >= 3:
-                        new_item.append(
-                            f'{float(sitem[0]):10.12f}'
-                            f'{float(ypar[cpar]/cp.yunits):24.12f}'
-                            f'{int(sitem[2]):7d}'
-                            f'{float(sitem[3]):14.2e}'
-                            f'{float(sitem[4]):14.1e}'.lstrip())
-                    else:
-                        new_item.append(
-                            f'{float(sitem[0]):10.12f}'
-                            f'{float(ypar[cpar]/cp.yunits):24.12f}'
-                            f'{int(sitem[2]):7d}')
-                    cpar += 1
-            else:
-                for item in cpl_data[cp.label]:
-                    sitem = item.split()
-                    if len(sitem) >= 2:
-                        new_item.append(
-                            f'{float(ypar[cpar]):18.12f}'
-                            f'{int(sitem[1]):3d}'
-                            f'{float(sitem[2]):10.1f}'.lstrip())
-                    else:
-                        new_item.append(
-                            f'{float(ypar[cpar]):18.12f}'
-                            f'{int(sitem[1]):3d}'.lstrip())
-                    cpar += 1
-            cpl_data[cp.label] = new_item
-
-        # with _open(Diatomic.cpl_file, 'w', encoding='utf8') as stream:
-        #     yaml.dump(cpl_data, stream=stream)
+#             sind += len(cp.interact)*cp.npnts
+#             eind = sind
+
+#     def merge_channel_parameters(self, channels):
+
+#         ppar = np.concatenate([c.upoints for c in channels])
+#         pfixed = np.concatenate([c.fixed for c in channels])
+
+#         pxunits = np.concatenate([c.potential.xunits for c in channels])
+#         pyunits = np.concatenate([c.potential.yunits for c in channels])
+
+#         refs = np.concatenate([c.refs for c in channels])
+#         # pregular = np.concatenate([c.pregular for c in channels])
+#         # plambda = np.concatenate([c.plambda for c in channels])
+
+#         self.tot_chnls_params = ppar.shape[0]
+
+#         return ppar, pfixed, pxunits, pyunits, refs
+
+#     def merge_coupling_parameters(self, couplings):
+
+#         self.tot_cpls_params = 0
+
+#         try:
+#             cpar = np.concatenate(
+#                 [c.yc for c in couplings for i in c.interact])
+#             cfixed = np.concatenate(
+#                 [c.yfixed for c in couplings])
+#             cxunits = np.concatenate(
+#                 [c.xunits for c in couplings for i in c.interact])
+#             cyunits = np.concatenate(
+#                 [c.yunits for c in couplings for i in c.interact])
+#             crefs = np.concatenate(
+#                 [c.refs for c in couplings])
+#             # self.cregular = np.concatenate([c.cregular for c in couplings])
+#             # self.clambda = np.concatenate([c.clambda for c in couplings])
+#             self.tot_cpls_params = cpar.shape[0]
+#         except ValueError:
+#             cpar, cfixed = np.array([]), np.array([], dtype=np.int64)
+#             cxunits, cyunits = np.array([]), np.array([])
+#             crefs = np.array([], dtype=np.int64)
+
+#         return cpar, cfixed, cxunits, cyunits, crefs
+
+#     def set_dmf_parameters(self, dmfs_init):
+
+#         self.tot_dmfs_params = self.tot_pars
+
+#         for (n, k) in dmfs_init:
+#             ypar_shape_old = self.ypar.shape[0]
+#             dmf_shape = dmfs_init[(n, k)].shape[0]
+
+#             self.ypar_init = np.concatenate(
+#                 (self.ypar_init, dmfs_init[(n, k)][:, 1]))
+
+#             self.yfixed_init = np.concatenate(
+#                 (self.yfixed_init, dmfs_init[(n, k)][:, 2]))
+
+#             self.ypar = np.concatenate((self.ypar, dmfs_init[(n, k)][:, 1]))
+
+#             ypar_shape_new = self.ypar.shape[0]
+
+#             self.yfixed = np.concatenate((self.ypar, dmfs_init[(n, k)][:, 2]))
+#             self.xunits = np.concatenate((self.xunits, np.full(dmf_shape, 1)))
+#             self.yunits = np.concatenate((self.yunits, np.full(dmf_shape, 1)))
+
+#             self.refs = np.concatenate(
+#                 (self.refs, np.arange(ypar_shape_old, ypar_shape_new)))
+
+#             self.tot_dmfs_params += dmf_shape

@@ -36,13 +36,15 @@ class Operator(object):
         self.masses = diatomic.reduced_masses or diatomic.masses
         self.niso = diatomic.niso
         self.refj = diatomic.referencej
-        self.refE = diatomic.refE
+        self.ref_enr = diatomic.ref_enr
         self.exp_data = diatomic.exp_data
         self.exp_file = diatomic.exp_file
         self.wavens_data = diatomic.wavens_data
         self.params_by_labels = diatomic.params_by_labels
         self.labels_inds = diatomic.labels_inds
         self.params = diatomic.params
+        self.fixed = diatomic.fixed
+        self.fname_data_params = diatomic.fname_data_params
 
         # set the local parameters
         self.states = states
@@ -74,7 +76,6 @@ class Operator(object):
                 self.state2 = state
 
 
-
 class SO(Operator):
 
     def __init__(self, objs, pair_states, label, model='pointwise', rotc=0.0,
@@ -97,7 +98,7 @@ class SO(Operator):
         self.ypoints = self.init_params[:, 1]
         self.fixed = self.init_params[:, 2]
 
-        self.calculate_radial_function_on_grid(self.params)
+        # self.calculate_radial_function_on_grid(self.params)
 
     def calculate_matrix_elements(self, jrotn, par, iso):
 
@@ -193,7 +194,7 @@ class LJ(Operator):
         self.ypoints = self.init_params[:, 1]
         self.fixed = self.init_params[:, 2]
 
-        self.calculate_radial_function_on_grid(self.params)
+        # self.calculate_radial_function_on_grid(self.params)
 
     def calculate_matrix_elements(self, jrotn, par, iso):
 
@@ -202,9 +203,11 @@ class LJ(Operator):
 
         # this check if not complete
         if self.state1.omega == self.state2.omega == 0.5:
-            self.matrix[self.dd] = self._lj_parity_interaction(jjrotn, mass, par) * self.ygrid
+            self.matrix[self.dd] = \
+                self._lj_parity_interaction(jjrotn, mass, par) * self.ygrid
         else:
-            self.matrix[self.dd] = self._lj_interaction(jrotn, jjrotn, mass) * self.ygrid
+            self.matrix[self.dd] = \
+                self._lj_interaction(jrotn, jjrotn, mass) * self.ygrid
 
         return self.matrix
 
@@ -351,7 +354,7 @@ class SJ(Operator):
         self.ypoints = self.init_params[:, 1]
         self.fixed = self.init_params[:, 2]
 
-        self.calculate_radial_function_on_grid(self.params)
+        # self.calculate_radial_function_on_grid(self.params)
 
     def calculate_matrix_elements(self, jrotn, par, iso):
 
@@ -359,9 +362,11 @@ class SJ(Operator):
         jjrotn = jrotn*(jrotn + 1.0)
 
         if self.istate1 != self.istate2:
-            self.matrix[self.dd] = self._sj_interaction(jrotn, jjrotn, mass) * self.ygrid
+            self.matrix[self.dd] = \
+                self._sj_interaction(jrotn, jjrotn, mass) * self.ygrid
         else:
-            self.matrix[self.dd] = self._sj_parity_interaction(jjrotn, mass, par) * self.ygrid
+            self.matrix[self.dd] = \
+                self._sj_parity_interaction(jjrotn, mass, par) * self.ygrid
 
         return self.matrix
 
@@ -484,13 +489,14 @@ class LS(Operator):
         self.ypoints = self.init_params[:, 1]
         self.fixed = self.init_params[:, 2]
 
-        self.calculate_radial_function_on_grid(self.params)
+        # self.calculate_radial_function_on_grid(self.params)
 
     def calculate_matrix_elements(self, jrotn, par, iso):
 
         mass = self.masses[iso-1]
 
-        self.matrix[self.dd] = self._spin_electornic_interaction(mass) * self.ygrid
+        self.matrix[self.dd] = \
+            self._spin_electornic_interaction(mass) * self.ygrid
 
         return self.matrix
 
@@ -585,14 +591,15 @@ class LD(Operator):
         self.ypoints = self.init_params[:, 1]
         self.fixed = self.init_params[:, 2]
 
-        self.calculate_radial_function_on_grid(self.params)
+        # self.calculate_radial_function_on_grid(self.params)
 
     def calculate_matrix_elements(self, jrotn, par, iso):
 
         mass = self.masses[iso-1]
         jjrotn = jrotn * (jrotn + 1.0)
 
-        self.matrix[self.dd] = self._lambda_doubling(jjrotn, mass, par) * self.ygrid
+        self.matrix[self.dd] = \
+            self._lambda_doubling(jjrotn, mass, par) * self.ygrid
 
         return self.matrix
 
@@ -638,14 +645,14 @@ class LD(Operator):
     def _lambda_doubling_e_parity(self, jjrotn, mass, par):
 
         if par == 1:
-            return self.lambda_doubling(jjrotn, mass, par)
+            return self._lambda_doubling(jjrotn, mass, par)
 
         return np.zeros(self.rgrid2.shape[0])
 
     def _lambda_doubling_f_parity(self, jjrotn, mass, par):
 
         if par == 0:
-            return self.lambda_doubling(jjrotn, mass, par)
+            return self._lambda_doubling(jjrotn, mass, par)
 
         return np.zeros(self.rgrid2.shape[0])
 
@@ -671,14 +678,15 @@ class SR(Operator):
         self.ypoints = self.init_params[:, 1]
         self.fixed = self.init_params[:, 2]
 
-        self.calculate_radial_function_on_grid(self.params)
+        # self.calculate_radial_function_on_grid(self.params)
 
     def calculate_matrix_elements(self, jrotn, par, iso):
 
         # mass = self.masses[iso-1]
         jjrotn = jrotn * (jrotn + 1.0)
 
-        self.matrix[self.dd] = self._spin_rotation_interaction(jjrotn) * self.ygrid
+        self.matrix[self.dd] = \
+            self._spin_rotation_interaction(jrotn, jjrotn) * self.ygrid
 
         return self.matrix
 
@@ -715,11 +723,11 @@ class SR(Operator):
         ypnts = ypar[self.sind:self.eind]  # * self.yunits
         self.ygrid = self.custom_func(xpnts, ypnts)
 
-    def _spin_rotation_interaction(self, jjrotn):
+    def _spin_rotation_interaction(self, jrotn, jjrotn):
 
         if self._rule_spin_rot_diag():
             qexpr = self.state1.sigma**2-self.state1.spin*(self.state2.spin+1)
-        elif self._rule_spin_rot_nondiag():
+        elif self._rule_spin_rot_nondiag(jrotn):
             ss1 = self.state1.spin * (self.state1.spin + 1)
             qexpr = \
                 _sqrt(jjrotn - (self.state1.omega * self.state2.omega)) * \
@@ -740,8 +748,8 @@ class SR(Operator):
 
         return 0
 
-    def _rule_spin_rot_nondiag(self):
-        self._rule_sj_interaction()
+    def _rule_spin_rot_nondiag(self, jrotn):
+        self._rule_sj_interaction(jrotn)
 
     def _rule_sj_interaction(self, jrotn):
 
@@ -781,7 +789,7 @@ class SS(Operator):
         self.ypoints = self.init_params[:, 1]
         self.fixed = self.init_params[:, 2]
 
-        self.calculate_radial_function_on_grid(self.params)
+        # self.calculate_radial_function_on_grid(self.params)
 
     def calculate_matrix_elements(self, jrotn, par, iso):
 
@@ -874,6 +882,7 @@ class SS(Operator):
             return 1
 
         return 0
+
 
 class Dipole(Operator):
 

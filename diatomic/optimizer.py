@@ -15,28 +15,18 @@ __all__ = ['Optimizer']
 
 
 class Optimizer:
+    """Optimize of the radial parameters based on the  provided observed data for
+       the energy levels, transition frequencies or transition intensities.
+    """
 
     def __init__(self, H, S=None, output_progress=False, is_weighted=False):
-        """Implement procedures for the optimization of the channel, coupling
-        and dipole moment parameters using input observations data for the
-        energy levels, transition frequencies or transition intensities
-
-        Args:
-            H (object): The Hamiltonian object
-            S (object, optional): The Spectrum object. Defaults to None.
-            output_progress (bool, optional): Whether detailed information for
-                the fit to be outputed on every iteration. Defaults to False.
-            is_weighted (bool, optional): Wotson's weighting procedure.
-                Defaults to False.
-        """
 
         self.H = H
         self.S = S
         self.progress = output_progress
         self.is_weighted = is_weighted
         self.progress_str = io.StringIO()
-        self.tot_ppts = H.tot_ppts
-        self.tot_cpts = H.tot_cpts
+        self.sing_values = None
 
     def _calculate_levels(self, ypar):
 
@@ -115,14 +105,14 @@ class Optimizer:
               f'\nTotal number of parameters to be optimized = '
               f'{yfixed[yfixed == 1].shape[0]}\n')
 
-        for it in range(1, niter+1):
+        for itr in range(1, niter+1):
 
             # get the energies with the initial/updated parameters from
             # the first/previous iteration
             ycal, yobs, ydel, yvar, stats = calculate_data(ypar)
             chisq_best, rms_best = stats['chi2'], stats['rms']
 
-            print(self.print_info(it, tol, stats))
+            print(self.print_info(itr, tol, stats))
 
             # build the matrix of the derivatives w.r.t. parameters
             if derivative == 'n':
@@ -133,13 +123,14 @@ class Optimizer:
                 pass
 
             # calculate the data matrix A from derivative matrix
-            A = (dydp.T / yvar).T
+            data_matrix = (dydp.T / yvar).T
 
             # calculate the rhs vector b
-            b = ydel / yvar
+            rhs_vector = ydel / yvar
 
             # the propossed corrections to the parameters is the solution
-            x, rank, sv = self._find_corrections(A, b, tol, lapack_driver)
+            x, rank, sing_values = self._find_corrections(
+                data_matrix, rhs_vector, tol, lapack_driver)
 
             # calculate new energies using the proposed corrections
 
@@ -174,22 +165,21 @@ class Optimizer:
                         break
 
             # on odd iteration try to change tol if nothing has been improved
-            if it > 1 and it % 2 == 1 and is_failed:
+            if itr > 1 and itr % 2 == 1 and is_failed:
                 tol /= 5.0
                 print(f'\nTol changed = {tol:.1e}')
 
             # write detailed fit progress
             if self.progress:
-                self._write_fit_progress(rank, sv, tol, ypar, x, yfixed, it)
+                self._write_fit_progress(rank, sing_values, tol, ypar, x, yfixed)
                 print(self.progress_str.getvalue())
 
-        self.singular_values = sv
+        self.sing_values = sing_values
 
         return ypar
 
     def optimize_levels_by_svd(self, niter=1, derivative='n', tol=0.1,
-                               lapack_driver='gelsd', step_size=1.0e-4,
-                               store_output=False, update_input=False):
+                               lapack_driver='gelsd', step_size=1.0e-4):
         """This procedure applies the SVD algorithm to optimize the parameters
         using an input information about the energy levels
 
@@ -201,52 +191,50 @@ class Optimizer:
                 Defaults to 'gelsd'.
             step_size (float, optional): The value used to change the
                 parameters. Defaults to 1.0e-4.
-            store_output (bool, optional): Store the output. Defaults to False.
-            update_input (bool, optional): Update the input. Defaults to False.
 
         Returns:
             array: The optimized parameters
         """
 
-        # get initial parameters
-        ypar, yfixed = self.H.ypar_init, self.H.yfixed_init
-        ypar_final = self.optimize(ypar, yfixed, self._calculate_levels, niter,
-                                   derivative, tol, lapack_driver, step_size)
-
-        # TODO: fix the units
-        # store the updated channel parameters in new files
-        if store_output:
-            prefix = 'fit_'
-            for i, c in enumerate(self.H.channels):
-                if i in self.H.unq_channel_inds:
-                    file_name = prefix + c.filep
-                    if c.model == 'pointwise' or c.model == 'cspline':
-                        x = c.rpoints/c.xunits
-                        y = ypar_final[c.start_index:c.end_index]/c.yunits
-                        z = c.fixed
-                        c.write_pointwise_data(file_name, x, y, z)
-                    elif c.model == 'morse':
-                        pass
-                    elif c.model == 'emo':
-                        pass
-                    elif c.model == 'mlr':
-                        pass
-                    elif c.model == 'custom':
-                        pass
-            # TODO: store the updated coupling parameters in new file
-
-        # update the parameters in the input files
-        if update_input:
-            self.H.edit_channel_parameters(ypar_final, self.H.channels)
-
-            if self.H.ncp > 0:
-                self.H.edit_coupling_parameters(ypar_final, self.H.couplings)
+        ypar_final = self.optimize(self.H.params, self.H.fixed, self._calculate_levels,
+                                   niter, derivative, tol, lapack_driver, step_size)
+        self._store_output_params()
 
         return ypar_final
 
+    def _store_output_params(self):
+
+        prefix = 'fit_'
+        for opr in self.H.ops:
+            fname = prefix + self.H.fname_data_params
+            if opr.model in ['pointwise', 'cspline']:
+                # TODO: update ypoints with the fitted params
+                self._write_pointwise_data(fname, opr.xpoints, opr.ypoints, opr.fixed)
+            elif opr.model == 'morse':
+                pass
+            elif opr.model == 'emo':
+                pass
+            elif opr.model == 'mlr':
+                pass
+            elif opr.model == 'custom':
+                pass
+
+    def _write_pointwise_data(self, fname, xpoints, ypoints, fixed):
+
+        data = np.column_stack((xpoints, ypoints, fixed))
+        fmt = ['%20.10f', '%25.10f', '%6d']
+        np.savetxt(fname, data, fmt=fmt)
+
+    def _write_morse_data(self, fname, ypoints, fixed):
+
+        with open(fname, 'w', encoding='utf8') as fs:
+            fs.write(f'Te = {ypoints[0]:>17.8e}{fixed[0]:>9}\n')
+            fs.write(f'De = {ypoints[1]:>17.8e}{fixed[1]:>9}\n')
+            fs.write(f'a  = {ypoints[2]:>17.8f}{fixed[2]:>9}\n')
+            fs.write(f're = {ypoints[3]:>17.8f}{fixed[3]:>9}\n')
+
     def optimize_wavenumbers_by_svd(self, niter=1, derivative='n', tol=0.1,
-                                    lapack_driver='gelsd', step_size=1.0e-4,
-                                    store_output=False, update_input=False):
+                                    lapack_driver='gelsd', step_size=1.0e-4):
 
         # get initial parameters
         ypar, yfixed = self.H.ypar_init, self.H.yfixed_inits
@@ -254,16 +242,10 @@ class Optimizer:
         ypar = self.optimize(ypar, yfixed, self._calculate_wavenumbers, niter,
                              derivative, tol, lapack_driver, step_size)
 
-        if store_output:
-            pass
-        if update_input:
-            pass
-
         return ypar
 
     def optimize_intensity_by_svd(self, niter=1, derivative='n', tol=0.1,
-                                  lapack_driver='gelsd', step_size=1.0e-4,
-                                  store_output=False, update_input=False):
+                                  lapack_driver='gelsd', step_size=1.0e-4):
 
         # get initial parameters
         ypar, yfixed = self.H.ypar_init, self.H.yfixed_init
@@ -277,16 +259,16 @@ class Optimizer:
         ypar = self.optimize(ypar, yfixed, self._calculate_intensity, niter,
                              derivative, tol, lapack_driver, step_size)
 
-        if store_output:
-            np.savetxt('fitted_dm.dat', ypar)
-        if update_input:
-            pass
-
         return ypar
 
     def get_singular_values(self):
+        """Get the singular values generated during the final iteration of the fit
 
-        return self.singular_values
+        Returns:
+            array: The array of singular values
+        """
+
+        return self.sing_values
 
     def _calculate_numerical_derivatives(self, ypar, yfixed, calculate_data,
                                          ycal_init, step_size):
@@ -306,22 +288,22 @@ class Optimizer:
             shape=(ycal_init.shape[0], ypar.shape[0]), dtype=np.float64)
 
         # change all free parameters
-        dp = np.abs(ypar) * step_size
-        dp[yfixed == 0] = 0.0
+        delta_par = np.abs(ypar) * step_size
+        delta_par[yfixed == 0] = 0.0
 
         for prm in range(0, ypar.shape[0]):
             if not yfixed[prm]:
                 continue
-            dpar = np.copy(ypar)
-            dpar[prm] += dp[prm]
-            ycal, *_ = calculate_data(dpar)
-            dydp[:, prm] = (ycal - ycal_init) / dp[prm]
+            changed_pars = np.copy(ypar)
+            changed_pars[prm] += delta_par[prm]
+            ycal, *_ = calculate_data(changed_pars)
+            dydp[:, prm] = (ycal - ycal_init) / delta_par[prm]
 
         return dydp
 
     def _calculate_analytical_derivatives(self, ypar, yfixed, qnums):
 
-        msize = self.ml.nch*self.ml.ngrid
+        msize = self.H.nch*self.H.ngrid
         evecs_found = np.zeros((msize, qnums.shape[0]))
         dydp = np.zeros((evecs_found.shape[1], ypar.shape[0]))
 
@@ -337,32 +319,32 @@ class Optimizer:
         ejqnums, fjqnums = qnums[qnums[:, 2] == 1], qnums[qnums[:, 2] == 0]
         fjqind = (fjqnums[:, 1] - np.min(fjqnums[:, 1])).astype(int)
         ejqind = (ejqnums[:, 1] - np.min(ejqnums[:, 1])).astype(int)
-        ejqind += self.ml.jqnumbers.shape[0]
+        ejqind += self.H.jqnumbers.shape[0]
         jqind = np.hstack((fjqind, ejqind))
 
         for prm in range(0, ypar.shape[0]):
             if not yfixed[prm]:
                 continue
             sk = np.zeros((msize, msize))
-            for iprm in self.ml.block_index[prm]:
+            for iprm in self.H.block_index[prm]:
                 r1, r2, c1, c2, count, cp = iprm
-                sk_grid = self.ml.sk_grid[r1:r2, count]
+                sk_grid = self.H.sk_grid[r1:r2, count]
                 if cp < 0:  # potential
                     np.fill_diagonal(sk[r1:r2, c1:c2], sk_grid)
                     dydp[:, prm] = np.diag(evecs_found.T @ sk @ evecs_found)
                 else:  # coupling
-                    sk_coef = self.ml.interact.cp_map[cp][r1:r2, :]
+                    sk_coef = self.H.interact.cp_map[cp][r1:r2, :]
                     memoize = set()
                     for countj, j in enumerate(jqind):
                         if j not in memoize:
-                            elem = self.get_dydp_elem(iprm[:4], sk, sk_grid,
+                            elem = self._get_dydp_elem(iprm[:4], sk, sk_grid,
                                                       sk_coef, j, evecs_found)
                         dydp[countj, prm] = elem[countj]
                         memoize.add(j)
         return dydp
 
     # @staticmethod
-    def get_dydp_elem(self, indices, sk, sk_grid, sk_coef, j, evecs_found):
+    def _get_dydp_elem(self, indices, sk, sk_grid, sk_coef, j, evecs_found):
         r1, r2, c1, c2 = indices
         np.fill_diagonal(sk[r1:r2, c1:c2], sk_grid)
         sk[r1:r2, c1:c2] = sk[r1:r2, c1:c2] * sk_coef[:, j]
@@ -374,13 +356,13 @@ class Optimizer:
         return elem
 
     @staticmethod
-    def _find_corrections(A, b, tol, lapack_driver):
+    def _find_corrections(data_matrix, rhs_vector, tol, lapack_driver):
         """Find corrections to a set of parameters by solving
            a linear system of equations with SVD algorithm
 
         Args:
-            A (array): The derivative matrix
-            b (array): RHS vector
+            data_matrix (array): The derivative matrix
+            rhs_vector (array): RHS vector
             tol (float): Tolerance value
             lapack_driver (str): The lapack routine used for
                 nonliner least-squares fiitting
@@ -389,7 +371,7 @@ class Optimizer:
             tuple: the corrections to the parameters, the rank of the
                 matrix and an array containing the singular values
 
-        Notes:
+        Remarks:
             1. There are two similar procedures for SVD in numpy and
             scipy libraries. In their older versions the definitions of
             the default tol value was different.
@@ -398,15 +380,26 @@ class Optimizer:
             the matrix.
         """
 
-        x, _, rank, s = sp.linalg.lstsq(A, b, tol, lapack_driver)
+        x, _, rank, s = sp.linalg.lstsq(data_matrix, rhs_vector, tol, lapack_driver)
         # x, _, rank, s = np.linalg.lstsq(A, b, rcond=tol)
 
         return x, rank, s
 
-    def print_info(self, it, tol, stats):
+    def print_info(self, itr, tol, stats):
+        """Print a short information about the progress of the fit on
+        each iteration
+
+        Args:
+            itr (int): the number of the iteration
+            tol (_type_): the tolerance value
+            stats (_type_): usefull statistics
+
+        Returns:
+            str: The string which to be outputed.
+        """
 
         stats_str = _utils.print_stats(stats)
-        out_str = (f'{14*"- "}Iteration {it} '
+        out_str = (f'{14*"- "}Iteration {itr} '
                    f'{14*"- "}\nTOL = {tol:.1e}\n')
         out_str += stats_str
 
@@ -418,36 +411,35 @@ class Optimizer:
         init_line = f'  {107*"-"}\n'
         out += init_line
         width = 15
-        title = (' | {0:^{width}} | {1:^{width}} | {2:^{width}} | {3:^{width}}'
-                 ' | {4:^{width}} | {5:^{width}} |\n').format(
-                    'id', 'Initial value', 'Correction', 'Final value',
-                    '% change', 'Fixed', width=width)
+        prec = 6
+
+        title = (f" | {'id':^{width}} | {'Initial value':^{width}} |"
+                 f"{'Correction':^{width}} | {'Final value':^{width}}"
+                 f" | {'% change':^{width}} | {'Fixed':^{width}} |\n")
+
         out += title
         out += init_line
         for row in data:
-            line = (' | {0:^{width}.0f} | {1:>{width}.{prec}f}'
-                    ' | {2:>{width}.{prec}f} | {3:>{width}.{prec}f}'
-                    ' | {4:>{width}.{prec}f} | {5:^{width}.0f} |\n').format(
-                        row[0], row[1], row[2], row[3], row[4], row[5],
-                        width=width, prec=6)
+            line = (f' | {row[0]:^{width}.0f} | {row[1]:>{width}.{prec}f}'
+                    f' | {row[2]:>{width}.{prec}f} | {row[3]:>{width}.{prec}f}'
+                    f' | {row[4]:>{width}.{prec}f} | {row[5]:^{width}.0f} |\n')
             out += line
         out += init_line
 
         return out
 
-    def _write_fit_progress(self, rank, sv, tol, ypar, dypar, yfixed, it):
+    def _write_fit_progress(self, rank, sing_values, tol, ypar, dypar, yfixed):
         """Write formatted detailed information about the progress of the fit
 
         Args:
             rank (float): The rank of the SVD matrix
-            sv (array): Array with singular values
+            sing_values (array): An array with singular values
             tol (float): Tolerance value
             ypar (array): Fitting parameters
             dypar (array): Corrections to the parameters
             yfixed (array): Whether a parameter is fixed or free
-            it (int): Iteration count
 
-        Notes:
+        Remarks:
             Singular values are sorted from the largest to the smallest one.
             Singular values smaller than tol times the largest singular value
             are set to 0.
@@ -458,30 +450,33 @@ class Optimizer:
         """
 
         self.progress_str.write(
-            f'\nTOL * max singular value = {tol*sv[0]:.3f}\n'
+            f'\nTOL * max singular value = {tol*sing_values[0]:.3f}\n'
             f'\nEffective rank = {rank}'
             f'\nThe first {rank} significant singular values:\n')
         self.progress_str.write(' '.join(
-            ['{:.1e}'.format(i) for i in sv[:rank]]))
+            ['{:.1e}'.format(i) for i in sing_values[:rank]]))
 
         with np.errstate(divide='ignore', invalid='ignore'):
-            cond_number = abs(sv[0] / sv[-1])
+            cond_number = abs(sing_values[0] / sing_values[-1])
 
         self.progress_str.write(f'\nCondition number = {cond_number:.1e}\n')
 
         # TODO: check if there are parameters equal to zero
-        nn = np.arange(1, ypar.shape[0]+1, 1, dtype=np.int64)
+        pcount = np.arange(1, ypar.shape[0]+1, 1, dtype=np.int64)
         xypar = ypar + dypar
         change = np.absolute(dypar / ypar) * 100
 
-        iypar = ypar / self.H.yunits
-        corr = dypar / self.H.yunits
-        fypar = xypar / self.H.yunits
-        data_out = np.column_stack((nn, iypar, corr, fypar, change, yfixed))
+        iypar = ypar  # / self.H.yunits
+        corr = dypar  # / self.H.yunits
+        fypar = xypar  # / self.H.yunits
+        data_out = np.column_stack((pcount, iypar, corr, fypar, change, yfixed))
 
         self.progress_str.write(self._format_params_table(data_out))
 
-    def calculate_covariance_matrix(self):
+    def get_covariance_matrix(self):
+        """Return the covariance matrix
+        """
+        raise NotImplementedError()
         # find covariance matrix
         # U, s, V = sp.linalg.svd(A, full_matrices=False)
         # si = np.zeros(s.shape[0])
@@ -508,7 +503,6 @@ class Optimizer:
         #           cvm[i, j] / (math.sqrt(cvm[i, i]) * math.sqrt(cvm[j, j]))
 
         # np.savetxt('crm.dat', crm, fmt='%12.4e')
-        pass
 
     def optimize_levels_by_svd_regular(self, niter=1, derivative='n',
                                        tol=0.1, lapack_driver='gelsd',
@@ -516,7 +510,6 @@ class Optimizer:
         pass
 
     def _minuit_least_squares(self, ypar):
-
         """The procedure which Minuit calls on each iteration
 
         Args:
@@ -525,35 +518,30 @@ class Optimizer:
         Returns:
             float: Chi Square value
 
-        Notes:
-            Minuit requires only one single argument to be passed
-            to this function
+        Remarks:
+            A single argument is required for this function
         """
         ycal, yobs, ydel, yvar, stats = self._calculate_levels(ypar)
 
         return np.sum(ydel ** 2 / yvar)
 
-    def set_constraints(self):
+    def _set_constraints(self):
         pass
 
-    def optimize_levels_by_minuit(self, niter=0, step_size=1.0e-4,
-                                  set_limits=None, uncert=False):
+    def optimize_levels_by_minuit(self, niter=0, step_size=1.0e-4, uncert=False):
         """Minuit algorithm for nonliner least squares fitting
 
         Args:
             niter (int, optional): The number of iterations. Defaults to 0.
             step_size (float, optional): the initial change in the parameters.
                 Defaults to 1.0e-4.
-            set_limits (array, optional): limit the possible values of
-                the parameters. Defaults to None.
             uncert (bool, optional): whether to compute the covariance and the
                 correlations matrices and the uncertanties in the parameters.
                 Defaults to False.
         """
 
         print_level = int(self.progress) + 1
-
-        ypar, yfixed, *_ = self._get_initial_parameters()
+        ypar, yfixed = self.H.params, self.H.fixed
 
         # TODO: # check if this is correct
         errors = np.abs(ypar) * step_size
