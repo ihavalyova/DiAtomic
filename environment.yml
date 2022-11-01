@@ -7,4 +7,5 @@ dependencies:
   - matplotlib>=3.2.0
   - scipy>=1.5.0
   - iminuit
+  - pybind11
   #- py3nj

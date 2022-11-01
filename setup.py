@@ -19,7 +19,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 readme = os.path.join(here, 'README.md')
 
 
-class get_pybind11_include_dirs(object):
+class Get_Pybind11_Include_Dirs(object):
     """Returns a list of include directories for pybind11;
     Ensure that pybind11 is installed before referencing it."""
 
@@ -34,21 +34,21 @@ diatomic_ext1 = Extension(
     "diatomic.identify",
     sources=["diatomic/identify.cpp"],
     extra_compile_args=['-O3', '-shared', '-std=c++11'],
-    include_dirs=[get_pybind11_include_dirs()]
+    include_dirs=[Get_Pybind11_Include_Dirs()]
 )
 
 diatomic_ext2 = Extension(
     "diatomic.wavenumbers",
     sources=["diatomic/wavenumbers.cpp"],
     extra_compile_args=['-O3', '-shared', '-std=c++11'],
-    include_dirs=[get_pybind11_include_dirs()]
+    include_dirs=[Get_Pybind11_Include_Dirs()]
 )
 
 setup(
     name='diatomic-computations',
     version='v0.0.1',
     description='Diatomic Molecules Computations',
-    long_description=open(readme).read(),
+    long_description=open(readme, encoding='utf-8').read(),
     long_description_content_type='text/markdown',
     author='Ilvie Havalyova',
     author_email='havaliova@gmail.com',
