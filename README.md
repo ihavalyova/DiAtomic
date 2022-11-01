@@ -7,7 +7,7 @@
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/ihavalyova/DiAtomic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/ihavalyova/DiAtomic/alerts/)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ihavalyova/DiAtomic/master)
 [![code scanning](https://github.com/ihavalyova/DiAtomic/workflows/CodeQL/badge.svg?branch=master)](https://github.com/ihavalyova/DiAtomic/actions)
-[![Maintainability](https://codeclimate.com/github/ihavalyova/DiAtomic.png)](https://codeclimate.com/github/ihavalyova/DiAtomic)
+[![Maintainability](https://api.codeclimate.com/v1/badges/e06f8c56335266f3879c/maintainability)](https://codeclimate.com/github/ihavalyova/DiAtomic/maintainability)
 
 <!-- https://mybinder.org/v2/gh/ihavalyova/DiAtomic/master -->
 
